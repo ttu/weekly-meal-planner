@@ -15,6 +15,7 @@ Realtime). No server of our own.
 
 | Need | Doc |
 |---|---|
+| The working agreement | `docs/00-engineering-standards.md` |
 | What it does, and **the glossary** | `docs/01-functional-spec.md` |
 | Where code goes | `docs/02-architecture.md` |
 | Tables and types | `docs/03-datamodel.md` |

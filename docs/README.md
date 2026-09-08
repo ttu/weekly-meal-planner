@@ -5,6 +5,7 @@ behaviour changed and no doc did, the change is incomplete.
 
 | Doc | What it covers | Kind |
 |---|---|---|
+| [00 — Engineering standards](00-engineering-standards.md) | The working agreement, as given. `02`–`08` apply it to this codebase | **Source** |
 | [01 — Functional spec](01-functional-spec.md) | What the app does, and the **glossary** that names everything | Living |
 | [02 — Architecture](02-architecture.md) | Vertical slices, DDD, boundaries, authorization point, data-as-code | Living |
 | [03 — Data model](03-datamodel.md) | Tables, constraints, branded types, edge validation | Living |
