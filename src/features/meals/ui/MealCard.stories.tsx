@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MealCard } from './MealCard'
+import { LeftoverCard } from './LeftoverCard'
 import type { MealId, Servings } from '../domain/types'
 
 const meal = { id: 'm1' as MealId, name: 'Chili con carne', servings: 4 as Servings }
@@ -17,9 +18,6 @@ export const Backlog: Story = { args: { meal, variant: 'backlog', addedBy: 'Aino
 export const Planned: Story = {
   args: { meal, variant: 'planned', servingsCooked: 6 as Servings },
 }
-export const Leftover: Story = {
-  args: { meal, variant: 'leftover', parentMealName: 'Chili con carne' },
-}
 export const LongFinnishName: Story = {
   args: { meal: longName, variant: 'planned', servingsCooked: 4 as Servings },
 }
@@ -32,7 +30,7 @@ export const AllVariants: Story = {
       <MealCard meal={meal} variant="library" />
       <MealCard meal={meal} variant="backlog" addedBy="Aino" />
       <MealCard meal={meal} variant="planned" servingsCooked={6 as Servings} />
-      <MealCard meal={meal} variant="leftover" parentMealName="Chili con carne" />
+      <LeftoverCard parentMealName="Chili con carne" />
     </div>
   ),
 }

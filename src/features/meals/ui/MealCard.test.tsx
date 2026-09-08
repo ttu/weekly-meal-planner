@@ -54,14 +54,6 @@ describe('MealCard', () => {
     await setLocale('en')
   })
 
-  it('names its parent on a leftover card and shows no servings', async () => {
-    const view = await render(
-      <MealCard meal={meal} variant="leftover" parentMealName="Chili con carne" />,
-    )
-    expect(view.getByText('Chili con carne — leftovers')).toBeTruthy()
-    expect(view.queryByTestId('meal-card-servings-cooked')).toBeNull()
-  })
-
   it('renders a long Finnish compound name without crashing', async () => {
     const long = { ...meal, name: 'Uunilohi ja perunamuusi kermaviilikastikkeella' }
     const view = await render(
