@@ -2,11 +2,11 @@
 
 ## Environments
 
-| Environment | Supabase | App |
-|---|---|---|
-| local | pglite for tests, local Supabase for manual work | Expo dev |
-| staging | own project, free tier | EAS internal distribution |
-| production | own project, Pro from first real household | TestFlight → App Store, Play |
+| Environment | Supabase                                         | App                          |
+| ----------- | ------------------------------------------------ | ---------------------------- |
+| local       | pglite for tests, local Supabase for manual work | Expo dev                     |
+| staging     | own project, free tier                           | EAS internal distribution    |
+| production  | own project, Pro from first real household       | TestFlight → App Store, Play |
 
 Free tier is fine until real families depend on the data; the trigger to move to
 Pro is **daily backups**, not a quota. See `01-functional-spec.md`.

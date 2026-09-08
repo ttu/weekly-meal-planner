@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Meal Planner",
+    "slug": "weekly-meal-planner",
+    "scheme": "mealplanner",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": ["expo-router"],
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.mealplanner.app" },
+    "android": {
+      "package": "com.mealplanner.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#EDE6D9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": { "favicon": "./assets/favicon.png", "bundler": "metro", "output": "static" }
+  }
+}

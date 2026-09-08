@@ -1,8 +1,9 @@
 node_modules/
 .expo/
 dist/
+coverage/
 *.log
 .env*
 !.env.example
-coverage/
+expo-env.d.ts
 .DS_Store

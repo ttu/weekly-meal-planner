@@ -6,7 +6,7 @@ Status: Accepted · 2026-09-08
 
 The project rules forbid hardcoded user-facing strings. The first real
 households are Finnish; the design's own copy is Finnish. Retrofitting i18n is
-a whole-codebase refactor, and retrofitting it into a *data model* is worse.
+a whole-codebase refactor, and retrofitting it into a _data model_ is worse.
 
 ## Decision
 

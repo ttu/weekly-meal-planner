@@ -4,15 +4,15 @@ Each plan produces working, testable software on its own and leaves the system
 in a runnable state. They are executed in order; each assumes the previous is
 merged.
 
-| # | Plan | Delivers | Status |
-|---|---|---|---|
-| 01 | [Foundation and tracer bullet](2026-09-08-01-foundation-and-tracer-bullet.md) | Board renders the seeded demo Household's week from Postgres. Fixture-first, so the UI exists from task 3 and every later task visibly changes it. | Ready |
-| 02 | Planning — backlog, placement, leftovers | Adding to the Backlog, planning onto a day and Slot, Leftover cards, tap-to-plan | Not written |
-| 03 | Meals — library, editor, catalogue copy | Meal editor with Ingredients, catalogue browse, copy-on-add | Not written |
-| 04 | Shopping list — derivation, pantry, exits | Buy / Cupboard Check / Extras, provenance, Agent Prompt, share, Reminders | Not written |
-| 05 | Catalogue content and sync | ~120 Catalogue Meals in fi + en, validated, synced by script | Not written |
-| 06 | Realtime and offline | Row subscriptions, presence, offline queue | Not written |
-| 07 | Wide-screen three-pane layout | Library / Backlog / Board panes above 1024px, drag between them | Not written |
+| #   | Plan                                                                          | Delivers                                                                                                                                           | Status      |
+| --- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 01  | [Foundation and tracer bullet](2026-09-08-01-foundation-and-tracer-bullet.md) | Board renders the seeded demo Household's week from Postgres. Fixture-first, so the UI exists from task 3 and every later task visibly changes it. | Ready       |
+| 02  | Planning — backlog, placement, leftovers                                      | Adding to the Backlog, planning onto a day and Slot, Leftover cards, tap-to-plan                                                                   | Not written |
+| 03  | Meals — library, editor, catalogue copy                                       | Meal editor with Ingredients, catalogue browse, copy-on-add                                                                                        | Not written |
+| 04  | Shopping list — derivation, pantry, exits                                     | Buy / Cupboard Check / Extras, provenance, Agent Prompt, share, Reminders                                                                          | Not written |
+| 05  | Catalogue content and sync                                                    | ~120 Catalogue Meals in fi + en, validated, synced by script                                                                                       | Not written |
+| 06  | Realtime and offline                                                          | Row subscriptions, presence, offline queue                                                                                                         | Not written |
+| 07  | Wide-screen three-pane layout                                                 | Library / Backlog / Board panes above 1024px, drag between them                                                                                    | Not written |
 
 ## Sequencing rationale
 

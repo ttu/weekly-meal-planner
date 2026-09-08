@@ -54,11 +54,11 @@ something on Tuesday dinner), and a slot holding a leftover card.
 
 Three panes in one view:
 
-| Pane | Content |
-|---|---|
-| Left | Meal library — household's own meals plus a public catalogue, searchable |
-| Centre | This week's backlog |
-| Right | The board, all seven days with their slots |
+| Pane   | Content                                                                  |
+| ------ | ------------------------------------------------------------------------ |
+| Left   | Meal library — household's own meals plus a public catalogue, searchable |
+| Centre | This week's backlog                                                      |
+| Right  | The board, all seven days with their slots                               |
 
 Meals drag left-to-right: library → backlog, or library → board directly. This
 collapses to the phone layout at around 1024px.
@@ -73,7 +73,7 @@ glance:
   this social signal matters, it is how a family sees "dad wants curry".
 - **Planned card** — sitting in a day slot. Shows servings cooked.
 - **Leftover card** — a lighter, visibly secondary variant naming its parent
-  ("Chili — leftovers"). It must read as *derived from* another card, not as a
+  ("Chili — leftovers"). It must read as _derived from_ another card, not as a
   meal in its own right. This distinction is the one people will get wrong if
   the design does not carry it.
 
@@ -162,7 +162,7 @@ at 6am and at 10pm.
 
 ## Round 2 — feedback on the delivered design
 
-The direction (Claude Design project *Meal Planner*, file
+The direction (Claude Design project _Meal Planner_, file
 `Meal Planner - Design Direction.dc.html`) is accepted. Two changes before it is
 final:
 

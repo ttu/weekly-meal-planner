@@ -20,7 +20,7 @@ application code.
 - A table shipped without a policy is unreachable rather than public. This is the
   right default and is asserted by a test.
 - RLS becomes load-bearing, so its tests must be adversarial: the tests that
-  matter prove household A *cannot* reach household B, not that a member can
+  matter prove household A _cannot_ reach household B, not that a member can
   reach their own data.
 - Membership lookup uses a `SECURITY DEFINER` helper, so the lookup is not
   subject to the policy it supports.

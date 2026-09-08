@@ -36,7 +36,7 @@ contradict this one, this one wins and the other is a bug.
   - Use clear, descriptive names taken from the ubiquitous language
   - Keep functions small and focused on one responsibility
   - Add comments only for non-obvious intent, constraints, or trade-offs
-  - Prefer self-documenting code — if a comment explains *what*, extract and name it instead
+  - Prefer self-documenting code — if a comment explains _what_, extract and name it instead
   - Doc comments on complex business logic (the why and the formula), not on obvious signatures
 - Follow Good Practices:
   - Keep code modular and reusable
@@ -58,7 +58,7 @@ contradict this one, this one wins and the other is a bug.
 ## Type Safety
 
 - Maintain Type Safety
-  - For domain types use e.g. branded types — for every domain identifier *and quantity*, so arguments can't be swapped
+  - For domain types use e.g. branded types — for every domain identifier _and quantity_, so arguments can't be swapped
   - Use strong typing when language supports it — TypeScript `strict`, plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`
   - Avoid loosely-typed constructs (e.g., `any`, `void*`, untyped dicts, unsafe casts)
   - Leverage type inference where appropriate — inside functions; be explicit at public boundaries
@@ -160,7 +160,7 @@ contradict this one, this one wins and the other is a bug.
   - Trailer footers (`Co-Authored-By`, `Refs: #issue`, tool attribution) are fine
   - Scope is required and names the feature slice it touches (`feat(pools):`, `fix(auth):`); use `repo` for cross-cutting/tooling changes
   - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`, `ci`, `build`, `perf`
-  - Keep commit and PR descriptions short — a one-line subject plus a few bullets; the *what* and *why*, not a narrative of the work. Detail belongs in the design doc or ADR
+  - Keep commit and PR descriptions short — a one-line subject plus a few bullets; the _what_ and _why_, not a narrative of the work. Detail belongs in the design doc or ADR
   - One commit per feature: implementation, tests, and docs together; don't commit design specs separately
   - PRs are squash-merged, so multiple commits on a branch are fine — don't squash locally
   - Use worktrees and feature branches — `feat/`/`fix/`/`chore/`/`refactor/` + slug; copy gitignored env files and install deps in each worktree; verify upstream is set

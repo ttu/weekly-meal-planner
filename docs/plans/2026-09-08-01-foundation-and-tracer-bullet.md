@@ -16,8 +16,9 @@ show from Task 5 onward.
 **Tech Stack:** Expo + Expo Router, TypeScript strict, Supabase (Postgres, Auth,
 RLS), TanStack Query, Zod, i18next, Jest (node + jest-expo projects), pglite,
 Storybook (react-native-web-vite), ESLint + Prettier + eslint-plugin-boundaries
-+ dependency-cruiser + jscpd, Husky + lint-staged + commitlint, GitHub Actions,
-Maestro.
+
+- dependency-cruiser + jscpd, Husky + lint-staged + commitlint, GitHub Actions,
+  Maestro.
 
 **Spec:** `docs/01-functional-spec.md` (with the glossary), supported by
 `docs/00-engineering-standards.md`, `docs/02-architecture.md`,
@@ -29,16 +30,16 @@ Maestro.
 Your standards ask for user-visible progress early. This is what a person can
 open and check at the end of each task:
 
-| Task | Openable and checkable |
-|---|---|
-| 1 | **Bootstrap only.** App runs and shows a placeholder. Honestly not a functionality — it is the one unavoidable setup task. |
-| 2 | **Storybook: all four Meal card variants, in Finnish and English.** |
-| 3 | **The board, in the app.** Seven days, configured Slots, two Meals in one Slot, a Leftover, empty Slots — from fixtures. |
-| 4 | **Tooling only.** Boundary violations and bad commit messages get rejected. Nothing visual; demonstrate by trying to break a rule. |
-| 5 | **The board's Household name and Slot configuration now come from Postgres.** Change a row with the seed script, restart, see the board change. |
-| 6 | **Cards show real Meals from the database.** Insert a Meal, it appears. |
-| 7 | **Fixtures deleted — the board is fully live.** The demo Household's planned week renders end to end. |
-| 8 | **CI and one E2E flow.** Tooling. |
+| Task | Openable and checkable                                                                                                                          |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | **Bootstrap only.** App runs and shows a placeholder. Honestly not a functionality — it is the one unavoidable setup task.                      |
+| 2    | **Storybook: all four Meal card variants, in Finnish and English.**                                                                             |
+| 3    | **The board, in the app.** Seven days, configured Slots, two Meals in one Slot, a Leftover, empty Slots — from fixtures.                        |
+| 4    | **Tooling only.** Boundary violations and bad commit messages get rejected. Nothing visual; demonstrate by trying to break a rule.              |
+| 5    | **The board's Household name and Slot configuration now come from Postgres.** Change a row with the seed script, restart, see the board change. |
+| 6    | **Cards show real Meals from the database.** Insert a Meal, it appears.                                                                         |
+| 7    | **Fixtures deleted — the board is fully live.** The demo Household's planned week renders end to end.                                           |
+| 8    | **CI and one E2E flow.** Tooling.                                                                                                               |
 
 Tasks 1, 4 and 8 have no visual deliverable and say so rather than pretending
 otherwise. The other five each end with a step that says: run the app and look
@@ -93,11 +94,13 @@ Every task's requirements implicitly include this section.
 task in the plan with nothing to demonstrate.
 
 **Files:**
+
 - Create: `package.json`, `tsconfig.json`, `app.json`, `.prettierrc`,
   `eslint.config.mjs`, `jest.config.js`, `jest.setup.node.js`,
   `src/app/_layout.tsx`, `src/app/index.tsx`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: `npm run validate` (format:check → lint → type-check → test →
   build). Every later task extends this script rather than adding a parallel one.
@@ -152,15 +155,24 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
       'no-console': 'error',
-      'no-restricted-syntax': ['error', {
-        selector: 'TSAsExpression[typeAnnotation.typeName.name!="const"]',
-        message: 'Unsafe cast. Construct branded values through a parser at the edge.',
-      }],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'TSAsExpression[typeAnnotation.typeName.name!="const"]',
+          message: 'Unsafe cast. Construct branded values through a parser at the edge.',
+        },
+      ],
     },
   },
   {
     // Fixtures and stories build branded values directly; that is their job.
-    files: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.stories.tsx', 'src/test/**', 'src/**/fixtures/**'],
+    files: [
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'src/**/*.stories.tsx',
+      'src/test/**',
+      'src/**/fixtures/**',
+    ],
     rules: { 'no-restricted-syntax': 'off', '@typescript-eslint/no-non-null-assertion': 'off' },
   },
   { ignores: ['dist/**', '.expo/**', 'node_modules/**', 'coverage/**'] },
@@ -276,6 +288,7 @@ git commit -m "chore(repo): scaffold Expo app with strict TypeScript and validat
 without a photo, with a long Finnish name, in both locales.
 
 **Files:**
+
 - Create: `src/shared/types/brand.ts`, `src/shared/types/result.ts`,
   `src/shared/time/clock.ts`, `src/shared/theme/tokens.ts`,
   `src/shared/logger/logger.ts`, `src/shared/i18n/index.ts`,
@@ -289,6 +302,7 @@ without a photo, with a long Finnish name, in both locales.
   `src/features/meals/ui/MealCard.test.tsx`
 
 **Interfaces:**
+
 - Consumes: Jest from Task 1
 - Produces:
   - `Brand<T, B>`; `Result<T,E>` with `ok`, `err`, `isOk`, `isErr`
@@ -552,7 +566,9 @@ import { initI18n } from '@/shared/i18n'
 import { MealCard } from './MealCard'
 import type { MealId, Servings } from '../domain/types'
 
-beforeAll(() => { initI18n() })
+beforeAll(() => {
+  initI18n()
+})
 
 const meal = { id: 'm1' as MealId, name: 'Chili con carne', servings: 4 as Servings }
 
@@ -643,7 +659,11 @@ const styles = StyleSheet.create({
 })
 
 export const MealCard = ({
-  meal, variant, addedBy, servingsCooked, parentMealName,
+  meal,
+  variant,
+  addedBy,
+  servingsCooked,
+  parentMealName,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const title =
@@ -659,9 +679,15 @@ export const MealCard = ({
             {meal.name.slice(0, 1).toUpperCase()}
           </Text>
         ) : (
-          <Image source={{ uri: meal.photoUrl }} style={styles.chip} accessibilityIgnoresInvertColors />
+          <Image
+            source={{ uri: meal.photoUrl }}
+            style={styles.chip}
+            accessibilityIgnoresInvertColors
+          />
         )}
-        <Text style={styles.name} numberOfLines={2}>{title}</Text>
+        <Text style={styles.name} numberOfLines={2}>
+          {title}
+        </Text>
       </View>
       {addedBy !== undefined && <Text style={styles.support}>{addedBy}</Text>}
       {variant !== 'leftover' && servingsCooked !== undefined && (
@@ -715,7 +741,12 @@ const preview: Preview = {
     locale: {
       description: 'Locale',
       defaultValue: 'fi',
-      toolbar: { items: [{ value: 'fi', title: 'Suomi' }, { value: 'en', title: 'English' }] },
+      toolbar: {
+        items: [
+          { value: 'fi', title: 'Suomi' },
+          { value: 'en', title: 'English' },
+        ],
+      },
     },
   },
   decorators: [
@@ -753,7 +784,9 @@ export const Library: Story = { args: { meal, variant: 'library' } }
 export const LibraryWithPhoto: Story = { args: { meal: withPhoto, variant: 'library' } }
 export const Backlog: Story = { args: { meal, variant: 'backlog', addedBy: 'Aino' } }
 export const Planned: Story = { args: { meal, variant: 'planned', servingsCooked: 6 as Servings } }
-export const Leftover: Story = { args: { meal, variant: 'leftover', parentMealName: 'Chili con carne' } }
+export const Leftover: Story = {
+  args: { meal, variant: 'leftover', parentMealName: 'Chili con carne' },
+}
 export const LongFinnishName: Story = {
   args: { meal: longName, variant: 'planned', servingsCooked: 4 as Servings },
 }
@@ -783,7 +816,13 @@ Create `src/features/meals/index.ts`:
 
 ```ts
 export type {
-  Meal, MealId, IngredientId, IngredientSlug, Servings, Quantity, HouseholdRef,
+  Meal,
+  MealId,
+  IngredientId,
+  IngredientSlug,
+  Servings,
+  Quantity,
+  HouseholdRef,
 } from './domain/types'
 export { isCatalogueMeal } from './domain/types'
 export { MealCard, type MealCardVariant } from './ui/MealCard'
@@ -804,6 +843,7 @@ two Meals in Tuesday dinner, a Leftover on Wednesday lunch, empty Slots as
 dashed add-lines. Data is fixtures; the database arrives in Task 5.
 
 **Files:**
+
 - Create: `src/features/household/domain/types.ts`,
   `src/features/planning/domain/types.ts`,
   `src/features/planning/domain/week.ts`,
@@ -819,6 +859,7 @@ dashed add-lines. Data is fixtures; the database arrives in Task 5.
   `src/features/planning/ui/DayColumn.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `Clock`, `tokens`, `useTranslation` (Task 2); `MealCard`, `MealId`,
   `Servings` (Task 2)
 - Produces:
@@ -862,7 +903,15 @@ export type Member = {
 Create `src/features/household/index.ts`:
 
 ```ts
-export type { Household, HouseholdId, Member, MemberId, Slot, SlotKey, Locale } from './domain/types'
+export type {
+  Household,
+  HouseholdId,
+  Member,
+  MemberId,
+  Slot,
+  SlotKey,
+  Locale,
+} from './domain/types'
 ```
 
 Create `src/features/planning/domain/types.ts`:
@@ -926,8 +975,13 @@ describe('currentWeekStart', () => {
 describe('weekDates', () => {
   it('returns seven consecutive ISO dates from Monday', () => {
     expect(weekDates('2026-08-24' as WeekStart)).toEqual([
-      '2026-08-24', '2026-08-25', '2026-08-26', '2026-08-27',
-      '2026-08-28', '2026-08-29', '2026-08-30',
+      '2026-08-24',
+      '2026-08-25',
+      '2026-08-26',
+      '2026-08-27',
+      '2026-08-28',
+      '2026-08-29',
+      '2026-08-30',
     ])
   })
 
@@ -938,7 +992,7 @@ describe('weekDates', () => {
 ```
 
 The Sunday case is the one that matters. A naive `getDay()` implementation
-returns the *next* Monday on Sundays, silently showing an empty week to a family
+returns the _next_ Monday on Sundays, silently showing an empty week to a family
 planning on Sunday evening — the single most likely moment they open the app.
 
 - [ ] **Step 3: Run to verify it fails, then implement**
@@ -1015,7 +1069,10 @@ describe('buildBoard', () => {
 
   it('places a Cook Event in its day and Slot', () => {
     const board = buildBoard({
-      weekStart, slots, cookEvents: [cookEvent('c1', '2026-08-25', 'dinner')], leftovers: [],
+      weekStart,
+      slots,
+      cookEvents: [cookEvent('c1', '2026-08-25', 'dinner')],
+      leftovers: [],
     })
     expect(board[1]!.slots[1]!.cards).toHaveLength(1)
     expect(board[1]!.slots[1]!.cards[0]!.kind).toBe('cook-event')
@@ -1023,14 +1080,18 @@ describe('buildBoard', () => {
 
   it('keeps two Cook Events in one Slot rather than dropping either', () => {
     const board = buildBoard({
-      weekStart, slots,
-      cookEvents: [cookEvent('c1', '2026-08-25', 'dinner'), cookEvent('c2', '2026-08-25', 'dinner')],
+      weekStart,
+      slots,
+      cookEvents: [
+        cookEvent('c1', '2026-08-25', 'dinner'),
+        cookEvent('c2', '2026-08-25', 'dinner'),
+      ],
       leftovers: [],
     })
     expect(board[1]!.slots[1]!.cards).toHaveLength(2)
   })
 
-  it('places a Leftover on its own day and Slot, not its parent\'s', () => {
+  it("places a Leftover on its own day and Slot, not its parent's", () => {
     const leftover: Leftover = {
       id: 'l1' as LeftoverId,
       cookEventId: 'c1' as CookEventId,
@@ -1039,7 +1100,10 @@ describe('buildBoard', () => {
       slotKey: 'lunch' as SlotKey,
     }
     const board = buildBoard({
-      weekStart, slots, cookEvents: [cookEvent('c1', '2026-08-25', 'dinner')], leftovers: [leftover],
+      weekStart,
+      slots,
+      cookEvents: [cookEvent('c1', '2026-08-25', 'dinner')],
+      leftovers: [leftover],
     })
     expect(board[2]!.slots[0]!.cards[0]!.kind).toBe('leftover')
     expect(board[1]!.slots[1]!.cards).toHaveLength(1)
@@ -1047,7 +1111,10 @@ describe('buildBoard', () => {
 
   it('skips a card whose Slot is no longer configured, without losing the day', () => {
     const board = buildBoard({
-      weekStart, slots, cookEvents: [cookEvent('c1', '2026-08-25', 'brunch')], leftovers: [],
+      weekStart,
+      slots,
+      cookEvents: [cookEvent('c1', '2026-08-25', 'brunch')],
+      leftovers: [],
     })
     expect(board[1]!.slots.flatMap((s) => s.cards)).toHaveLength(0)
     expect(board[1]!.slots).toHaveLength(2)
@@ -1087,7 +1154,10 @@ export type BuildBoardInput = {
 }
 
 export const buildBoard = ({
-  weekStart, slots, cookEvents, leftovers,
+  weekStart,
+  slots,
+  cookEvents,
+  leftovers,
 }: BuildBoardInput): readonly BoardDay[] => {
   const placed = [
     ...cookEvents.map((cookEvent) => ({
@@ -1109,9 +1179,7 @@ export const buildBoard = ({
     slots: slots.map((slot) => ({
       slotKey: slot.key,
       labelKey: slot.labelKey,
-      cards: placed
-        .filter((p) => p.date === date && p.slotKey === slot.key)
-        .map((p) => p.card),
+      cards: placed.filter((p) => p.date === date && p.slotKey === slot.key).map((p) => p.card),
     })),
   }))
 }
@@ -1123,7 +1191,7 @@ Expected: PASS, 6 tests.
 - [ ] **Step 6: The demo fixtures**
 
 Create `src/features/planning/fixtures/demo-week.ts`. Dates are derived from the
-clock so the fixture is always *this* week — a fixture pinned to August 2026
+clock so the fixture is always _this_ week — a fixture pinned to August 2026
 shows an empty board in September and wastes an afternoon.
 
 ```ts
@@ -1146,7 +1214,11 @@ export const demoHousehold: Household = {
 }
 
 const cookEvent = (
-  id: string, mealName: string, date: string, slotKey: string, servings: number,
+  id: string,
+  mealName: string,
+  date: string,
+  slotKey: string,
+  servings: number,
 ): CookEvent => ({
   id: id as CookEventId,
   mealId: `meal-${id}` as MealId,
@@ -1158,7 +1230,9 @@ const cookEvent = (
 
 /** Deliberately covers every state the board must handle: a normal day, two
  *  Meals in one Slot, a Leftover, and empty Slots. */
-export const demoWeek = (clock: Clock): {
+export const demoWeek = (
+  clock: Clock,
+): {
   cookEvents: readonly CookEvent[]
   leftovers: readonly Leftover[]
 } => {
@@ -1200,7 +1274,9 @@ import type { CookEventId } from '../domain/types'
 import type { SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/features/meals'
 
-beforeAll(() => { initI18n() })
+beforeAll(() => {
+  initI18n()
+})
 
 const emptyDay: BoardDay = {
   date: '2026-08-24',
@@ -1296,7 +1372,11 @@ export const DayColumn = ({ day, isToday }: Props): React.JSX.Element => {
     <View style={styles.day} testID={`day-${day.date}`}>
       <View style={styles.header}>
         <Text style={styles.dayName}>{day.date}</Text>
-        {isToday && <Text style={styles.today} testID="day-today-marker">{t('board.today')}</Text>}
+        {isToday && (
+          <Text style={styles.today} testID="day-today-marker">
+            {t('board.today')}
+          </Text>
+        )}
       </View>
 
       {day.slots.map((slot) => (
@@ -1430,7 +1510,14 @@ Create `src/features/planning/index.ts`:
 
 ```ts
 export type {
-  WeekStart, WeekPlanId, CookEvent, CookEventId, Leftover, LeftoverId, BacklogItemId, BoardCard,
+  WeekStart,
+  WeekPlanId,
+  CookEvent,
+  CookEventId,
+  Leftover,
+  LeftoverId,
+  BacklogItemId,
+  BoardCard,
 } from './domain/types'
 export { currentWeekStart, weekDates } from './domain/week'
 export { buildBoard, type BoardDay, type BoardSlot, type BuildBoardInput } from './domain/board'
@@ -1517,11 +1604,13 @@ nothing to show, and it is placed here deliberately: the boundaries now have
 real slices to enforce against.
 
 **Files:**
+
 - Create: `.dependency-cruiser.cjs`, `.jscpd.json`, `commitlint.config.cjs`,
   `.husky/{pre-commit,commit-msg,pre-push}`
 - Modify: `eslint.config.mjs`, `package.json`
 
 **Interfaces:**
+
 - Consumes: `npm run validate` (Task 1), the feature slices (Tasks 2–3)
 - Produces: `validate` extended with `lint:boundaries` and `lint:duplication`
 
@@ -1594,9 +1683,7 @@ Create `.dependency-cruiser.cjs`:
 
 ```js
 module.exports = {
-  forbidden: [
-    { name: 'no-circular', severity: 'error', from: {}, to: { circular: true } },
-  ],
+  forbidden: [{ name: 'no-circular', severity: 'error', from: {}, to: { circular: true } }],
   options: {
     doNotFollow: { path: 'node_modules' },
     tsConfig: { fileName: 'tsconfig.json' },
@@ -1645,8 +1732,11 @@ module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'scope-empty': [2, 'never'],
-    'type-enum': [2, 'always',
-      ['feat','fix','refactor','test','docs','style','chore','ci','build','perf']],
+    'type-enum': [
+      2,
+      'always',
+      ['feat', 'fix', 'refactor', 'test', 'docs', 'style', 'chore', 'ci', 'build', 'perf'],
+    ],
   },
 }
 ```
@@ -1722,6 +1812,7 @@ database. Edit the seed, re-run it, restart the app, and watch the board change
 — add a `breakfast` Slot and a third row appears on every day.
 
 **Files:**
+
 - Create: `supabase/schemas/00_extensions.sql`,
   `supabase/schemas/10_household.sql`,
   `supabase/schemas/90_policies_household.sql`
@@ -1737,6 +1828,7 @@ database. Edit the seed, re-run it, restart the app, and watch the board change
   `src/test/db/rls-household.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Result` (Task 2), `Household`, `Slot`, `SlotKey` (Task 3)
 - Produces:
   - `parseSlots(input): Result<readonly Slot[], 'invalid-slots'>`
@@ -1780,7 +1872,7 @@ create table household_member (
 create index household_member_user_idx on household_member (user_id);
 ```
 
-`slots` stores translation *keys*, not display text. Storing "Lounas" here would
+`slots` stores translation _keys_, not display text. Storing "Lounas" here would
 make the board monolingual and break ADR 0009 at the data layer.
 
 - [ ] **Step 2: Write the policies**
@@ -1916,9 +2008,9 @@ describe('household RLS', () => {
   let bobHousehold: string
 
   const seed = async (name: string, userId: string): Promise<string> => {
-    const [row] = (await db.sql(
-      'insert into household (name) values ($1) returning id', [name],
-    )) as { id: string }[]
+    const [row] = (await db.sql('insert into household (name) values ($1) returning id', [
+      name,
+    ])) as { id: string }[]
     await db.sql(
       `insert into household_member (household_id, user_id, role, display_name, colour)
        values ($1, $2, 'owner', 'Owner', '#5F7355')`,
@@ -1935,7 +2027,9 @@ describe('household RLS', () => {
     bobHousehold = await seed('Bob household', BOB)
   })
 
-  afterAll(async () => { await db.close() })
+  afterAll(async () => {
+    await db.close()
+  })
 
   it('lets a Member read their own Household', async () => {
     await db.asMember(ALICE)
@@ -1953,7 +2047,9 @@ describe('household RLS', () => {
     await db.asMember(ALICE)
     await db.sql("update household set name = 'stolen' where id = $1", [bobHousehold])
     await db.asMember(BOB)
-    const rows = (await db.sql('select name from household where id = $1', [bobHousehold])) as { name: string }[]
+    const rows = (await db.sql('select name from household where id = $1', [bobHousehold])) as {
+      name: string
+    }[]
     expect(rows[0]!.name).toBe('Bob household')
   })
 
@@ -2014,10 +2110,14 @@ describe('parseSlots', () => {
   })
 
   it('rejects duplicate keys', () => {
-    expect(isErr(parseSlots([
-      { key: 'lunch', labelKey: 'slot.lunch' },
-      { key: 'lunch', labelKey: 'slot.lunch' },
-    ]))).toBe(true)
+    expect(
+      isErr(
+        parseSlots([
+          { key: 'lunch', labelKey: 'slot.lunch' },
+          { key: 'lunch', labelKey: 'slot.lunch' },
+        ]),
+      ),
+    ).toBe(true)
   })
 
   it('rejects a non-array', () => {
@@ -2079,8 +2179,7 @@ export type Env = z.infer<typeof envSchema>
 /** Fails loudly at startup rather than producing an undefined URL at the first
  *  query. Both values are public by construction (docs/06-security.md); the
  *  service role key is never read here — only by scripts/seed-demo.ts. */
-export const readEnv = (source: Record<string, string | undefined>): Env =>
-  envSchema.parse(source)
+export const readEnv = (source: Record<string, string | undefined>): Env => envSchema.parse(source)
 ```
 
 Create `.env.example`:
@@ -2133,7 +2232,10 @@ export const loadHousehold = async (
   // No household_id filter: RLS already restricts the row set to the Member's
   // own Household (ADR 0002). A filter here would be a second enforcement point.
   const { data } = await client
-    .from('household').select('id,name,locale,slots').limit(1).maybeSingle()
+    .from('household')
+    .select('id,name,locale,slots')
+    .limit(1)
+    .maybeSingle()
   if (data === null) return err('not-found')
 
   const row = rowSchema.safeParse(data)
@@ -2169,7 +2271,10 @@ type SessionValue = {
 const SessionContext = createContext<SessionValue | undefined>(undefined)
 
 export const SessionProvider = ({
-  client, household, memberId, children,
+  client,
+  household,
+  memberId,
+  children,
 }: SessionValue & { children: ReactNode }): React.JSX.Element => {
   const value = useMemo(() => ({ client, household, memberId }), [client, household, memberId])
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
@@ -2185,7 +2290,15 @@ export const useSession = (): SessionValue => {
 Update `src/features/household/index.ts`:
 
 ```ts
-export type { Household, HouseholdId, Member, MemberId, Slot, SlotKey, Locale } from './domain/types'
+export type {
+  Household,
+  HouseholdId,
+  Member,
+  MemberId,
+  Slot,
+  SlotKey,
+  Locale,
+} from './domain/types'
 export { parseSlots, type ParseSlotsError } from './domain/slot'
 export { createSupabaseClient } from './infrastructure/supabase-client'
 export { loadHousehold, type LoadHouseholdError } from './infrastructure/household-repository'
@@ -2221,12 +2334,25 @@ const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001'
  *  must not be diluted by appearing on a person. */
 const MEMBERS = [
   { userId: DEMO_USER_ID, displayName: 'Aino', colour: '#5F7355', role: 'owner' },
-  { userId: '00000000-0000-0000-0000-000000000002', displayName: 'Sanni', colour: '#C05A38', role: 'member' },
-  { userId: '00000000-0000-0000-0000-000000000003', displayName: 'Mikko', colour: '#4A6670', role: 'member' },
+  {
+    userId: '00000000-0000-0000-0000-000000000002',
+    displayName: 'Sanni',
+    colour: '#C05A38',
+    role: 'member',
+  },
+  {
+    userId: '00000000-0000-0000-0000-000000000003',
+    displayName: 'Mikko',
+    colour: '#4A6670',
+    role: 'member',
+  },
 ]
 
 const seed = async (): Promise<void> => {
-  await admin.from('household_member').delete().neq('user_id', '00000000-0000-0000-0000-000000000000')
+  await admin
+    .from('household_member')
+    .delete()
+    .neq('user_id', '00000000-0000-0000-0000-000000000000')
   await admin.from('household').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
   const { data: household, error } = await admin
@@ -2312,7 +2438,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { readEnv } from '@/shared/env'
 import { initI18n, i18n } from '@/shared/i18n'
 import {
-  createSupabaseClient, loadHousehold, SessionProvider, type Household,
+  createSupabaseClient,
+  loadHousehold,
+  SessionProvider,
+  type Household,
 } from '@/features/household'
 import { isOk } from '@/shared/types/result'
 
@@ -2401,6 +2530,7 @@ Ingredient slugs are in place, so a Finnish and an English name resolve to one
 Ingredient.
 
 **Files:**
+
 - Create: `supabase/schemas/20_meals.sql`, `supabase/schemas/91_policies_meals.sql`
 - Create: `data/ingredients.json`, `src/features/meals/infrastructure/meal-repository.ts`
 - Modify: `src/test/db/harness.ts`, `scripts/seed-demo.ts`,
@@ -2408,6 +2538,7 @@ Ingredient.
 - Test: `src/test/db/rls-meals.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createTestDb` (Task 5), `Meal`, `MealId`, `Servings` (Task 2)
 - Produces: `loadMeals(client): Promise<Result<readonly Meal[], 'invalid-row'>>`
 
@@ -2540,7 +2671,9 @@ describe('meal RLS', () => {
     db = await createTestDb()
 
     const seedHousehold = async (name: string, userId: string): Promise<string> => {
-      const [h] = (await db.sql('insert into household (name) values ($1) returning id', [name])) as { id: string }[]
+      const [h] = (await db.sql('insert into household (name) values ($1) returning id', [
+        name,
+      ])) as { id: string }[]
       await db.sql(
         `insert into household_member (household_id, user_id, role, display_name, colour)
          values ($1, $2, 'owner', 'Owner', '#5F7355')`,
@@ -2564,7 +2697,9 @@ describe('meal RLS', () => {
     catalogueMeal = cm!.id
   })
 
-  afterAll(async () => { await db.close() })
+  afterAll(async () => {
+    await db.close()
+  })
 
   it("hides another Household's Meal", async () => {
     await db.asMember(ALICE)
@@ -2579,15 +2714,17 @@ describe('meal RLS', () => {
   it('refuses to let a Household edit a Catalogue Meal', async () => {
     await db.asMember(ALICE)
     await db.sql("update meal set name = 'hijacked' where id = $1", [catalogueMeal])
-    const rows = (await db.sql('select name from meal where id = $1', [catalogueMeal])) as { name: string }[]
+    const rows = (await db.sql('select name from meal where id = $1', [catalogueMeal])) as {
+      name: string
+    }[]
     expect(rows[0]!.name).toBe('Shakshuka')
   })
 
   it('allows a Meal with no Ingredients, for the day-one quick-add path', async () => {
     await db.asMember(ALICE)
-    await db.sql(
-      "insert into meal (household_id, name, servings) values ($1, 'Tacos', 4)", [aliceHousehold],
-    )
+    await db.sql("insert into meal (household_id, name, servings) values ($1, 'Tacos', 4)", [
+      aliceHousehold,
+    ])
     const rows = (await db.sql(
       `select count(mi.ingredient_id) as ingredient_count
        from meal m left join meal_ingredient mi on mi.meal_id = m.id
@@ -2603,7 +2740,8 @@ describe('meal RLS', () => {
     )) as { id: string }[]
     await db.sql(
       `insert into ingredient_name (ingredient_id, locale, name)
-       values ($1, 'fi', 'sipuli'), ($1, 'en', 'onion')`, [ing!.id],
+       values ($1, 'fi', 'sipuli'), ($1, 'en', 'onion')`,
+      [ing!.id],
     )
     await db.asMember(ALICE)
     const rows = await db.sql(
@@ -2631,18 +2769,48 @@ Create `data/ingredients.json` — data as code, per `docs/02-architecture.md`:
 
 ```json
 [
-  { "slug": "onion", "category": "produce", "dimension": "count", "baseUnit": "pcs",
-    "names": { "fi": "sipuli", "en": "onion" } },
-  { "slug": "minced-beef", "category": "meat", "dimension": "mass", "baseUnit": "g",
-    "names": { "fi": "jauheliha", "en": "minced beef" } },
-  { "slug": "tinned-tomatoes", "category": "dry-goods", "dimension": "count", "baseUnit": "tin",
-    "names": { "fi": "tomaattimurska", "en": "tinned tomatoes" } },
-  { "slug": "salmon-fillet", "category": "fish", "dimension": "mass", "baseUnit": "g",
-    "names": { "fi": "lohifile", "en": "salmon fillet" } },
-  { "slug": "potato", "category": "produce", "dimension": "mass", "baseUnit": "g",
-    "names": { "fi": "peruna", "en": "potato" } },
-  { "slug": "ground-cumin", "category": "spices", "dimension": "mass", "baseUnit": "g",
-    "names": { "fi": "juustokumina", "en": "ground cumin" } }
+  {
+    "slug": "onion",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "sipuli", "en": "onion" }
+  },
+  {
+    "slug": "minced-beef",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "jauheliha", "en": "minced beef" }
+  },
+  {
+    "slug": "tinned-tomatoes",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "tomaattimurska", "en": "tinned tomatoes" }
+  },
+  {
+    "slug": "salmon-fillet",
+    "category": "fish",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "lohifile", "en": "salmon fillet" }
+  },
+  {
+    "slug": "potato",
+    "category": "produce",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "peruna", "en": "potato" }
+  },
+  {
+    "slug": "ground-cumin",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "juustokumina", "en": "ground cumin" }
+  }
 ]
 ```
 
@@ -2653,16 +2821,24 @@ Add to `scripts/seed-demo.ts`, after the Members insert, and add
 
 ```ts
 const MEALS = [
-  { name: 'Chili con carne', servings: 4, ingredients: [
-    { slug: 'onion', quantity: 2, unit: 'pcs' },
-    { slug: 'minced-beef', quantity: 400, unit: 'g' },
-    { slug: 'tinned-tomatoes', quantity: 2, unit: 'tin' },
-    { slug: 'ground-cumin', quantity: 5, unit: 'g' },
-  ] },
-  { name: 'Uunilohi ja perunamuusi', servings: 4, ingredients: [
-    { slug: 'salmon-fillet', quantity: 600, unit: 'g' },
-    { slug: 'potato', quantity: 1000, unit: 'g' },
-  ] },
+  {
+    name: 'Chili con carne',
+    servings: 4,
+    ingredients: [
+      { slug: 'onion', quantity: 2, unit: 'pcs' },
+      { slug: 'minced-beef', quantity: 400, unit: 'g' },
+      { slug: 'tinned-tomatoes', quantity: 2, unit: 'tin' },
+      { slug: 'ground-cumin', quantity: 5, unit: 'g' },
+    ],
+  },
+  {
+    name: 'Uunilohi ja perunamuusi',
+    servings: 4,
+    ingredients: [
+      { slug: 'salmon-fillet', quantity: 600, unit: 'g' },
+      { slug: 'potato', quantity: 1000, unit: 'g' },
+    ],
+  },
   { name: 'Munavoileivät', servings: 2, ingredients: [] },
   { name: 'Tacos', servings: 4, ingredients: [] },
 ]
@@ -2674,10 +2850,14 @@ const seedMeals = async (householdId: string): Promise<void> => {
     const { data, error } = await admin
       .from('ingredient')
       .insert({
-        household_id: null, slug: ing.slug, category: ing.category,
-        dimension: ing.dimension, base_unit: ing.baseUnit,
+        household_id: null,
+        slug: ing.slug,
+        category: ing.category,
+        dimension: ing.dimension,
+        base_unit: ing.baseUnit,
       })
-      .select('id').single()
+      .select('id')
+      .single()
     if (error !== null) throw new Error(`Ingredient ${ing.slug}: ${error.message}`)
 
     const ingredientId = (data as { id: string }).id
@@ -2685,7 +2865,9 @@ const seedMeals = async (householdId: string): Promise<void> => {
 
     const { error: nameError } = await admin.from('ingredient_name').insert(
       Object.entries(ing.names).map(([locale, name]) => ({
-        ingredient_id: ingredientId, locale, name,
+        ingredient_id: ingredientId,
+        locale,
+        name,
       })),
     )
     if (nameError !== null) throw new Error(`Ingredient names ${ing.slug}: ${nameError.message}`)
@@ -2695,7 +2877,8 @@ const seedMeals = async (householdId: string): Promise<void> => {
     const { data, error } = await admin
       .from('meal')
       .insert({ household_id: householdId, name: meal.name, servings: meal.servings })
-      .select('id').single()
+      .select('id')
+      .single()
     if (error !== null) throw new Error(`Meal ${meal.name}: ${error.message}`)
 
     if (meal.ingredients.length === 0) continue
@@ -2705,7 +2888,12 @@ const seedMeals = async (householdId: string): Promise<void> => {
       meal.ingredients.map((mi) => {
         const ingredientId = slugToId.get(mi.slug)
         if (ingredientId === undefined) throw new Error(`Unknown Ingredient slug: ${mi.slug}`)
-        return { meal_id: mealId, ingredient_id: ingredientId, quantity: mi.quantity, unit: mi.unit }
+        return {
+          meal_id: mealId,
+          ingredient_id: ingredientId,
+          quantity: mi.quantity,
+          unit: mi.unit,
+        }
       }),
     )
     if (miError !== null) throw new Error(`Meal Ingredients ${meal.name}: ${miError.message}`)
@@ -2750,13 +2938,15 @@ export const loadMeals = async (
   if (!rows.success) return err('invalid-row')
 
   // null at the edge becomes undefined inside; the domain never carries null.
-  return ok(rows.data.map((r) => ({
-    id: r.id as MealId,
-    ...(r.household_id === null ? {} : { householdId: r.household_id as HouseholdRef }),
-    name: r.name,
-    servings: r.servings as Servings,
-    ...(r.photo_url === null ? {} : { photoUrl: r.photo_url }),
-  })))
+  return ok(
+    rows.data.map((r) => ({
+      id: r.id as MealId,
+      ...(r.household_id === null ? {} : { householdId: r.household_id as HouseholdRef }),
+      name: r.name,
+      servings: r.servings as Servings,
+      ...(r.photo_url === null ? {} : { photoUrl: r.photo_url }),
+    })),
+  )
 }
 ```
 
@@ -2809,6 +2999,7 @@ git commit -m "feat(meals): Meal and Ingredient schema with slug-keyed identity
 database. Delete a Cook Event with SQL and its Leftover disappears with it.
 
 **Files:**
+
 - Create: `supabase/schemas/30_planning.sql`,
   `supabase/schemas/92_policies_planning.sql`,
   `src/features/planning/infrastructure/board-repository.ts`
@@ -2818,6 +3009,7 @@ database. Delete a Cook Event with SQL and its Leftover disappears with it.
 - Test: `src/test/db/rls-planning.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createTestDb` (Task 5), `buildBoard`, `currentWeekStart` (Task 3)
 - Produces: `loadWeek(client, weekStart): Promise<Result<WeekContents, LoadWeekError>>`
   where `WeekContents = { cookEvents: readonly CookEvent[]; leftovers: readonly Leftover[] }`
@@ -2941,16 +3133,21 @@ describe('planning RLS and cascades', () => {
     db = await createTestDb()
 
     const seed = async (name: string, userId: string): Promise<{ week: string; meal: string }> => {
-      const [h] = (await db.sql('insert into household (name) values ($1) returning id', [name])) as { id: string }[]
+      const [h] = (await db.sql('insert into household (name) values ($1) returning id', [
+        name,
+      ])) as { id: string }[]
       await db.sql(
         `insert into household_member (household_id, user_id, role, display_name, colour)
-         values ($1, $2, 'owner', 'Owner', '#5F7355')`, [h!.id, userId],
+         values ($1, $2, 'owner', 'Owner', '#5F7355')`,
+        [h!.id, userId],
       )
       const [w] = (await db.sql(
-        "insert into week_plan (household_id, week_start) values ($1, '2026-08-24') returning id", [h!.id],
+        "insert into week_plan (household_id, week_start) values ($1, '2026-08-24') returning id",
+        [h!.id],
       )) as { id: string }[]
       const [m] = (await db.sql(
-        "insert into meal (household_id, name, servings) values ($1, 'Chili', 4) returning id", [h!.id],
+        "insert into meal (household_id, name, servings) values ($1, 'Chili', 4) returning id",
+        [h!.id],
       )) as { id: string }[]
       return { week: w!.id, meal: m!.id }
     }
@@ -2962,12 +3159,17 @@ describe('planning RLS and cascades', () => {
     bobWeek = bob.week
   })
 
-  afterAll(async () => { await db.close() })
+  afterAll(async () => {
+    await db.close()
+  })
 
   it('rejects a week_start that is not a Monday', async () => {
     await expect(
-      db.sql(`insert into week_plan (household_id, week_start)
-              select household_id, '2026-08-25' from week_plan where id = $1`, [aliceWeek]),
+      db.sql(
+        `insert into week_plan (household_id, week_start)
+              select household_id, '2026-08-25' from week_plan where id = $1`,
+        [aliceWeek],
+      ),
     ).rejects.toThrow()
   })
 
@@ -2981,7 +3183,8 @@ describe('planning RLS and cascades', () => {
     await expect(
       db.sql(
         `insert into cook_event (week_plan_id, meal_id, date, slot_key, servings_cooked)
-         values ($1, $2, '2026-08-25', 'dinner', 4)`, [bobWeek, aliceMeal],
+         values ($1, $2, '2026-08-25', 'dinner', 4)`,
+        [bobWeek, aliceMeal],
       ),
     ).rejects.toThrow()
   })
@@ -2991,26 +3194,33 @@ describe('planning RLS and cascades', () => {
     for (const _ of [1, 2]) {
       await db.sql(
         `insert into cook_event (week_plan_id, meal_id, date, slot_key, servings_cooked)
-         values ($1, $2, '2026-08-25', 'dinner', 4)`, [aliceWeek, aliceMeal],
+         values ($1, $2, '2026-08-25', 'dinner', 4)`,
+        [aliceWeek, aliceMeal],
       )
     }
-    expect(await db.sql(
-      "select id from cook_event where week_plan_id = $1 and date = '2026-08-25' and slot_key = 'dinner'",
-      [aliceWeek],
-    )).toHaveLength(2)
+    expect(
+      await db.sql(
+        "select id from cook_event where week_plan_id = $1 and date = '2026-08-25' and slot_key = 'dinner'",
+        [aliceWeek],
+      ),
+    ).toHaveLength(2)
   })
 
   it('takes Leftovers with the Cook Event when it is deleted', async () => {
     await db.asMember(ALICE)
     const [ce] = (await db.sql(
       `insert into cook_event (week_plan_id, meal_id, date, slot_key, servings_cooked)
-       values ($1, $2, '2026-08-26', 'dinner', 6) returning id`, [aliceWeek, aliceMeal],
+       values ($1, $2, '2026-08-26', 'dinner', 6) returning id`,
+      [aliceWeek, aliceMeal],
     )) as { id: string }[]
     await db.sql(
-      "insert into leftover (cook_event_id, date, slot_key) values ($1, '2026-08-27', 'lunch')", [ce!.id],
+      "insert into leftover (cook_event_id, date, slot_key) values ($1, '2026-08-27', 'lunch')",
+      [ce!.id],
     )
     await db.sql('delete from cook_event where id = $1', [ce!.id])
-    expect(await db.sql('select id from leftover where cook_event_id = $1', [ce!.id])).toHaveLength(0)
+    expect(await db.sql('select id from leftover where cook_event_id = $1', [ce!.id])).toHaveLength(
+      0,
+    )
   })
 })
 ```
@@ -3066,7 +3276,10 @@ export const loadWeek = async (
   weekStart: WeekStart,
 ): Promise<Result<WeekContents, LoadWeekError>> => {
   const { data: plan } = await client
-    .from('week_plan').select('id').eq('week_start', weekStart).maybeSingle()
+    .from('week_plan')
+    .select('id')
+    .eq('week_start', weekStart)
+    .maybeSingle()
   if (plan === null) return err('no-week-plan')
 
   const planId = (plan as { id: string }).id
@@ -3187,8 +3400,10 @@ const seedWeek = async (householdId: string): Promise<void> => {
   const weekStart = mondayOfThisWeek()
 
   const { data: plan, error } = await admin
-    .from('week_plan').insert({ household_id: householdId, week_start: weekStart })
-    .select('id').single()
+    .from('week_plan')
+    .insert({ household_id: householdId, week_start: weekStart })
+    .select('id')
+    .single()
   if (error !== null) throw new Error(`Week Plan: ${error.message}`)
   const weekPlanId = (plan as { id: string }).id
 
@@ -3202,20 +3417,50 @@ const seedWeek = async (householdId: string): Promise<void> => {
 
   // Covers every board state: a normal day, two Meals in one Slot, a Leftover,
   // and empty Slots.
-  const { data: events, error: eventError } = await admin.from('cook_event').insert([
-    { week_plan_id: weekPlanId, meal_id: mealId('Munavoileivät'), date: weekStart, slot_key: 'lunch', servings_cooked: 2 },
-    { week_plan_id: weekPlanId, meal_id: mealId('Chili con carne'), date: weekStart, slot_key: 'dinner', servings_cooked: 6 },
-    { week_plan_id: weekPlanId, meal_id: mealId('Uunilohi ja perunamuusi'), date: addDays(weekStart, 1), slot_key: 'dinner', servings_cooked: 3 },
-    { week_plan_id: weekPlanId, meal_id: mealId('Tacos'), date: addDays(weekStart, 1), slot_key: 'dinner', servings_cooked: 2 },
-  ]).select('id,meal_id')
+  const { data: events, error: eventError } = await admin
+    .from('cook_event')
+    .insert([
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Munavoileivät'),
+        date: weekStart,
+        slot_key: 'lunch',
+        servings_cooked: 2,
+      },
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Chili con carne'),
+        date: weekStart,
+        slot_key: 'dinner',
+        servings_cooked: 6,
+      },
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Uunilohi ja perunamuusi'),
+        date: addDays(weekStart, 1),
+        slot_key: 'dinner',
+        servings_cooked: 3,
+      },
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Tacos'),
+        date: addDays(weekStart, 1),
+        slot_key: 'dinner',
+        servings_cooked: 2,
+      },
+    ])
+    .select('id,meal_id')
   if (eventError !== null) throw new Error(`Cook Events: ${eventError.message}`)
 
-  const chiliEvent = (events as { id: string; meal_id: string }[])
-    .find((e) => e.meal_id === mealId('Chili con carne'))
+  const chiliEvent = (events as { id: string; meal_id: string }[]).find(
+    (e) => e.meal_id === mealId('Chili con carne'),
+  )
   if (chiliEvent === undefined) throw new Error('Seed failed to create the Chili Cook Event')
 
   const { error: leftoverError } = await admin.from('leftover').insert({
-    cook_event_id: chiliEvent.id, date: addDays(weekStart, 2), slot_key: 'lunch',
+    cook_event_id: chiliEvent.id,
+    date: addDays(weekStart, 2),
+    slot_key: 'lunch',
   })
   if (leftoverError !== null) throw new Error(`Leftover: ${leftoverError.message}`)
 
@@ -3281,10 +3526,12 @@ git commit -m "feat(planning): Week Plan, Cook Event and Leftover schema; board 
 E2E flow proves the board renders on a real device.
 
 **Files:**
+
 - Create: `.github/workflows/validate.yml`, `.maestro/board-smoke.yaml`
 - Modify: `package.json`, `docs/08-deployment.md`
 
 **Interfaces:**
+
 - Consumes: `npm run validate` (Tasks 1, 4)
 - Produces: CI mirroring local gates
 
@@ -3359,12 +3606,12 @@ appId: com.mealplanner.app
 ---
 - launchApp
 - assertVisible:
-    id: "board-screen"
+    id: 'board-screen'
 - assertVisible:
-    id: "board"
-- assertVisible: "Koivisto"
+    id: 'board'
+- assertVisible: 'Koivisto'
 - assertVisible:
-    id: "slot-dinner"
+    id: 'slot-dinner'
 ```
 
 Add script: `"test:e2e": "maestro test .maestro"`.

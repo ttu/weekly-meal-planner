@@ -13,17 +13,17 @@ Realtime). No server of our own.
 
 ## Read before writing code
 
-| Need | Doc |
-|---|---|
-| The working agreement | `docs/00-engineering-standards.md` |
-| What it does, and **the glossary** | `docs/01-functional-spec.md` |
-| Where code goes | `docs/02-architecture.md` |
-| Tables and types | `docs/03-datamodel.md` |
-| How to test it | `docs/04-testing.md` |
-| Rules and conventions | `docs/05-code-quality.md` |
-| Auth, RLS, privacy | `docs/06-security.md` |
-| Colours, type, components | `docs/07-design-system.md` |
-| Why things are the way they are | `docs/adr/README.md` |
+| Need                               | Doc                                |
+| ---------------------------------- | ---------------------------------- |
+| The working agreement              | `docs/00-engineering-standards.md` |
+| What it does, and **the glossary** | `docs/01-functional-spec.md`       |
+| Where code goes                    | `docs/02-architecture.md`          |
+| Tables and types                   | `docs/03-datamodel.md`             |
+| How to test it                     | `docs/04-testing.md`               |
+| Rules and conventions              | `docs/05-code-quality.md`          |
+| Auth, RLS, privacy                 | `docs/06-security.md`              |
+| Colours, type, components          | `docs/07-design-system.md`         |
+| Why things are the way they are    | `docs/adr/README.md`               |
 
 ## Ubiquitous language
 
