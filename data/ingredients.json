@@ -1,0 +1,51 @@
+[
+  {
+    "slug": "onion",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "sipuli", "en": "onion" }
+  },
+  {
+    "slug": "minced-beef",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "jauheliha", "en": "minced beef" }
+  },
+  {
+    "slug": "tinned-tomatoes",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "tomaattimurska", "en": "tinned tomatoes" }
+  },
+  {
+    "slug": "kidney-beans",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "kidneypavut", "en": "kidney beans" }
+  },
+  {
+    "slug": "salmon-fillet",
+    "category": "fish",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "lohifile", "en": "salmon fillet" }
+  },
+  {
+    "slug": "potato",
+    "category": "produce",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "peruna", "en": "potato" }
+  },
+  {
+    "slug": "ground-cumin",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "juustokumina", "en": "ground cumin" }
+  }
+]
