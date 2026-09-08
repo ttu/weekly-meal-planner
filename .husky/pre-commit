@@ -1,0 +1,8 @@
+if [ "$SKIP_HOOKS" = "1" ]; then
+  echo "⚠️  SKIP_HOOKS=1 — pre-commit checks bypassed. This is not normal."
+  exit 0
+fi
+
+pnpm exec lint-staged
+pnpm run type-check
+pnpm test

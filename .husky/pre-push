@@ -1,0 +1,17 @@
+if [ "$SKIP_HOOKS" = "1" ]; then
+  echo "⚠️  SKIP_HOOKS=1 — pre-push checks bypassed. This is not normal."
+  exit 0
+fi
+
+# Refuse to push a branch that is not rebased on latest main.
+if git remote get-url origin >/dev/null 2>&1; then
+  git fetch origin main --quiet || true
+  if git rev-parse --verify origin/main >/dev/null 2>&1; then
+    if ! git merge-base --is-ancestor origin/main HEAD; then
+      echo "✖ Branch is not rebased on latest origin/main. Rebase before pushing."
+      exit 1
+    fi
+  fi
+fi
+
+pnpm run validate:all

@@ -1,0 +1,8 @@
+{
+  "threshold": 3,
+  "reporters": ["consoleFull"],
+  "absolute": true,
+  "gitignore": true,
+  "path": ["src"],
+  "ignore": ["**/*.test.ts", "**/*.test.tsx", "**/*.stories.tsx", "**/fixtures/**"]
+}

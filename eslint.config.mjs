@@ -14,6 +14,7 @@ export default defineConfig([
       'storybook-static/**',
       'expo-env.d.ts',
       '*.config.js',
+      '*.cjs',
       'jest.setup.node.js',
     ],
   },
@@ -49,6 +50,48 @@ export default defineConfig([
     rules: {
       'no-restricted-syntax': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
+  {
+    plugins: { boundaries: (await import('eslint-plugin-boundaries')).default },
+    settings: {
+      // Without a TypeScript resolver an extensionless .tsx import cannot be
+      // resolved, the target is classified "unknown", and every boundary rule
+      // silently passes.
+      'import/resolver': { typescript: { project: './tsconfig.json' } },
+      'boundaries/elements': [
+        { type: 'app', pattern: 'src/app', partialMatch: true },
+        { type: 'feature', pattern: 'src/features/*', capture: ['feature'], partialMatch: true },
+        { type: 'shared', pattern: 'src/shared', partialMatch: true },
+        { type: 'test', pattern: 'src/test', partialMatch: true },
+      ],
+      'boundaries/files': [{ category: 'feature-public', pattern: 'src/features/*/index.ts' }],
+    },
+    rules: {
+      'boundaries/no-unknown-dependencies': 'error',
+      // Cross-feature access goes through index.ts and nothing else. A
+      // feature's own files import each other freely (same captured feature).
+      'boundaries/dependencies': [
+        'error',
+        {
+          default: 'allow',
+          policies: [
+            {
+              from: { element: { type: 'feature' } },
+              disallow: { to: { element: { type: 'feature' } } },
+            },
+            {
+              from: { element: { type: 'feature' } },
+              allow: { to: { file: { categories: 'feature-public' } } },
+            },
+            // shared/ is generic or it is not shared: it may never know a feature.
+            {
+              from: { element: { type: 'shared' } },
+              disallow: { to: { element: { types: { anyOf: ['feature', 'app'] } } } },
+            },
+          ],
+        },
+      ],
     },
   },
   {
