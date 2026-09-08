@@ -4,3 +4,4 @@ dist/
 coverage/
 assets/
 pnpm-lock.yaml
+storybook-static/

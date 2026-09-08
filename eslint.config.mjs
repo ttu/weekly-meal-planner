@@ -11,6 +11,7 @@ export default defineConfig([
       'node_modules/**',
       'coverage/**',
       'assets/**',
+      'storybook-static/**',
       'expo-env.d.ts',
       '*.config.js',
       'jest.setup.node.js',
@@ -19,7 +20,7 @@ export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
-    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    files: ['src/**/*.ts', 'src/**/*.tsx', '.storybook/**/*.ts', '.storybook/**/*.tsx'],
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
@@ -43,6 +44,7 @@ export default defineConfig([
       'src/**/*.stories.tsx',
       'src/test/**',
       'src/**/fixtures/**',
+      '.storybook/**',
     ],
     rules: {
       'no-restricted-syntax': 'off',

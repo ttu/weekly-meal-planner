@@ -1,0 +1,6 @@
+{
+  "board": { "thisWeek": "Tämä viikko", "today": "Tänään", "addMeal": "Lisää ateria" },
+  "slot": { "lunch": "Lounas", "dinner": "Päivällinen", "breakfast": "Aamiainen" },
+  "cookEvent": { "cookingCount": "Valmistetaan {{count}}" },
+  "leftover": { "suffix": "{{meal}} — tähteet" }
+}

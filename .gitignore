@@ -7,3 +7,4 @@ coverage/
 !.env.example
 expo-env.d.ts
 .DS_Store
+storybook-static/

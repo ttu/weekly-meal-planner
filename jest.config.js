@@ -2,8 +2,12 @@ module.exports = {
   projects: [
     {
       displayName: 'node',
-      preset: 'ts-jest',
       testEnvironment: 'node',
+      transform: {
+        // ts-jest emits CommonJS, which the app's verbatimModuleSyntax forbids.
+        // tsconfig.jest.json relaxes exactly that, and nothing else.
+        '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.json' }],
+      },
       testMatch: ['<rootDir>/src/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/jest.setup.node.js'],
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },

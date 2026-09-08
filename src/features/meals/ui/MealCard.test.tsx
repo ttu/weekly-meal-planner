@@ -1,0 +1,72 @@
+import { render } from '@testing-library/react-native'
+import { initI18n, setLocale } from '@/shared/i18n'
+import { MealCard } from './MealCard'
+import type { MealId, Servings } from '../domain/types'
+
+// react-native-testing-library v14 made render async; every call must be awaited
+// or the queries come back empty with a misleading "render has not been called".
+beforeAll(async () => {
+  initI18n()
+  await setLocale('en')
+})
+
+const meal = { id: 'm1' as MealId, name: 'Chili con carne', servings: 4 as Servings }
+
+describe('MealCard', () => {
+  it('shows the Meal name', async () => {
+    const view = await render(<MealCard meal={meal} variant="library" />)
+    expect(view.getByText('Chili con carne')).toBeTruthy()
+  })
+
+  it('shows an initial when the Meal has no photo, so the row rhythm holds', async () => {
+    const view = await render(<MealCard meal={meal} variant="library" />)
+    expect(view.getByTestId('meal-card-initial')).toBeTruthy()
+  })
+
+  it('shows a photo chip instead of an initial when the Meal has one', async () => {
+    const withPhoto = { ...meal, photoUrl: 'https://example.test/chili.jpg' }
+    const view = await render(<MealCard meal={withPhoto} variant="library" />)
+    expect(view.queryByTestId('meal-card-initial')).toBeNull()
+  })
+
+  it('shows who added it on a backlog card, because that is the point', async () => {
+    const view = await render(<MealCard meal={meal} variant="backlog" addedBy="Aino" />)
+    expect(view.getByText('Aino')).toBeTruthy()
+  })
+
+  it('shows a translated servings line on a planned card', async () => {
+    const view = await render(
+      <MealCard meal={meal} variant="planned" servingsCooked={6 as Servings} />,
+    )
+    expect(view.getByText('Cooking 6')).toBeTruthy()
+  })
+
+  it('translates the servings line into Finnish', async () => {
+    await setLocale('fi')
+    const view = await render(
+      <MealCard meal={meal} variant="planned" servingsCooked={6 as Servings} />,
+    )
+    expect(view.getByText('Valmistetaan 6')).toBeTruthy()
+
+    // Unmount before switching back: useTranslation subscribes to language
+    // changes, so a live component would re-render outside act().
+    await view.unmount()
+    await setLocale('en')
+  })
+
+  it('names its parent on a leftover card and shows no servings', async () => {
+    const view = await render(
+      <MealCard meal={meal} variant="leftover" parentMealName="Chili con carne" />,
+    )
+    expect(view.getByText('Chili con carne — leftovers')).toBeTruthy()
+    expect(view.queryByTestId('meal-card-servings-cooked')).toBeNull()
+  })
+
+  it('renders a long Finnish compound name without crashing', async () => {
+    const long = { ...meal, name: 'Uunilohi ja perunamuusi kermaviilikastikkeella' }
+    const view = await render(
+      <MealCard meal={long} variant="planned" servingsCooked={4 as Servings} />,
+    )
+    expect(view.getByText(long.name)).toBeTruthy()
+  })
+})

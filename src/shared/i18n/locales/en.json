@@ -1,0 +1,6 @@
+{
+  "board": { "thisWeek": "This week", "today": "Today", "addMeal": "Add a meal" },
+  "slot": { "lunch": "Lunch", "dinner": "Dinner", "breakfast": "Breakfast" },
+  "cookEvent": { "cookingCount": "Cooking {{count}}" },
+  "leftover": { "suffix": "{{meal}} — leftovers" }
+}

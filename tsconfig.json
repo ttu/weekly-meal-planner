@@ -7,7 +7,16 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "verbatimModuleSyntax": true,
-    "paths": { "@/*": ["./src/*"] }
+    "types": ["jest"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "*.config.ts", "expo-env.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    "expo-env.d.ts"
+  ]
 }
