@@ -8,6 +8,8 @@ export type TestDb = {
   asMember: (userId: string) => Promise<void>
   /** Run as the table owner, which policies do not apply to. Fixture setup only. */
   asOwner: () => Promise<void>
+  /** Run as a signed-out client: role anon, no auth.uid(). */
+  asAnon: () => Promise<void>
   close: () => Promise<void>
 }
 
@@ -37,9 +39,9 @@ export const createTestDb = async (): Promise<TestDb> => {
   // Policies do not apply to the table owner, so tests must run as a role that
   // is subject to them — exactly as anon/authenticated are in production.
   await db.exec(`
-    grant usage on schema public, app to authenticated;
-    grant select, insert, update, delete on all tables in schema public to authenticated;
-    grant execute on all functions in schema app to authenticated;
+    grant usage on schema public, app to authenticated, anon;
+    grant select, insert, update, delete on all tables in schema public to authenticated, anon;
+    grant execute on all functions in schema app to authenticated, anon;
   `)
 
   return {
@@ -50,6 +52,10 @@ export const createTestDb = async (): Promise<TestDb> => {
     },
     asOwner: async () => {
       await db.exec('reset role;')
+    },
+    asAnon: async () => {
+      await db.exec('set role anon;')
+      await db.query('select set_config($1, $2, false)', ['app.current_user_id', ''])
     },
     close: () => db.close(),
   }

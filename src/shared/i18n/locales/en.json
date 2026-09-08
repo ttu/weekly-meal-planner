@@ -1,6 +1,27 @@
 {
-  "board": { "thisWeek": "This week", "today": "Today", "addMeal": "Add a meal" },
-  "slot": { "lunch": "Lunch", "dinner": "Dinner", "breakfast": "Breakfast" },
-  "cookEvent": { "cookingCount": "Cooking {{count}}" },
-  "leftover": { "suffix": "{{meal}} — leftovers" }
+  "board": {
+    "thisWeek": "This week",
+    "today": "Today",
+    "addMeal": "Add a meal"
+  },
+  "slot": {
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "breakfast": "Breakfast"
+  },
+  "cookEvent": {
+    "cookingCount": "Cooking {{count}}"
+  },
+  "leftover": {
+    "suffix": "{{meal}} — leftovers"
+  },
+  "auth": {
+    "title": "Sign in",
+    "email": "Email address",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalid": "That email and password do not match.",
+    "unavailable": "Could not reach the server. Try again.",
+    "signOut": "Sign out"
+  }
 }

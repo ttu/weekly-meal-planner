@@ -25,6 +25,12 @@ it while debugging.
 Testcontainers is reserved for anything where vendor-specific behaviour actually
 matters — realtime replication, storage — and is not part of the default loop.
 
+**One drift risk to know about.** The harness loads `supabase/schemas/*.sql`,
+while the running database is built from `supabase/migrations/*.sql`. Migrations
+are generated from the schema files, so they normally agree — but a policy added
+only to a migration is invisible to every test. Anything that must be proven
+absent has to be checked against a real database as well, not only in pglite.
+
 Covered here:
 
 - **RLS, adversarially.** A test proving a member reads their own household

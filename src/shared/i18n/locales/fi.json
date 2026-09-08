@@ -1,6 +1,27 @@
 {
-  "board": { "thisWeek": "Tämä viikko", "today": "Tänään", "addMeal": "Lisää ateria" },
-  "slot": { "lunch": "Lounas", "dinner": "Päivällinen", "breakfast": "Aamiainen" },
-  "cookEvent": { "cookingCount": "Valmistetaan {{count}}" },
-  "leftover": { "suffix": "{{meal}} — tähteet" }
+  "board": {
+    "thisWeek": "Tämä viikko",
+    "today": "Tänään",
+    "addMeal": "Lisää ateria"
+  },
+  "slot": {
+    "lunch": "Lounas",
+    "dinner": "Päivällinen",
+    "breakfast": "Aamiainen"
+  },
+  "cookEvent": {
+    "cookingCount": "Valmistetaan {{count}}"
+  },
+  "leftover": {
+    "suffix": "{{meal}} — tähteet"
+  },
+  "auth": {
+    "title": "Kirjaudu sisään",
+    "email": "Sähköpostiosoite",
+    "password": "Salasana",
+    "submit": "Kirjaudu",
+    "invalid": "Sähköposti ja salasana eivät täsmää.",
+    "unavailable": "Palvelimeen ei saatu yhteyttä. Yritä uudelleen.",
+    "signOut": "Kirjaudu ulos"
+  }
 }

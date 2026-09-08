@@ -22,26 +22,36 @@ const NIL_UUID = '00000000-0000-0000-0000-000000000000'
  * Member colours exclude backlog amber, which means "wanted but unplanned" and
  * must not be diluted by appearing on a person (docs/07-design-system.md).
  */
+const DEMO_PASSWORD = 'meal-planner-demo'
+
 const MEMBERS = [
-  {
-    userId: '00000000-0000-0000-0000-000000000001',
-    displayName: 'Aino',
-    colour: '#5F7355',
-    role: 'owner',
-  },
-  {
-    userId: '00000000-0000-0000-0000-000000000002',
-    displayName: 'Sanni',
-    colour: '#C05A38',
-    role: 'member',
-  },
-  {
-    userId: '00000000-0000-0000-0000-000000000003',
-    displayName: 'Mikko',
-    colour: '#4A6670',
-    role: 'member',
-  },
+  { email: 'aino@example.test', displayName: 'Aino', colour: '#5F7355', role: 'owner' },
+  { email: 'sanni@example.test', displayName: 'Sanni', colour: '#C05A38', role: 'member' },
+  { email: 'mikko@example.test', displayName: 'Mikko', colour: '#4A6670', role: 'member' },
 ]
+
+/**
+ * Real auth users, so the demo Household can actually be signed into. Local
+ * only: these credentials exist on a developer machine and nowhere else.
+ */
+const seedAuthUsers = async (): Promise<Map<string, string>> => {
+  const { data: existing, error: listError } = await admin.auth.admin.listUsers()
+  if (listError !== null) fail('List auth users', listError.message)
+  for (const user of existing.users) await admin.auth.admin.deleteUser(user.id)
+
+  const emailToId = new Map<string, string>()
+  for (const member of MEMBERS) {
+    const { data, error } = await admin.auth.admin.createUser({
+      email: member.email,
+      password: DEMO_PASSWORD,
+      email_confirm: true,
+    })
+    if (error !== null) fail(`Auth user ${member.email}`, error.message)
+    if (data.user === null) throw new Error(`Auth user ${member.email} came back empty`)
+    emailToId.set(member.email, data.user.id)
+  }
+  return emailToId
+}
 
 const fail = (what: string, message: string): never => {
   throw new Error(`${what}: ${message}`)
@@ -234,10 +244,17 @@ const seed = async (): Promise<void> => {
 
   const householdId = (household as { id: string }).id
 
+  const emailToId = await seedAuthUsers()
+  const userId = (email: string): string => {
+    const id = emailToId.get(email)
+    if (id === undefined) throw new Error(`Seed failed to create auth user ${email}`)
+    return id
+  }
+
   const { error: memberError } = await admin.from('household_member').insert(
     MEMBERS.map((m) => ({
       household_id: householdId,
-      user_id: m.userId,
+      user_id: userId(m.email),
       role: m.role,
       display_name: m.displayName,
       colour: m.colour,
@@ -249,6 +266,10 @@ const seed = async (): Promise<void> => {
 
   await seedMeals(householdId)
   await seedWeek(householdId)
+
+  process.stdout.write(
+    `\nSign in as any of:\n${MEMBERS.map((m) => `  ${m.email} / ${DEMO_PASSWORD}`).join('\n')}\n`,
+  )
 }
 
 void seed()
