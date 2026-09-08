@@ -91,7 +91,7 @@ contradict this one, this one wins and the other is a bug.
 - Automatic code validation and formatting
   - After each step format and lint code
   - One `validate` script is the contract — format:check, lint (`--max-warnings=0`), type-check, duplication, test, build; CI runs the same steps
-  - Always use `npm run <script>`; never invoke tools directly via `npx`
+  - Always use `pnpm run <script>`; never invoke tools directly via `npx`
 - Pre-commit, pre-push hooks and CI quality gates
   - Execute most CI steps locally before pushing (`validate:all`)
   - Pre-commit: lint-staged + type-check + tests + build, fast enough that nobody wants to skip it

@@ -95,11 +95,11 @@ mid-range Android. Until then it is a sentiment, and it is labelled as one.
 One script, run identically locally and in CI:
 
 ```
-npm run validate   # format:check, lint --max-warnings=0, type-check,
+pnpm run validate   # format:check, lint --max-warnings=0, type-check,
                    # duplication, test, build
 ```
 
-Always `npm run <script>`; never `npx` directly. Tooling is adopted
+Always `pnpm run <script>`; never `npx` directly. Tooling is adopted
 incrementally — each gate green before the next is added.
 
 ## Hooks

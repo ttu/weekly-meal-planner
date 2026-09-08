@@ -50,17 +50,29 @@ Not: plan entry, recipe, portion, pantry item, groceries.
 9. No cross-feature imports except through `index.ts`
 10. No circular dependencies
 
+## Toolchain
+
+**pnpm**, not npm. Node and pnpm are pinned in `.tool-versions` (asdf), Node
+again in `.nvmrc`. Run `asdf install` in a fresh checkout.
+
+`.npmrc` sets `node-linker=hoisted` — Metro cannot follow pnpm's symlinked
+store. Do not remove it; the symptom is "Unable to resolve module" on packages
+that are plainly installed.
+
+Do not bump versions in one file only — `.tool-versions`, `.nvmrc` and
+`package.json` (`engines`, `packageManager`) move together; CI reads `.nvmrc`.
+
 ## Commands
 
-Always `npm run <script>`, never `npx` directly.
+Always `pnpm run <script>`, never `npx` or a bare binary directly.
 
 ```
-npm run validate      # format:check, lint --max-warnings=0, type-check,
+pnpm run validate      # format:check, lint --max-warnings=0, type-check,
                       # duplication, test, build — the contract, same in CI
-npm run validate:all  # everything CI runs; pre-push runs this
-npm run test:watch
-npm run storybook
-npm run catalogue:sync  # reference data in data/ -> database (service role)
+pnpm run validate:all  # everything CI runs; pre-push runs this
+pnpm run test:watch
+pnpm run storybook
+pnpm run catalogue:sync  # reference data in data/ -> database (service role)
 ```
 
 ## Workflow

@@ -15,8 +15,8 @@
     "test": "jest --passWithNoTests",
     "test:coverage": "jest --coverage",
     "build": "expo export --platform web",
-    "validate": "npm run format:check && npm run lint && npm run type-check && npm run test && npm run build",
-    "validate:all": "npm run validate"
+    "validate": "pnpm run format:check && pnpm run lint && pnpm run type-check && pnpm run test && pnpm run build",
+    "validate:all": "pnpm run validate"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",
@@ -43,5 +43,10 @@
     "ts-jest": "^29.4.12",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.0"
-  }
+  },
+  "engines": {
+    "node": ">=24.9.0",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.33.0"
 }

@@ -13,6 +13,12 @@ substituted underneath it**, so the UI exists from Task 3 and every later task
 visibly changes it. A seeded demo Household means the board has real content to
 show from Task 5 onward.
 
+**Toolchain:** **pnpm**, pinned with Node in `.tool-versions` (asdf) and
+`.nvmrc`, with `engines` and `packageManager` in `package.json` as the
+package-manager-level guard. CI reads `.nvmrc`, so there is one source
+of truth. Actual versions found during Task 1: Node 24.9.0, Expo SDK 57,
+React 19.2.3, React Native 0.86.3, TypeScript 6.0.
+
 **Tech Stack:** Expo + Expo Router, TypeScript strict, Supabase (Postgres, Auth,
 RLS), TanStack Query, Zod, i18next, Jest (node + jest-expo projects), pglite,
 Storybook (react-native-web-vite), ESLint + Prettier + eslint-plugin-boundaries
@@ -82,7 +88,7 @@ Every task's requirements implicitly include this section.
   avatar colours, which draw from a separate palette.
 - **Commits:** conventional, scope required, naming the feature slice. One
   commit per task.
-- **Always `npm run <script>`**, never `npx`. The single exception is the
+- **Always `pnpm run <script>`**, never `npx`. The single exception is the
   one-time scaffold in Task 1, which has no package.json to run from yet.
 - **Never `--no-verify`.** Work on `feat/01-foundation`, never on `main`.
 
@@ -102,23 +108,59 @@ task in the plan with nothing to demonstrate.
 **Interfaces:**
 
 - Consumes: nothing
-- Produces: `npm run validate` (format:check → lint → type-check → test →
+- Produces: `pnpm run validate` (format:check → lint → type-check → test →
   build). Every later task extends this script rather than adding a parallel one.
 
 - [ ] **Step 1: Scaffold**
 
-The one command run outside `npm run` — there is no package.json yet.
+The only commands run outside `pnpm run` — there is no package.json yet.
 
 ```bash
 git checkout -b feat/01-foundation
-npx create-expo-app@latest . --template blank-typescript
-npm install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants
-npm install -D prettier eslint typescript-eslint @eslint/js jest @types/jest ts-jest jest-expo
+printf 'nodejs 24.9.0\npnpm 10.33.0\n' > .tool-versions
+printf '24.9.0\n' > .nvmrc
+```
+
+Create `.npmrc` before the first install. Metro resolves modules by walking real
+paths and cannot follow pnpm's symlinked store, so the default layout produces
+"Unable to resolve module" errors that read as missing dependencies:
+
+```
+# Metro cannot follow pnpm's symlinked store; a hoisted layout keeps pnpm's
+# deduplicated store while giving Metro the flat tree it expects.
+node-linker=hoisted
+
+# Expo and React Native ship loose peer ranges; failing installs on them stops
+# work without catching real problems.
+strict-peer-dependencies=false
+```
+
+`create-expo-app` refuses to scaffold into a directory that already contains
+files it might overwrite — `CLAUDE.md` and `docs/` are enough to stop it. Build
+it elsewhere and copy the pieces in:
+
+```bash
+npm create expo-app@latest -- /tmp/mp-scaffold --template blank-typescript --no-install
+cp -R /tmp/mp-scaffold/assets ./assets
+cp /tmp/mp-scaffold/app.json /tmp/mp-scaffold/tsconfig.json .
+```
+
+Then write `package.json` by hand (Step 5) and install. Router and web packages
+go through `expo install`, never plain `pnpm add` — it picks versions that
+match the SDK, and `jest-expo` will otherwise pull a `react-dom` that conflicts
+with the pinned React:
+
+```bash
+pnpm install
+pnpm exec expo install expo-router react-native-safe-area-context react-native-screens \
+  expo-linking expo-constants react-dom react-native-web @expo/metro-runtime
+pnpm add -D prettier eslint typescript-eslint @eslint/js jest @types/jest ts-jest jest-expo
 ```
 
 - [ ] **Step 2: Strict TypeScript**
 
-Replace `tsconfig.json`:
+Replace `tsconfig.json`. Note there is no `baseUrl`: TypeScript 6 deprecated it
+and `tsc --noEmit` fails outright on it. `paths` works without it.
 
 ```json
 {
@@ -130,25 +172,42 @@ Replace `tsconfig.json`:
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "verbatimModuleSyntax": true,
-    "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "*.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "*.config.ts", "expo-env.d.ts"]
 }
 ```
 
 - [ ] **Step 3: ESLint**
 
-Create `eslint.config.mjs`:
+Create `eslint.config.mjs`. Two things differ from what you might write from
+memory: `tseslint.config()` is deprecated in favour of ESLint's own
+`defineConfig()`, and type-aware rules must be scoped to `src/**` — pointed at
+the CommonJS tool configs they fail with "not found by the project service".
 
 ```js
 import js from '@eslint/js'
+import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
 
-export default tseslint.config(
+export default defineConfig([
+  {
+    // Build output, assets and CommonJS tool configs are not application code.
+    ignores: [
+      'dist/**',
+      '.expo/**',
+      'node_modules/**',
+      'coverage/**',
+      'assets/**',
+      'expo-env.d.ts',
+      '*.config.js',
+      'jest.setup.node.js',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
@@ -165,7 +224,7 @@ export default tseslint.config(
     },
   },
   {
-    // Fixtures and stories build branded values directly; that is their job.
+    // Fixtures, tests and stories build branded values directly; that is their job.
     files: [
       'src/**/*.test.ts',
       'src/**/*.test.tsx',
@@ -173,11 +232,21 @@ export default tseslint.config(
       'src/test/**',
       'src/**/fixtures/**',
     ],
-    rules: { 'no-restricted-syntax': 'off', '@typescript-eslint/no-non-null-assertion': 'off' },
+    rules: {
+      'no-restricted-syntax': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
   },
-  { ignores: ['dist/**', '.expo/**', 'node_modules/**', 'coverage/**'] },
-)
+  {
+    // The flat config itself: lint it, but without type information.
+    files: ['eslint.config.mjs'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+])
 ```
+
+The `no-restricted-syntax` rule bans `as` casts outside `as const`. Branded
+values are constructed by parsers at the edge, never by casting — see Task 5.
 
 - [ ] **Step 4: Jest with two projects**
 
@@ -191,7 +260,6 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: ['<rootDir>/src/**/*.test.ts'],
-      setupFilesAfterEach: undefined,
       setupFilesAfterEnv: ['<rootDir>/jest.setup.node.js'],
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
     },
@@ -207,9 +275,6 @@ module.exports = {
   },
 }
 ```
-
-Remove the `setupFilesAfterEach: undefined` line — it is not a Jest option and
-is listed here only so you notice if your editor autocompleted it in.
 
 Create `jest.setup.node.js`:
 
@@ -233,8 +298,8 @@ In `package.json`, set `"main": "expo-router/entry"` and add:
   "test": "jest --passWithNoTests",
   "test:coverage": "jest --coverage",
   "build": "expo export --platform web",
-  "validate": "npm run format:check && npm run lint && npm run type-check && npm run test && npm run build",
-  "validate:all": "npm run validate"
+  "validate": "pnpm run format:check && pnpm run lint && pnpm run type-check && pnpm run test && pnpm run build",
+  "validate:all": "pnpm run validate"
 }
 ```
 
@@ -271,7 +336,7 @@ Both are replaced in Task 3.
 
 - [ ] **Step 7: Verify and commit**
 
-Run: `npm run validate`
+Run: `pnpm run validate`
 Expected: all five steps pass. Do not continue until they do — this script is
 the contract every later task depends on.
 
@@ -350,7 +415,7 @@ describe('fixedClock', () => {
 
 - [ ] **Step 2: Run to verify they fail**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: FAIL — `Cannot find module './result'` and `'./clock'`.
 
 - [ ] **Step 3: Implement the kernel**
@@ -393,7 +458,7 @@ Remove `--passWithNoTests` from the `test` script.
 
 - [ ] **Step 4: Run to verify they pass**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: PASS, 3 tests.
 
 - [ ] **Step 5: Theme tokens**
@@ -434,8 +499,8 @@ export const memberColours = ['#5F7355', '#C05A38', '#4A6670', '#7A5C74'] as con
 - [ ] **Step 6: i18n in both locales**
 
 ```bash
-npm install i18next react-i18next expo-localization
-npm install -D eslint-plugin-i18next
+pnpm add i18next react-i18next expo-localization
+pnpm add -D eslint-plugin-i18next
 ```
 
 Create `src/shared/i18n/locales/en.json`:
@@ -608,12 +673,12 @@ describe('MealCard', () => {
 ```
 
 ```bash
-npm install -D @testing-library/react-native react-test-renderer
+pnpm add -D @testing-library/react-native react-test-renderer
 ```
 
 - [ ] **Step 10: Run to verify it fails**
 
-Run: `npm test -- MealCard`
+Run: `pnpm test -- MealCard`
 Expected: FAIL — `Cannot find module './MealCard'`.
 
 - [ ] **Step 11: Implement MealCard**
@@ -705,13 +770,13 @@ never read as a Meal in its own right.
 
 - [ ] **Step 12: Run to verify it passes**
 
-Run: `npm test -- MealCard`
+Run: `pnpm test -- MealCard`
 Expected: PASS, 6 tests.
 
 - [ ] **Step 13: Storybook with a locale switcher**
 
 ```bash
-npm install -D storybook @storybook/react-native-web-vite vite @storybook/addon-essentials
+pnpm add -D storybook @storybook/react-native-web-vite vite @storybook/addon-essentials
 ```
 
 Create `.storybook/main.ts`:
@@ -794,7 +859,7 @@ export const LongFinnishName: Story = {
 
 - [ ] **Step 14: Look at it**
 
-Run: `npm run storybook`
+Run: `pnpm run storybook`
 
 Open http://localhost:6006 and check, switching the toolbar locale between
 Suomi and English:
@@ -829,7 +894,7 @@ export { MealCard, type MealCardVariant } from './ui/MealCard'
 ```
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "feat(meals): shared kernel, theme tokens, i18n and the four Meal card variants"
 ```
@@ -997,7 +1062,7 @@ planning on Sunday evening — the single most likely moment they open the app.
 
 - [ ] **Step 3: Run to verify it fails, then implement**
 
-Run: `npm test -- week`
+Run: `pnpm test -- week`
 Expected: FAIL — `Cannot find module './week'`.
 
 Create `src/features/planning/domain/week.ts`:
@@ -1025,7 +1090,7 @@ export const weekDates = (weekStart: WeekStart): readonly string[] => {
 }
 ```
 
-Run: `npm test -- week`
+Run: `pnpm test -- week`
 Expected: PASS, 5 tests.
 
 - [ ] **Step 4: Write the failing board test**
@@ -1128,7 +1193,7 @@ tolerates an orphaned `slot_key` rather than crashing.
 
 - [ ] **Step 5: Run to verify it fails, then implement**
 
-Run: `npm test -- board`
+Run: `pnpm test -- board`
 Expected: FAIL — `Cannot find module './board'`.
 
 Create `src/features/planning/domain/board.ts`:
@@ -1185,7 +1250,7 @@ export const buildBoard = ({
 }
 ```
 
-Run: `npm test -- board`
+Run: `pnpm test -- board`
 Expected: PASS, 6 tests.
 
 - [ ] **Step 6: The demo fixtures**
@@ -1334,7 +1399,7 @@ describe('DayColumn', () => {
 
 - [ ] **Step 8: Run to verify it fails, then implement**
 
-Run: `npm test -- DayColumn`
+Run: `pnpm test -- DayColumn`
 Expected: FAIL — `Cannot find module './DayColumn'`.
 
 Create `src/features/planning/ui/DayColumn.tsx`:
@@ -1423,13 +1488,13 @@ export const DayColumn = ({ day, isToday }: Props): React.JSX.Element => {
 An empty Slot renders as one dashed add-line, never as a blank gap — the
 design's "an empty Slot is a single dashed line rather than a hole".
 
-Run: `npm test -- DayColumn`
+Run: `pnpm test -- DayColumn`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 9: The board hook and screen**
 
 ```bash
-npm install @tanstack/react-query
+pnpm add @tanstack/react-query
 ```
 
 Create `src/features/planning/ui/useWeekBoard.ts`. It reads fixtures now and
@@ -1564,7 +1629,7 @@ export default function Index(): React.JSX.Element {
 - [ ] **Step 11: Run the app and look at it**
 
 ```bash
-npm run start
+pnpm run start
 ```
 
 Open on a phone or simulator. Check:
@@ -1585,7 +1650,7 @@ is the one users get wrong.
 - [ ] **Step 12: Validate and commit**
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "feat(planning): board screen rendering a week from fixtures
 
@@ -1611,13 +1676,13 @@ real slices to enforce against.
 
 **Interfaces:**
 
-- Consumes: `npm run validate` (Task 1), the feature slices (Tasks 2–3)
+- Consumes: `pnpm run validate` (Task 1), the feature slices (Tasks 2–3)
 - Produces: `validate` extended with `lint:boundaries` and `lint:duplication`
 
 - [ ] **Step 1: Install**
 
 ```bash
-npm install -D eslint-plugin-boundaries dependency-cruiser jscpd \
+pnpm add -D eslint-plugin-boundaries dependency-cruiser jscpd \
   @commitlint/cli @commitlint/config-conventional husky lint-staged
 ```
 
@@ -1665,7 +1730,7 @@ Create a deliberate violation in `src/features/planning/domain/probe.ts`:
 export { MealCard } from '../../meals/ui/MealCard'
 ```
 
-Run: `npm run lint`
+Run: `pnpm run lint`
 Expected: FAIL, reporting that `probe.ts` may not import an element of type
 `feature-internal`.
 
@@ -1714,15 +1779,15 @@ Add scripts and extend `validate`:
 {
   "lint:boundaries": "depcruise src --config .dependency-cruiser.cjs",
   "lint:duplication": "jscpd",
-  "validate": "npm run format:check && npm run lint && npm run lint:boundaries && npm run lint:duplication && npm run type-check && npm run test && npm run build"
+  "validate": "pnpm run format:check && pnpm run lint && pnpm run lint:boundaries && pnpm run lint:duplication && pnpm run type-check && pnpm run test && pnpm run build"
 }
 ```
 
 - [ ] **Step 5: Hooks**
 
 ```bash
-npm pkg set scripts.prepare="husky"
-npm run prepare
+pnpm pkg set scripts.prepare="husky"
+pnpm run prepare
 ```
 
 Create `commitlint.config.cjs`:
@@ -1754,15 +1819,15 @@ if [ "$SKIP_HOOKS" = "1" ]; then
   echo "⚠️  SKIP_HOOKS=1 — pre-commit checks bypassed. This is not normal."
   exit 0
 fi
-npx lint-staged
-npm run type-check
-npm run test
+pnpm exec lint-staged
+pnpm run type-check
+pnpm run test
 ```
 
 Create `.husky/commit-msg`:
 
 ```sh
-npx commitlint --edit "$1"
+pnpm exec commitlint --edit "$1"
 ```
 
 Create `.husky/pre-push`:
@@ -1778,7 +1843,7 @@ if ! git merge-base --is-ancestor origin/main HEAD; then
   echo "✖ Branch is not rebased on latest origin/main. Rebase before pushing."
   exit 1
 fi
-npm run validate:all
+pnpm run validate:all
 ```
 
 Create `.husky/pre-rebase` to block the destructive operations named in
@@ -1789,16 +1854,16 @@ if the team wants it enforced outside the agent.
 
 - [ ] **Step 6: Prove commitlint works**
 
-Run: `echo "added stuff" | npx commitlint`
+Run: `echo "added stuff" | pnpm exec commitlint`
 Expected: FAIL — missing type and scope.
 
-Run: `echo "feat(planning): add cook event" | npx commitlint`
+Run: `echo "feat(planning): add cook event" | pnpm exec commitlint`
 Expected: PASS.
 
 - [ ] **Step 7: Validate and commit**
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "chore(repo): enforce slice boundaries, cycles, duplication and commit conventions"
 ```
@@ -1923,7 +1988,7 @@ create policy household_member_insert on household_member
 - [ ] **Step 3: The pglite harness with the auth shim**
 
 ```bash
-npm install -D @electric-sql/pglite tsx
+pnpm add -D @electric-sql/pglite tsx
 ```
 
 Create `src/test/db/auth-shim.sql`. This is the one knowing divergence from
@@ -2071,13 +2136,13 @@ describe('household RLS', () => {
 
 - [ ] **Step 5: Run to verify it fails, then passes**
 
-Run: `npm test -- rls-household`
+Run: `pnpm test -- rls-household`
 Expected first: FAIL — a schema file is missing, or `relation "household" does
 not exist`.
 
 Create any missing SQL files, then re-run.
 
-Run: `npm test -- rls-household`
+Run: `pnpm test -- rls-household`
 Expected: PASS, 5 tests.
 
 If "hides another Household" returns a row, `set role authenticated` did not
@@ -2128,11 +2193,11 @@ describe('parseSlots', () => {
 
 - [ ] **Step 7: Run to verify it fails, then implement**
 
-Run: `npm test -- slot`
+Run: `pnpm test -- slot`
 Expected: FAIL — `Cannot find module './slot'`.
 
 ```bash
-npm install zod @supabase/supabase-js @react-native-async-storage/async-storage
+pnpm add zod @supabase/supabase-js @react-native-async-storage/async-storage
 ```
 
 Create `src/features/household/domain/slot.ts`:
@@ -2159,7 +2224,7 @@ export const parseSlots = (input: unknown): Result<readonly Slot[], ParseSlotsEr
 }
 ```
 
-Run: `npm test -- slot`
+Run: `pnpm test -- slot`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 8: Validated environment and the client factory**
@@ -2310,8 +2375,8 @@ export { SessionProvider, useSession } from './ui/SessionProvider'
 Install the Supabase CLI if absent, then:
 
 ```bash
-npx supabase init
-npx supabase start
+pnpm exec supabase init
+pnpm exec supabase start
 ```
 
 Create `scripts/seed-demo.ts`. Dates are computed from today so the demo week is
@@ -2391,7 +2456,7 @@ mkdir -p supabase/migrations
 cat supabase/schemas/00_extensions.sql supabase/schemas/10_household.sql \
     supabase/schemas/90_policies_household.sql \
     > supabase/migrations/20260908000000_household.sql
-npx supabase db reset
+pnpm exec supabase db reset
 ```
 
 - [ ] **Step 12: Substitute the Household into the board**
@@ -2489,9 +2554,9 @@ its expiry (plan 02), and that it must never reach the production project.
 - [ ] **Step 13: Run it and look at it**
 
 ```bash
-npx supabase db reset
-npm run db:seed
-npm run start
+pnpm exec supabase db reset
+pnpm run db:seed
+pnpm run start
 ```
 
 Check the board shows "Koivisto" from Postgres, with lunch and dinner rows.
@@ -2499,19 +2564,19 @@ Check the board shows "Koivisto" from Postgres, with lunch and dinner rows.
 Now prove the substitution is real. Add a Slot:
 
 ```bash
-psql "$(npx supabase status -o env | grep DB_URL | cut -d= -f2-)" -c \
+psql "$(pnpm exec supabase status -o env | grep DB_URL | cut -d= -f2-)" -c \
   $'update household set slots = \'[{"key":"breakfast","labelKey":"slot.breakfast"},{"key":"lunch","labelKey":"slot.lunch"},{"key":"dinner","labelKey":"slot.dinner"}]\'::jsonb'
 ```
 
 Restart the app. Expected: **every day now has three rows, breakfast first, in
 Finnish.** The board is reading configuration from the database.
 
-Revert with `npm run db:seed`.
+Revert with `pnpm run db:seed`.
 
 - [ ] **Step 14: Validate and commit**
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "feat(household): Household schema with RLS, seed script and live Slot config
 
@@ -2755,12 +2820,12 @@ describe('meal RLS', () => {
 
 - [ ] **Step 4: Run to verify it fails, then passes**
 
-Run: `npm test -- rls-meals`
+Run: `pnpm test -- rls-meals`
 Expected first: FAIL — `relation "meal" does not exist`.
 
 Create the SQL files, add them to `SCHEMA_FILES`, re-run.
 
-Run: `npm test -- rls-meals`
+Run: `pnpm test -- rls-meals`
 Expected: PASS, 5 tests.
 
 - [ ] **Step 5: Reference data for Ingredients**
@@ -2961,8 +3026,8 @@ export { loadMeals, type LoadMealsError } from './infrastructure/meal-repository
 ```bash
 cat supabase/schemas/20_meals.sql supabase/schemas/91_policies_meals.sql \
     > supabase/migrations/20260908000002_meals.sql
-npx supabase db reset
-npm run db:seed
+pnpm exec supabase db reset
+pnpm run db:seed
 ```
 
 Add the temporary anon-read policies for the new tables to
@@ -2981,7 +3046,7 @@ Ingredients. The board still shows fixture Cook Events; Task 7 connects them.
 - [ ] **Step 9: Validate and commit**
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "feat(meals): Meal and Ingredient schema with slug-keyed identity
 
@@ -3227,12 +3292,12 @@ describe('planning RLS and cascades', () => {
 
 - [ ] **Step 4: Run to verify it fails, then passes**
 
-Run: `npm test -- rls-planning`
+Run: `pnpm test -- rls-planning`
 Expected first: FAIL — `relation "week_plan" does not exist`.
 
 Create the SQL files, add to `SCHEMA_FILES`, re-run.
 
-Run: `npm test -- rls-planning`
+Run: `pnpm test -- rls-planning`
 Expected: PASS, 5 tests.
 
 - [ ] **Step 5: The board repository**
@@ -3486,16 +3551,16 @@ create policy leftover_demo_anon_select on leftover for select to anon using (tr
 ```
 
 ```bash
-npx supabase db reset
-npm run db:seed
-npm run start
+pnpm exec supabase db reset
+pnpm run db:seed
+pnpm run start
 ```
 
 Check the board shows the same week it showed in Task 3 — but now from Postgres.
 Then prove the cascade is real:
 
 ```bash
-psql "$(npx supabase status -o env | grep DB_URL | cut -d= -f2-)" -c \
+psql "$(pnpm exec supabase status -o env | grep DB_URL | cut -d= -f2-)" -c \
   "delete from cook_event where meal_id = (select id from meal where name = 'Chili con carne')"
 ```
 
@@ -3503,12 +3568,12 @@ Pull to refresh, or restart. Expected: **Monday dinner's Chili is gone and
 Wednesday lunch's Leftover has gone with it.** That is ADR 0004 working in the
 real system.
 
-Restore with `npm run db:seed`.
+Restore with `pnpm run db:seed`.
 
 - [ ] **Step 9: Validate and commit**
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "feat(planning): Week Plan, Cook Event and Leftover schema; board reads live data
 
@@ -3532,7 +3597,7 @@ E2E flow proves the board renders on a real device.
 
 **Interfaces:**
 
-- Consumes: `npm run validate` (Tasks 1, 4)
+- Consumes: `pnpm run validate` (Tasks 1, 4)
 - Produces: CI mirroring local gates
 
 - [ ] **Step 1: The workflow**
@@ -3563,19 +3628,20 @@ jobs:
           - build
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run ${{ matrix.step }}
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: ppnpm add --frozen-lockfile
+      - run: pnpm run ${{ matrix.step }}
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: failure-${{ matrix.step }}
           path: |
             coverage/
-            npm-debug.log
+            pnpm-debug.log
           if-no-files-found: ignore
 
   scan:
@@ -3583,10 +3649,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
-      - run: npm ci
-      - run: npm audit --audit-level=high
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: ppnpm add --frozen-lockfile
+      - run: pnpm audit --audit-level=high
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -3600,7 +3667,7 @@ want every problem from one push, not one problem per push.
 Create `.maestro/board-smoke.yaml`:
 
 ```yaml
-# Requires a seeded local Supabase (npm run db:seed). The date assertions are
+# Requires a seeded local Supabase (pnpm run db:seed). The date assertions are
 # relative because the seed always plans the current week.
 appId: com.mealplanner.app
 ---
@@ -3623,8 +3690,8 @@ which is not translated.
 - [ ] **Step 3: Run it**
 
 ```bash
-npm run db:seed
-npm run test:e2e
+pnpm run db:seed
+pnpm run test:e2e
 ```
 
 Expected: PASS. If Maestro is not installed, note it in the commit message as a
@@ -3633,7 +3700,7 @@ developer-machine prerequisite rather than skipping the flow.
 - [ ] **Step 4: Update the deployment doc**
 
 Add to `docs/08-deployment.md` under CI: the matrix runs each gate as a parallel
-job with `fail-fast: false`; `npm audit` and gitleaks run on every PR; artifacts
+job with `fail-fast: false`; `pnpm audit` and gitleaks run on every PR; artifacts
 upload on failure.
 
 Add to `docs/06-security.md` under Authorization a note that
@@ -3644,7 +3711,7 @@ production.
 - [ ] **Step 5: Validate and commit**
 
 ```bash
-npm run validate
+pnpm run validate
 git add -A
 git commit -m "ci(repo): parallel quality gates, dependency and secret scanning, E2E smoke"
 ```
