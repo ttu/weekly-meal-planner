@@ -1,20 +1,8 @@
 import type { Clock } from '@/shared/time/clock'
-import type { Household, HouseholdId, Slot, SlotKey } from '@/features/household'
+import type { SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/features/meals'
 import { currentWeekStart, weekDates } from '../domain/week'
 import type { CookEvent, CookEventId, Leftover, LeftoverId } from '../domain/types'
-
-const slots: readonly Slot[] = [
-  { key: 'lunch' as SlotKey, labelKey: 'slot.lunch' },
-  { key: 'dinner' as SlotKey, labelKey: 'slot.dinner' },
-]
-
-export const demoHousehold: Household = {
-  id: 'demo-household' as HouseholdId,
-  name: 'Koivisto',
-  locale: 'fi',
-  slots,
-}
 
 const cookEvent = (
   id: string,

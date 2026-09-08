@@ -5,3 +5,4 @@ coverage/
 assets/
 pnpm-lock.yaml
 storybook-static/
+src/shared/db/database.types.ts

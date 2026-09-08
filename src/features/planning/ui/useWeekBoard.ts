@@ -1,7 +1,8 @@
 import { systemClock, type Clock } from '@/shared/time/clock'
+import { useSession } from '@/features/household'
 import { currentWeekStart } from '../domain/week'
 import { buildBoard, type BoardDay } from '../domain/board'
-import { demoHousehold, demoWeek } from '../fixtures/demo-week'
+import { demoWeek } from '../fixtures/demo-week'
 import type { WeekStart } from '../domain/types'
 
 export type WeekBoard = {
@@ -12,17 +13,18 @@ export type WeekBoard = {
 }
 
 /**
- * Fixture-backed. Task 5 substitutes the Household from Postgres and Task 7 the
- * week's contents; this signature does not change.
+ * The Household comes from Postgres; the week's contents are still fixtures
+ * until Task 7. This signature does not change when they are substituted.
  */
 export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
+  const { household } = useSession()
   const weekStart = currentWeekStart(clock)
   const { cookEvents, leftovers } = demoWeek(clock)
 
   return {
-    board: buildBoard({ weekStart, slots: demoHousehold.slots, cookEvents, leftovers }),
+    board: buildBoard({ weekStart, slots: household?.slots ?? [], cookEvents, leftovers }),
     weekStart,
-    householdName: demoHousehold.name,
-    isLoading: false,
+    householdName: household?.name ?? '',
+    isLoading: household === undefined,
   }
 }

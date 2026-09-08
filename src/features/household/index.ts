@@ -1,1 +1,5 @@
 export type { Household, HouseholdId, Member, MemberId, Slot, SlotKey } from './domain/types'
+export { parseSlots, type ParseSlotsError } from './domain/slot'
+export { createSupabaseClient, type AppSupabaseClient } from './infrastructure/supabase-client'
+export { loadHousehold, type LoadHouseholdError } from './infrastructure/household-repository'
+export { SessionProvider, useSession } from './ui/SessionProvider'

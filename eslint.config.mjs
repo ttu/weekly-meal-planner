@@ -15,13 +15,20 @@ export default defineConfig([
       'expo-env.d.ts',
       '*.config.js',
       '*.cjs',
+      'src/shared/db/database.types.ts',
       'jest.setup.node.js',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
-    files: ['src/**/*.ts', 'src/**/*.tsx', '.storybook/**/*.ts', '.storybook/**/*.tsx'],
+    files: [
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      '.storybook/**/*.ts',
+      '.storybook/**/*.tsx',
+      'scripts/**/*.ts',
+    ],
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
@@ -46,6 +53,7 @@ export default defineConfig([
       'src/test/**',
       'src/**/fixtures/**',
       '.storybook/**',
+      'scripts/**',
     ],
     rules: {
       'no-restricted-syntax': 'off',

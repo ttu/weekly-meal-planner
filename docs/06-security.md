@@ -27,6 +27,13 @@ is exactly one enforcement point. Consequences:
 
 RLS tests are adversarial by design — see `04-testing.md`.
 
+### Temporary demo policy
+
+`supabase/migrations/20260908000001_demo_anon_read.sql` grants `anon` read access
+so the local demo board is not empty before sign-in exists. It **expires when
+sign-in lands in plan 02** and must never be applied to staging or production.
+Anything added to that migration inherits the same expiry.
+
 ## Secrets
 
 Only the Supabase URL and anon key reach the bundle, and both are public by
