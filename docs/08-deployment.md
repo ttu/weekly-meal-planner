@@ -47,9 +47,18 @@ installs without catching real problems.
 
 ## CI
 
-Mirrors the local gates as parallel jobs — format, lint, type-check,
-duplication, unit, integration (pglite), build. Plus dependency and secret
-scanning. Dependencies install from the lockfile and are cached. Artifacts
-upload on failure. A preview build per PR once EAS is wired.
+`.github/workflows/validate.yml` mirrors the local gates as a **matrix of
+parallel jobs** — format:check, lint, lint:boundaries, lint:duplication,
+type-check, test, build — with `fail-fast: false`, so one failing gate does not
+hide the others. A second job runs `pnpm audit` and gitleaks on every PR.
+Dependencies install from the lockfile and are cached; artifacts upload on
+failure. A preview build per PR once EAS is wired.
+
+CI reads the Node version from `.nvmrc` rather than hardcoding it.
+
+**E2E** is Maestro (`pnpm run test:e2e`, flows in `.maestro/`) against a
+development build with a seeded local Supabase. Maestro is a developer-machine
+prerequisite, not an npm dependency, and is not yet wired into CI — that needs
+an EAS build in the pipeline and belongs with the deployment work.
 
 `pnpm run validate:all` locally reproduces CI, and pre-push runs it.

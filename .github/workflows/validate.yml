@@ -1,0 +1,54 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      # One failing gate must not hide the others: you want every problem from
+      # one push, not one problem per push.
+      fail-fast: false
+      matrix:
+        step:
+          - format:check
+          - lint
+          - lint:boundaries
+          - lint:duplication
+          - type-check
+          - test
+          - build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run ${{ matrix.step }}
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-${{ matrix.step }}
+          path: |
+            coverage/
+            .jscpd/
+          if-no-files-found: ignore
+
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

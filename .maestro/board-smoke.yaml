@@ -1,0 +1,17 @@
+# Requires a seeded local Supabase: pnpm exec supabase start && pnpm run db:seed
+#
+# Assertions are on testIDs and on the Household name from the seed, which is
+# not translated. Never on CSS classes, structural position, or translated copy
+# (docs/04-testing.md) — the app ships in two Locales and has a breakpoint.
+appId: com.mealplanner.app
+---
+- launchApp
+- assertVisible:
+    id: 'board-screen'
+- assertVisible:
+    id: 'board'
+- assertVisible: 'Koivisto'
+- assertVisible:
+    id: 'slot-dinner'
+- assertVisible:
+    id: 'meal-card-planned'
