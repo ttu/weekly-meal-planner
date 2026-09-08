@@ -8,3 +8,4 @@ coverage/
 expo-env.d.ts
 .DS_Store
 storybook-static/
+.playwright-mcp/

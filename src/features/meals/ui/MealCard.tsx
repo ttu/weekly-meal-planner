@@ -21,12 +21,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: tokens.color.backlog,
   },
+  // boxShadow, not the shadow* props: those are deprecated in React Native 0.86
+  // and warn on every render under react-native-web.
   planned: {
     backgroundColor: tokens.color.surfaceRaised,
-    shadowColor: tokens.color.textPrimary,
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 6px rgba(36, 33, 28, 0.06)',
   },
   leftover: {
     backgroundColor: tokens.color.surfaceInset,

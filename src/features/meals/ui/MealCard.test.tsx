@@ -6,7 +6,7 @@ import type { MealId, Servings } from '../domain/types'
 // react-native-testing-library v14 made render async; every call must be awaited
 // or the queries come back empty with a misleading "render has not been called".
 beforeAll(async () => {
-  initI18n()
+  initI18n('en')
   await setLocale('en')
 })
 

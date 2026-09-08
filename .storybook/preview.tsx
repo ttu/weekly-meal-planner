@@ -2,7 +2,7 @@ import type { Preview } from '@storybook/react'
 import { initI18n, setLocale } from '../src/shared/i18n'
 import { tokens } from '../src/shared/theme/tokens'
 
-initI18n()
+initI18n('fi')
 
 const preview: Preview = {
   globalTypes: {
