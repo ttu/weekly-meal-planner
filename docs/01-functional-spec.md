@@ -38,6 +38,7 @@ have.
 | Shopping list | Computed in the app as pure TypeScript functions |
 | Agent handoff | Copy-as-prompt and OS share in v1; App Intents next |
 | Visual direction | Warm paper ground, ink type, one earth accent (see canvas) |
+| Languages | Finnish and English from the first commit, catalogue in both |
 
 ### Backend cost position
 
@@ -83,7 +84,9 @@ first.
 | **Extra** | A manually added Shopping List item belonging to no Meal. | custom item |
 | **Override** | A manually set quantity on a Buy Line, with an optional reason. | manual quantity |
 | **Provenance** | The per-Meal breakdown behind a Buy Line's quantity. | source, breakdown |
-| **Agent Prompt** | The copyable text handing the Shopping List to a browser AI agent. | export, share text |
+| **Agent Prompt** | The copyable text handing the Shopping List to a browser AI agent. Generated in the household's Locale. | export, share text |
+| **Locale** | `fi` or `en`. Set per Household. | language, i18n |
+| **Slug** | An Ingredient's stable, locale-independent identity. | key, code |
 
 Two renames applied when this glossary was adopted: `plan_entry` became
 **Cook Event** and `leftover_entry` became **Leftover**, because the UI, the
@@ -373,8 +376,11 @@ takes two minutes.
 None blocking.
 
 **Resolved by the visual design:** the public catalogue is sized at ~120
-everyday meals ("120 everyday meals, copy any of them"). Who writes them, and in
-which languages, is a content task to schedule alongside implementation.
+everyday meals ("120 everyday meals, copy any of them"), each with Finnish and
+English names and descriptions. Writing that content is a real task — 120 meals
+with validated ingredient slugs, in two languages — and it must be scheduled as
+work, not assumed to appear. It is the single largest non-code deliverable in
+v1, and the app is not usable by a first household without it.
 
 **Still open:**
 

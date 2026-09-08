@@ -31,7 +31,7 @@ Use these words exactly, everywhere — types, files, columns, tests, commits:
 
 Household · Member · Slot · Week Plan · Meal · Catalogue Meal · Household Meal ·
 Backlog Item · **Cook Event** · **Leftover** · Servings · Servings Cooked ·
-Ingredient · Dimension · Staple · Running Low · Shopping List · Buy Line ·
+Ingredient · **Slug** · Dimension · Locale · Staple · Running Low · Shopping List · Buy Line ·
 Cupboard Check · Extra · Override · Provenance · Agent Prompt
 
 Not: plan entry, recipe, portion, pantry item, groceries.
@@ -39,7 +39,7 @@ Not: plan entry, recipe, portion, pantry item, groceries.
 ## The ten rules
 
 1. No business logic in components
-2. No hardcoded user-facing strings — everything through `t()`
+2. No hardcoded user-facing strings — everything through `t()` (fi + en, ADR 0009)
 3. No hardcoded colours or font sizes, no inline styles — theme tokens only
 4. Server state and client state never mix
 5. Prefer `undefined` over `null`
@@ -88,6 +88,8 @@ been looked at is not done.
 - Don't add authorization checks in application code — RLS is the only
   enforcement point (ADR 0002)
 - Don't store the shopping list — it is derived, always (ADR 0003)
+- Don't key an Ingredient on its name — identity is the locale-independent slug,
+  or the shopping list aggregates `sipuli` and `onion` separately (ADR 0009)
 - Don't use amber for anything but the backlog (`docs/07-design-system.md`)
 - Don't reach past a feature's `index.ts`
 - Don't ask whether to write tests, whether to update docs, or whether to run

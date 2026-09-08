@@ -8,9 +8,10 @@ infrastructure edge.
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `household` | `id`, `name`, `slots jsonb` | `slots` is an ordered `[{key,label}]` |
+| `household` | `id`, `name`, `slots jsonb`, `locale` | `slots` is an ordered `[{key,label}]`; `locale` is `fi` or `en` |
 | `household_member` | `household_id`, `user_id`, `role`, `display_name`, `avatar_url`, `colour` | display name and colour are load-bearing in the UI |
-| `ingredient` | `id`, `household_id?`, `name`, `category`, `dimension`, `base_unit` | `household_id NULL` = global taxonomy |
+| `ingredient` | `id`, `household_id?`, `slug`, `category`, `dimension`, `base_unit` | identity is the locale-independent `slug`; `household_id NULL` = global taxonomy |
+| `ingredient_name` | `ingredient_id`, `locale`, `name` | one row per locale; global ingredients carry `fi` and `en` |
 | `meal` | `id`, `household_id?`, `name`, `description`, `servings`, `source_url?`, `photo_url?`, `copied_from_meal_id?` | `household_id NULL` = catalogue meal |
 | `meal_ingredient` | `meal_id`, `ingredient_id`, `quantity`, `unit`, `optional` | may be empty for a name-only meal |
 | `week_plan` | `id`, `household_id`, `week_start` | ISO week Monday |
@@ -24,6 +25,32 @@ infrastructure edge.
 
 The Shopping List itself has no table. It is derived on every render; storing it
 would mean it going stale exactly when Thursday's dinner changes.
+
+## Localisation and identity
+
+The app ships in Finnish and English (ADR 0009), and that has one structural
+consequence: **an Ingredient's identity cannot be its name.** If a Finnish
+household plans a meal naming `sipuli` and an English catalogue meal names
+`onion`, the Shopping List must produce one Buy Line of five onions, not two
+lines of two and three.
+
+So `ingredient` is keyed on a locale-independent `slug`, and display names live
+in `ingredient_name`, one row per locale. Aggregation joins on `ingredient_id`
+and never touches a name. A household-created ingredient gets a single
+`ingredient_name` row in the household's locale; if the app is later viewed in
+the other locale it falls back to whatever row exists, which is correct — the
+family called it that.
+
+Meals are different and deliberately simpler. Catalogue meals carry per-locale
+names and descriptions **in the reference data files**, not in the database:
+the sync script writes one `meal` row per locale-neutral catalogue entry with
+the name resolved for each supported locale at copy time. A **Household Meal has
+a single name**, in whatever language the family typed. A family's own meal is
+theirs and they name it once; forcing them to supply two names would be exactly
+the kind of friction this app is supposed to avoid.
+
+Units and category labels are translated in the UI layer from their stable keys,
+never stored as display text.
 
 ## Constraints that carry meaning
 
@@ -67,7 +94,8 @@ derived from the schemas rather than declared alongside them:
 
 - PostgREST responses — the database can be ahead of or behind the client
 - Environment variables — at startup, failing loudly
-- The catalogue and taxonomy files in `data/` — at load, in the sync script and in tests
+- The catalogue and taxonomy files in `data/` — at load, in the sync script and
+  in tests, including a check that every entry has both `fi` and `en` names
 - Local storage and the offline write queue — it survives app upgrades
 - The App Group JSON snapshot, when App Intents land
 
