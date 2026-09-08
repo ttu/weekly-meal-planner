@@ -135,6 +135,91 @@ const seedMeals = async (householdId: string): Promise<void> => {
   process.stdout.write(`Seeded ${String(MEALS.length)} Meals\n`)
 }
 
+const DAY_MS = 86_400_000
+
+/** The demo week is always the current week; a fixture pinned to a past date
+ *  shows an empty board later and wastes an afternoon. */
+const mondayOfThisWeek = (): string => {
+  const now = new Date()
+  const utcMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const daysSinceMonday = (new Date(utcMidnight).getUTCDay() + 6) % 7
+  return new Date(utcMidnight - daysSinceMonday * DAY_MS).toISOString().slice(0, 10)
+}
+
+const addDays = (iso: string, days: number): string =>
+  new Date(Date.parse(`${iso}T00:00:00.000Z`) + days * DAY_MS).toISOString().slice(0, 10)
+
+const seedWeek = async (householdId: string): Promise<void> => {
+  const weekStart = mondayOfThisWeek()
+
+  const { data: plan, error } = await admin
+    .from('week_plan')
+    .insert({ household_id: householdId, week_start: weekStart })
+    .select('id')
+    .single()
+  if (error !== null) fail('Week Plan', error.message)
+
+  const weekPlanId = (plan as { id: string }).id
+
+  const { data: meals } = await admin.from('meal').select('id,name').eq('household_id', householdId)
+
+  const byName = new Map((meals ?? []).map((m) => [m.name, m.id]))
+  const mealId = (name: string): string => {
+    const id = byName.get(name)
+    if (id === undefined) throw new Error(`Seed expects a Meal named ${name}`)
+    return id
+  }
+
+  // Covers every board state: a normal day, two Meals in one Slot, a Leftover,
+  // and empty Slots.
+  const { data: events, error: eventError } = await admin
+    .from('cook_event')
+    .insert([
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Munavoileivät'),
+        date: weekStart,
+        slot_key: 'lunch',
+        servings_cooked: 2,
+      },
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Chili con carne'),
+        date: weekStart,
+        slot_key: 'dinner',
+        servings_cooked: 6,
+      },
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Uunilohi ja perunamuusi'),
+        date: addDays(weekStart, 1),
+        slot_key: 'dinner',
+        servings_cooked: 3,
+      },
+      {
+        week_plan_id: weekPlanId,
+        meal_id: mealId('Tacos'),
+        date: addDays(weekStart, 1),
+        slot_key: 'dinner',
+        servings_cooked: 2,
+      },
+    ])
+    .select('id,meal_id')
+  if (eventError !== null) fail('Cook Events', eventError.message)
+
+  const chiliEvent = (events ?? []).find((e) => e.meal_id === mealId('Chili con carne'))
+  if (chiliEvent === undefined) throw new Error('Seed failed to create the Chili Cook Event')
+
+  const { error: leftoverError } = await admin.from('leftover').insert({
+    cook_event_id: chiliEvent.id,
+    date: addDays(weekStart, 2),
+    slot_key: 'lunch',
+  })
+  if (leftoverError !== null) fail('Leftover', leftoverError.message)
+
+  process.stdout.write(`Seeded Week Plan for ${weekStart}\n`)
+}
+
 const seed = async (): Promise<void> => {
   // Cascades clear members, meals and meal_ingredient rows.
   await admin.from('household').delete().neq('id', NIL_UUID)
@@ -163,6 +248,7 @@ const seed = async (): Promise<void> => {
   process.stdout.write(`Seeded Household ${householdId} with ${String(MEMBERS.length)} Members\n`)
 
   await seedMeals(householdId)
+  await seedWeek(householdId)
 }
 
 void seed()

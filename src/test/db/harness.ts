@@ -16,9 +16,11 @@ const SCHEMA_FILES = [
   'supabase/schemas/00_extensions.sql',
   'supabase/schemas/10_household.sql',
   'supabase/schemas/20_meals.sql',
+  'supabase/schemas/30_planning.sql',
   'src/test/db/auth-shim.sql',
   'supabase/schemas/90_policies_household.sql',
   'supabase/schemas/91_policies_meals.sql',
+  'supabase/schemas/92_policies_planning.sql',
 ]
 
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8')

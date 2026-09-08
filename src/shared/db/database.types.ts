@@ -34,6 +34,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      backlog_item: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          meal_id: string
+          week_plan_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          meal_id: string
+          week_plan_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          meal_id?: string
+          week_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlog_item_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlog_item_week_plan_id_fkey"
+            columns: ["week_plan_id"]
+            isOneToOne: false
+            referencedRelation: "week_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cook_event: {
+        Row: {
+          created_at: string
+          date: string
+          from_backlog_item_id: string | null
+          id: string
+          meal_id: string
+          servings_cooked: number
+          slot_key: string
+          week_plan_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          from_backlog_item_id?: string | null
+          id?: string
+          meal_id: string
+          servings_cooked: number
+          slot_key: string
+          week_plan_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          from_backlog_item_id?: string | null
+          id?: string
+          meal_id?: string
+          servings_cooked?: number
+          slot_key?: string
+          week_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cook_event_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cook_event_week_plan_id_fkey"
+            columns: ["week_plan_id"]
+            isOneToOne: false
+            referencedRelation: "week_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       household: {
         Row: {
           created_at: string
@@ -157,6 +244,35 @@ export type Database = {
           },
         ]
       }
+      leftover: {
+        Row: {
+          cook_event_id: string
+          date: string
+          id: string
+          slot_key: string
+        }
+        Insert: {
+          cook_event_id: string
+          date: string
+          id?: string
+          slot_key: string
+        }
+        Update: {
+          cook_event_id?: string
+          date?: string
+          id?: string
+          slot_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leftover_cook_event_id_fkey"
+            columns: ["cook_event_id"]
+            isOneToOne: false
+            referencedRelation: "cook_event"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal: {
         Row: {
           copied_from_meal_id: string | null
@@ -243,6 +359,32 @@ export type Database = {
             columns: ["meal_id"]
             isOneToOne: false
             referencedRelation: "meal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      week_plan: {
+        Row: {
+          household_id: string
+          id: string
+          week_start: string
+        }
+        Insert: {
+          household_id: string
+          id?: string
+          week_start: string
+        }
+        Update: {
+          household_id?: string
+          id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "week_plan_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "household"
             referencedColumns: ["id"]
           },
         ]

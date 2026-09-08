@@ -12,3 +12,7 @@ create policy meal_demo_anon_select on meal for select to anon using (true);
 create policy ingredient_demo_anon_select on ingredient for select to anon using (true);
 create policy ingredient_name_demo_anon_select on ingredient_name for select to anon using (true);
 create policy meal_ingredient_demo_anon_select on meal_ingredient for select to anon using (true);
+create policy week_plan_demo_anon_select on week_plan for select to anon using (true);
+create policy cook_event_demo_anon_select on cook_event for select to anon using (true);
+create policy leftover_demo_anon_select on leftover for select to anon using (true);
+create policy backlog_item_demo_anon_select on backlog_item for select to anon using (true);
