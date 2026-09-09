@@ -41,7 +41,7 @@ export default function RootLayout(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <SessionProvider client={client} household={household} memberId={undefined}>
+        <SessionProvider client={client} household={household} userId={userId}>
           {isLoading ? (
             <View
               style={{ flex: 1, backgroundColor: tokens.color.surface }}

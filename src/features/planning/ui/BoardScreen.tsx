@@ -2,15 +2,24 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
+import { useState } from 'react'
 import { signOut, useSession } from '@/features/household'
+import { MealPicker, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { BacklogShelf } from './BacklogShelf'
 import { DayColumn } from './DayColumn'
 import { useWeekBoard } from './useWeekBoard'
+import { useAddToBacklog } from './useAddToBacklog'
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface },
   scroll: { flex: 1 },
+  error: {
+    ...tokens.type.body,
+    color: tokens.color.action,
+    paddingHorizontal: tokens.space.md,
+    paddingBottom: tokens.space.sm,
+  },
   content: { paddingHorizontal: tokens.space.md, paddingBottom: tokens.space.xl },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   household: { ...tokens.type.label, color: tokens.color.textMuted, textTransform: 'uppercase' },
@@ -25,6 +34,9 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
   const insets = useSafeAreaInsets()
   const { client } = useSession()
   const { board, backlog, householdName } = useWeekBoard(clock)
+  const { meals } = useHouseholdMeals()
+  const { add, hasFailed } = useAddToBacklog(clock)
+  const [isPickerOpen, setPickerOpen] = useState(false)
   const today = clock.now().toISOString().slice(0, 10)
 
   return (
@@ -55,8 +67,31 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
         </View>
       </ScrollView>
 
+      {hasFailed && (
+        <Text style={styles.error} testID="backlog-add-error">
+          {t('picker.addFailed')}
+        </Text>
+      )}
+
       {/* Docked below the board, visible at every scroll position. */}
-      <BacklogShelf items={backlog} />
+      <BacklogShelf
+        items={backlog}
+        onAdd={() => {
+          setPickerOpen(true)
+        }}
+      />
+
+      <MealPicker
+        visible={isPickerOpen}
+        meals={meals}
+        onSelect={(mealId) => {
+          add(mealId)
+          setPickerOpen(false)
+        }}
+        onDismiss={() => {
+          setPickerOpen(false)
+        }}
+      />
     </View>
   )
 }

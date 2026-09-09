@@ -28,5 +28,15 @@
     "count": "Toivelista",
     "empty": "Kukaan ei ole vielä lisännyt mitään.",
     "add": "Lisää"
+  },
+  "picker": {
+    "title": "Lisää ateria",
+    "search": "Hae aterioita",
+    "ours": "Omat",
+    "catalogue": "Luettelo",
+    "noResults": "Yksikään ateria ei vastaa hakua.",
+    "cancel": "Peruuta",
+    "addFailed": "Aterian lisääminen epäonnistui. Yritä uudelleen.",
+    "catalogueHint": "Kopioi omiin aterioihin muokataksesi"
   }
 }

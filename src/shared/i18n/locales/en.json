@@ -28,5 +28,15 @@
     "count": "Backlog",
     "empty": "Nobody has added anything yet.",
     "add": "Add"
+  },
+  "picker": {
+    "title": "Add a Meal",
+    "search": "Search Meals",
+    "ours": "Ours",
+    "catalogue": "Catalogue",
+    "noResults": "No Meals match that.",
+    "cancel": "Cancel",
+    "addFailed": "Could not add that Meal. Try again.",
+    "catalogueHint": "Copy to your library to edit"
   }
 }
