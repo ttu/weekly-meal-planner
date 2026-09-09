@@ -38,5 +38,26 @@
     "cancel": "Peruuta",
     "addFailed": "Aterian lisääminen epäonnistui. Yritä uudelleen.",
     "catalogueHint": "Kopioi omiin aterioihin muokataksesi"
+  },
+  "plan": {
+    "title": "Suunnittele \"{{meal}}\"",
+    "addedBy": "Lisännyt {{name}} · {{servings}} annosta",
+    "day": "Päivä",
+    "slot": "Ateria",
+    "cookingFor": "Valmistetaan",
+    "submit": "Lisää {{day}}",
+    "cancel": "Peruuta",
+    "failed": "Aterian suunnittelu epäonnistui. Yritä uudelleen.",
+    "willJoin_one": "{{slot}} sisältää jo {{count}} aterian. Sinun tulee sen rinnalle.",
+    "willJoin_other": "{{slot}} sisältää jo {{count}} ateriaa. Sinun tulee niiden rinnalle."
+  },
+  "weekday": {
+    "1": "Ma",
+    "2": "Ti",
+    "3": "Ke",
+    "4": "To",
+    "5": "Pe",
+    "6": "La",
+    "7": "Su"
   }
 }

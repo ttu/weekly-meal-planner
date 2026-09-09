@@ -11,6 +11,7 @@ import type { BacklogItem, WeekStart } from '../domain/types'
 export type WeekBoard = {
   readonly board: readonly BoardDay[]
   readonly backlog: readonly BacklogItem[]
+  readonly weekPlanId: string | undefined
   readonly weekStart: WeekStart
   readonly householdName: string
   readonly isLoading: boolean
@@ -31,7 +32,9 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
       const result = await loadWeek(client, weekStart)
       // A Week Plan that does not exist yet is an expected outcome, not an
       // error: nobody has planned this week. Render an empty board.
-      if (isErr(result)) return { cookEvents: [], leftovers: [], backlog: [] }
+      if (isErr(result)) {
+        return { weekPlanId: undefined, cookEvents: [], leftovers: [], backlog: [] }
+      }
 
       const backlog = await loadBacklog(client, result.value.weekPlanId)
       return {
@@ -49,6 +52,7 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
       leftovers: data?.leftovers ?? [],
     }),
     backlog: data?.backlog ?? [],
+    weekPlanId: data?.weekPlanId,
     weekStart,
     householdName: household?.name ?? '',
     isLoading: isLoading || household === undefined,

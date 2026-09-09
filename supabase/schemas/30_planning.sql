@@ -25,6 +25,10 @@ create table cook_event (
   slot_key text not null,
   servings_cooked integer not null check (servings_cooked between 1 and 50),
   from_backlog_item_id uuid,
+  -- Carried through planning so unplanning can restore the Backlog Item with
+  -- its original author. Without it, unplanning silently reassigns authorship
+  -- and the Backlog card then displays a lie about who wanted the Meal.
+  added_by uuid,
   created_at timestamptz not null default now()
 );
 

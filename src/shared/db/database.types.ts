@@ -75,6 +75,7 @@ export type Database = {
       }
       cook_event: {
         Row: {
+          added_by: string | null
           created_at: string
           date: string
           from_backlog_item_id: string | null
@@ -85,6 +86,7 @@ export type Database = {
           week_plan_id: string
         }
         Insert: {
+          added_by?: string | null
           created_at?: string
           date: string
           from_backlog_item_id?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           week_plan_id: string
         }
         Update: {
+          added_by?: string | null
           created_at?: string
           date?: string
           from_backlog_item_id?: string | null
@@ -394,7 +397,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      plan_meal: {
+        Args: {
+          p_added_by: string
+          p_backlog_item_id?: string
+          p_date: string
+          p_meal_id: string
+          p_servings_cooked: number
+          p_slot_key: string
+          p_week_plan_id: string
+        }
+        Returns: string
+      }
+      unplan_meal: { Args: { p_cook_event_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

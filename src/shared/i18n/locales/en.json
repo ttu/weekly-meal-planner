@@ -38,5 +38,26 @@
     "cancel": "Cancel",
     "addFailed": "Could not add that Meal. Try again.",
     "catalogueHint": "Copy to your library to edit"
+  },
+  "plan": {
+    "title": "Plan \"{{meal}}\"",
+    "addedBy": "Added by {{name}} · serves {{servings}}",
+    "day": "Day",
+    "slot": "Slot",
+    "cookingFor": "Cooking for",
+    "submit": "Put it on {{day}}",
+    "cancel": "Cancel",
+    "failed": "Could not plan that Meal. Try again.",
+    "willJoin_one": "{{slot}} already has {{count}} Meal. Yours will join it.",
+    "willJoin_other": "{{slot}} already has {{count}} Meals. Yours will join them."
+  },
+  "weekday": {
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat",
+    "7": "Sun"
   }
 }

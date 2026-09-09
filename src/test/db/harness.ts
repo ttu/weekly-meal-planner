@@ -23,6 +23,7 @@ const SCHEMA_FILES = [
   'supabase/schemas/90_policies_household.sql',
   'supabase/schemas/91_policies_meals.sql',
   'supabase/schemas/92_policies_planning.sql',
+  'supabase/schemas/40_planning_rpc.sql',
 ]
 
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8')
@@ -39,9 +40,11 @@ export const createTestDb = async (): Promise<TestDb> => {
   // Policies do not apply to the table owner, so tests must run as a role that
   // is subject to them — exactly as anon/authenticated are in production.
   await db.exec(`
-    grant usage on schema public, app to authenticated, anon;
+    grant usage on schema public, app, auth to authenticated, anon;
     grant select, insert, update, delete on all tables in schema public to authenticated, anon;
     grant execute on all functions in schema app to authenticated, anon;
+    grant execute on all functions in schema auth to authenticated, anon;
+    grant execute on all functions in schema public to authenticated, anon;
   `)
 
   return {

@@ -10,6 +10,9 @@ import { BacklogShelf } from './BacklogShelf'
 import { DayColumn } from './DayColumn'
 import { useWeekBoard } from './useWeekBoard'
 import { useAddToBacklog } from './useAddToBacklog'
+import { usePlanMeal } from './usePlanMeal'
+import { PlanSheet } from './PlanSheet'
+import type { BacklogItem } from '../domain/types'
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface },
@@ -32,11 +35,14 @@ type Props = { readonly clock?: Clock }
 export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
-  const { client } = useSession()
-  const { board, backlog, householdName } = useWeekBoard(clock)
+  const session = useSession()
+  const household = session.household
+  const { board, backlog, weekPlanId, householdName } = useWeekBoard(clock)
   const { meals } = useHouseholdMeals()
   const { add, hasFailed } = useAddToBacklog(clock)
+  const { plan, hasFailed: planFailed } = usePlanMeal(clock)
   const [isPickerOpen, setPickerOpen] = useState(false)
+  const [planning, setPlanning] = useState<BacklogItem | undefined>(undefined)
   const today = clock.now().toISOString().slice(0, 10)
 
   return (
@@ -49,7 +55,7 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
           <Text style={styles.household}>{householdName}</Text>
           <Pressable
             onPress={() => {
-              void signOut(client)
+              void signOut(session.client)
             }}
             accessibilityRole="button"
             accessibilityLabel={t('auth.signOut')}
@@ -73,13 +79,46 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
         </Text>
       )}
 
+      {planFailed && (
+        <Text style={styles.error} testID="plan-error">
+          {t('plan.failed')}
+        </Text>
+      )}
+
       {/* Docked below the board, visible at every scroll position. */}
       <BacklogShelf
         items={backlog}
         onAdd={() => {
           setPickerOpen(true)
         }}
+        onPlan={(id) => {
+          setPlanning(backlog.find((item) => item.id === id))
+        }}
       />
+
+      {planning !== undefined && weekPlanId !== undefined && (
+        <PlanSheet
+          visible
+          mealName={planning.mealName}
+          addedByName={planning.addedByName}
+          defaultServings={planning.servings}
+          board={board}
+          slots={household?.slots ?? []}
+          today={today}
+          onSubmit={(choice) => {
+            plan({
+              weekPlanId,
+              mealId: planning.mealId,
+              backlogItemId: planning.id,
+              ...choice,
+            })
+            setPlanning(undefined)
+          }}
+          onDismiss={() => {
+            setPlanning(undefined)
+          }}
+        />
+      )}
 
       <MealPicker
         visible={isPickerOpen}
