@@ -2,31 +2,14 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
+import { formStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { isErr } from '@/shared/types/result'
 import { signIn, type SignInError } from '../application/sign-in'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: tokens.color.surface, paddingHorizontal: tokens.space.lg },
   title: { ...tokens.type.display, color: tokens.color.textPrimary, marginBottom: tokens.space.lg },
-  label: {
-    ...tokens.type.label,
-    color: tokens.color.textMuted,
-    textTransform: 'uppercase',
-    marginBottom: tokens.space.xs,
-  },
-  field: {
-    ...tokens.type.body,
-    color: tokens.color.textPrimary,
-    backgroundColor: tokens.color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: tokens.color.rule,
-    borderRadius: 8,
-    paddingHorizontal: tokens.space.md,
-    minHeight: 54,
-    marginBottom: tokens.space.md,
-  },
   submit: {
     backgroundColor: tokens.color.action,
     borderRadius: 8,
@@ -36,7 +19,6 @@ const styles = StyleSheet.create({
   },
   submitPressed: { backgroundColor: tokens.color.actionPressed },
   submitText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
-  error: { ...tokens.type.body, color: tokens.color.action, marginBottom: tokens.space.md },
 })
 
 const errorKey = (error: SignInError): string =>
@@ -63,14 +45,14 @@ export const SignInScreen = ({ client }: Props): React.JSX.Element => {
 
   return (
     <View
-      style={[styles.screen, { paddingTop: insets.top + tokens.space.xl }]}
+      style={[formStyles.screen, { paddingTop: insets.top + tokens.space.xl }]}
       testID="sign-in-screen"
     >
-      <Text style={styles.title}>{t('auth.title')}</Text>
+      <Text style={formStyles.title}>{t('auth.title')}</Text>
 
-      <Text style={styles.label}>{t('auth.email')}</Text>
+      <Text style={formStyles.label}>{t('auth.email')}</Text>
       <TextInput
-        style={styles.field}
+        style={formStyles.field}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -80,9 +62,9 @@ export const SignInScreen = ({ client }: Props): React.JSX.Element => {
         testID="sign-in-email"
       />
 
-      <Text style={styles.label}>{t('auth.password')}</Text>
+      <Text style={formStyles.label}>{t('auth.password')}</Text>
       <TextInput
-        style={styles.field}
+        style={formStyles.field}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -92,7 +74,7 @@ export const SignInScreen = ({ client }: Props): React.JSX.Element => {
       />
 
       {error !== undefined && (
-        <Text style={styles.error} testID="sign-in-error">
+        <Text style={formStyles.error} testID="sign-in-error">
           {t(errorKey(error))}
         </Text>
       )}

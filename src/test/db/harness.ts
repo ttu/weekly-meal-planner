@@ -24,6 +24,7 @@ const SCHEMA_FILES = [
   'supabase/schemas/91_policies_meals.sql',
   'supabase/schemas/92_policies_planning.sql',
   'supabase/schemas/40_planning_rpc.sql',
+  'supabase/schemas/41_meal_rpc.sql',
 ]
 
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8')

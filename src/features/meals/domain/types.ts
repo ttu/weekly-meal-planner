@@ -19,6 +19,9 @@ export type Meal = {
   readonly name: string
   readonly servings: Servings
   readonly photoUrl?: string
+  /** How many Ingredients it has. "Tacos · no Ingredients yet" is the signal a
+   *  Member needs before planning it. */
+  readonly ingredientCount: number
 }
 
 export const isCatalogueMeal = (meal: Meal): boolean => meal.householdId === undefined

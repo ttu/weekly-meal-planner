@@ -2,16 +2,23 @@ import { Image, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { cardStyles } from './card-styles'
-import type { Meal, Servings } from '../domain/types'
+import type { Servings } from '../domain/types'
 
 /** A Leftover is not a Meal and has its own component — see LeftoverCard. */
 export type MealCardVariant = 'library' | 'backlog' | 'planned'
 
+/**
+ * Takes what it renders, not a Meal. A planned card and a Backlog card are built
+ * from a Cook Event and a Backlog Item, neither of which is a Meal — demanding
+ * one forced those call sites to fabricate the missing fields.
+ */
 type Props = {
-  readonly meal: Meal
+  readonly name: string
   readonly variant: MealCardVariant
-  readonly addedBy?: string
-  readonly servingsCooked?: Servings
+  readonly photoUrl?: string | undefined
+  readonly addedBy?: string | undefined
+  readonly servingsCooked?: Servings | undefined
+  readonly detail?: string | undefined
 }
 
 const styles = StyleSheet.create({
@@ -29,27 +36,36 @@ const styles = StyleSheet.create({
   },
 })
 
-export const MealCard = ({ meal, variant, addedBy, servingsCooked }: Props): React.JSX.Element => {
+export const MealCard = ({
+  name,
+  variant,
+  photoUrl,
+  addedBy,
+  servingsCooked,
+  detail,
+}: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
   return (
     <View style={[cardStyles.base, styles[variant]]} testID={`meal-card-${variant}`}>
       <View style={cardStyles.row}>
-        {meal.photoUrl === undefined ? (
+        {photoUrl === undefined ? (
           <Text style={cardStyles.initial} testID="meal-card-initial">
-            {meal.name.slice(0, 1).toUpperCase()}
+            {name.slice(0, 1).toUpperCase()}
           </Text>
         ) : (
           <Image
-            source={{ uri: meal.photoUrl }}
+            source={{ uri: photoUrl }}
             style={cardStyles.chip}
             accessibilityIgnoresInvertColors
           />
         )}
         <Text style={cardStyles.name} numberOfLines={2}>
-          {meal.name}
+          {name}
         </Text>
       </View>
+
+      {detail !== undefined && <Text style={cardStyles.support}>{detail}</Text>}
 
       {addedBy !== undefined && <Text style={cardStyles.support}>{addedBy}</Text>}
 

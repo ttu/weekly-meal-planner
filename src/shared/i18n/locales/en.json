@@ -78,5 +78,19 @@
   "noHousehold": {
     "title": "No Household yet",
     "body": "This account is not a member of any Household. Sign out and back in, or ask someone to invite you."
+  },
+  "meal": {
+    "library": "Meals",
+    "new": "New Meal",
+    "name": "Name",
+    "servings": "Serves",
+    "save": "Save",
+    "nameRequired": "Give the Meal a name.",
+    "saveFailed": "Could not save. Try again.",
+    "noIngredients": "No Ingredients yet",
+    "emptyLibrary": "No Meals yet. Add the first one.",
+    "add": "Add a Meal",
+    "ingredientCount_one": "{{count}} Ingredient",
+    "ingredientCount_other": "{{count}} Ingredients"
   }
 }

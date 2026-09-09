@@ -27,14 +27,15 @@ const styles = StyleSheet.create({
   },
   content: { paddingHorizontal: tokens.space.md, paddingBottom: tokens.space.xl },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerActions: { flexDirection: 'row', gap: tokens.space.md },
   household: { ...tokens.type.label, color: tokens.color.textMuted, textTransform: 'uppercase' },
   signOut: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
   title: { ...tokens.type.display, color: tokens.color.textPrimary, marginBottom: tokens.space.md },
 })
 
-type Props = { readonly clock?: Clock }
+type Props = { readonly clock?: Clock; readonly onOpenLibrary?: (() => void) | undefined }
 
-export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element => {
+export const BoardScreen = ({ clock = systemClock, onOpenLibrary }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const session = useSession()
@@ -74,16 +75,26 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
       >
         <View style={styles.headerRow}>
           <Text style={styles.household}>{householdName}</Text>
-          <Pressable
-            onPress={() => {
-              void signOut(session.client)
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('auth.signOut')}
-            testID="sign-out"
-          >
-            <Text style={styles.signOut}>{t('auth.signOut')}</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={onOpenLibrary}
+              accessibilityRole="button"
+              accessibilityLabel={t('meal.library')}
+              testID="open-library"
+            >
+              <Text style={styles.signOut}>{t('meal.library')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                void signOut(session.client)
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.signOut')}
+              testID="sign-out"
+            >
+              <Text style={styles.signOut}>{t('auth.signOut')}</Text>
+            </Pressable>
+          </View>
         </View>
         <Text style={styles.title}>{t('board.thisWeek')}</Text>
 

@@ -96,12 +96,8 @@ export const BacklogShelf = ({ items, onAdd, onPlan, onRemove }: Props): React.J
                 >
                   <MealCard
                     variant="backlog"
+                    name={backlogItem.mealName}
                     addedBy={backlogItem.addedByName}
-                    meal={{
-                      id: backlogItem.mealId,
-                      name: backlogItem.mealName,
-                      servings: backlogItem.servings,
-                    }}
                   />
                 </Pressable>
                 <Pressable

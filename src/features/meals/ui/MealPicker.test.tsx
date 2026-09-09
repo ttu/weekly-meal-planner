@@ -17,12 +17,14 @@ const own = (id: string, name: string): Meal => ({
   householdId: 'h1' as HouseholdRef,
   name,
   servings: 4 as Servings,
+  ingredientCount: 0,
 })
 
 const catalogue = (id: string, name: string): Meal => ({
   id: id as MealId,
   name,
   servings: 2 as Servings,
+  ingredientCount: 0,
 })
 
 const meals = [own('1', 'Munavoileivät'), own('2', 'Tacos'), catalogue('3', 'Shakshuka')]

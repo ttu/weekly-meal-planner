@@ -49,12 +49,8 @@ const Card = ({ card, onAddLeftover, onUnplan }: CardProps): React.JSX.Element =
     <View>
       <MealCard
         variant="planned"
+        name={cookEvent.mealName}
         servingsCooked={cookEvent.servingsCooked}
-        meal={{
-          id: cookEvent.mealId,
-          name: cookEvent.mealName,
-          servings: cookEvent.servingsCooked,
-        }}
       />
       <View style={styles.actions}>
         <Pressable

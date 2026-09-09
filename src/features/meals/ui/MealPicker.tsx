@@ -80,7 +80,7 @@ export const MealPicker = ({ visible, meals, onSelect, onDismiss }: Props): Reac
       accessibilityLabel={meal.name}
       testID={`picker-meal-${meal.id}`}
     >
-      <MealCard meal={meal} variant="library" />
+      <MealCard name={meal.name} photoUrl={meal.photoUrl} variant="library" />
       {fromCatalogue && <Text style={styles.hint}>{t('picker.catalogueHint')}</Text>}
     </Pressable>
   )

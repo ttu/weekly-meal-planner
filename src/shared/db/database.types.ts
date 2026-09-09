@@ -409,6 +409,16 @@ export type Database = {
         }
         Returns: string
       }
+      save_meal: {
+        Args: {
+          p_household_id: string
+          p_ingredients: Json
+          p_meal_id?: string
+          p_name: string
+          p_servings: number
+        }
+        Returns: string
+      }
       unplan_meal: { Args: { p_cook_event_id: string }; Returns: string }
     }
     Enums: {

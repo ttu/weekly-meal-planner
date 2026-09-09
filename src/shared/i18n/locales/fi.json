@@ -78,5 +78,19 @@
   "noHousehold": {
     "title": "Ei taloutta",
     "body": "Tämä tili ei kuulu mihinkään talouteen. Kirjaudu ulos ja takaisin sisään, tai pyydä kutsu."
+  },
+  "meal": {
+    "library": "Ateriat",
+    "new": "Uusi ateria",
+    "name": "Nimi",
+    "servings": "Annoksia",
+    "save": "Tallenna",
+    "nameRequired": "Anna aterialle nimi.",
+    "saveFailed": "Tallennus epäonnistui. Yritä uudelleen.",
+    "noIngredients": "Ei vielä raaka-aineita",
+    "emptyLibrary": "Ei vielä aterioita. Lisää ensimmäinen.",
+    "add": "Lisää ateria",
+    "ingredientCount_one": "{{count}} raaka-aine",
+    "ingredientCount_other": "{{count}} raaka-ainetta"
   }
 }
