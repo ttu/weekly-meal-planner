@@ -4,11 +4,13 @@ import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { signOut, useSession } from '@/features/household'
 import { systemClock, type Clock } from '@/shared/time/clock'
+import { BacklogShelf } from './BacklogShelf'
 import { DayColumn } from './DayColumn'
 import { useWeekBoard } from './useWeekBoard'
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface },
+  scroll: { flex: 1 },
   content: { paddingHorizontal: tokens.space.md, paddingBottom: tokens.space.xl },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   household: { ...tokens.type.label, color: tokens.color.textMuted, textTransform: 'uppercase' },
@@ -22,35 +24,39 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const { client } = useSession()
-  const { board, householdName } = useWeekBoard(clock)
+  const { board, backlog, householdName } = useWeekBoard(clock)
   const today = clock.now().toISOString().slice(0, 10)
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
-      testID="board-screen"
-    >
-      <View style={styles.headerRow}>
-        <Text style={styles.household}>{householdName}</Text>
-        <Pressable
-          onPress={() => {
-            void signOut(client)
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('auth.signOut')}
-          testID="sign-out"
-        >
-          <Text style={styles.signOut}>{t('auth.signOut')}</Text>
-        </Pressable>
-      </View>
-      <Text style={styles.title}>{t('board.thisWeek')}</Text>
+    <View style={styles.screen} testID="board-screen">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+      >
+        <View style={styles.headerRow}>
+          <Text style={styles.household}>{householdName}</Text>
+          <Pressable
+            onPress={() => {
+              void signOut(client)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.signOut')}
+            testID="sign-out"
+          >
+            <Text style={styles.signOut}>{t('auth.signOut')}</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.title}>{t('board.thisWeek')}</Text>
 
-      <View testID="board">
-        {board.map((day) => (
-          <DayColumn key={day.date} day={day} isToday={day.date === today} />
-        ))}
-      </View>
-    </ScrollView>
+        <View testID="board">
+          {board.map((day) => (
+            <DayColumn key={day.date} day={day} isToday={day.date === today} />
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Docked below the board, visible at every scroll position. */}
+      <BacklogShelf items={backlog} />
+    </View>
   )
 }

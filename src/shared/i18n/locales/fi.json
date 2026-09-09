@@ -23,5 +23,10 @@
     "invalid": "Sähköposti ja salasana eivät täsmää.",
     "unavailable": "Palvelimeen ei saatu yhteyttä. Yritä uudelleen.",
     "signOut": "Kirjaudu ulos"
+  },
+  "backlog": {
+    "count": "Toivelista",
+    "empty": "Kukaan ei ole vielä lisännyt mitään.",
+    "add": "Lisää"
   }
 }

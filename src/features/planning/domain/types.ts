@@ -28,6 +28,20 @@ export type Leftover = {
   readonly slotKey: SlotKey
 }
 
+/**
+ * A Meal wanted this week, not yet dated. `addedByName` and `addedByColour` are
+ * denormalised from household_member at read time: who wanted it is the point
+ * of the card, and the design puts it on the card rather than in a tooltip.
+ */
+export type BacklogItem = {
+  readonly id: BacklogItemId
+  readonly mealId: MealId
+  readonly mealName: string
+  readonly servings: Servings
+  readonly addedByName: string
+  readonly addedByColour: string
+}
+
 export type BoardCard =
   | { readonly kind: 'cook-event'; readonly cookEvent: CookEvent }
   | { readonly kind: 'leftover'; readonly leftover: Leftover }

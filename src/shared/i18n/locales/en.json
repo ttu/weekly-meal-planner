@@ -23,5 +23,10 @@
     "invalid": "That email and password do not match.",
     "unavailable": "Could not reach the server. Try again.",
     "signOut": "Sign out"
+  },
+  "backlog": {
+    "count": "Backlog",
+    "empty": "Nobody has added anything yet.",
+    "add": "Add"
   }
 }

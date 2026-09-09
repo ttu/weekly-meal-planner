@@ -24,6 +24,7 @@ const leftoverRow = z.object({
 export type LoadWeekError = 'no-week-plan' | 'invalid-row'
 
 export type WeekContents = {
+  readonly weekPlanId: string
   readonly cookEvents: readonly CookEvent[]
   readonly leftovers: readonly Leftover[]
 }
@@ -57,6 +58,7 @@ export const loadWeek = async (
   if (!cookEvents.success || !leftovers.success) return err('invalid-row')
 
   return ok({
+    weekPlanId: planId,
     cookEvents: cookEvents.data.map((r) => ({
       id: brand<string, 'CookEventId'>(r.id),
       mealId: brand<string, 'MealId'>(r.meal_id),

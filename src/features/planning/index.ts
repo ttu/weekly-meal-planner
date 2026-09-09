@@ -6,6 +6,7 @@ export type {
   Leftover,
   LeftoverId,
   BacklogItemId,
+  BacklogItem,
   BoardCard,
 } from './domain/types'
 export { currentWeekStart, weekDates } from './domain/week'
@@ -13,3 +14,5 @@ export { buildBoard, type BoardDay, type BoardSlot, type BuildBoardInput } from 
 export { BoardScreen } from './ui/BoardScreen'
 export { useWeekBoard, type WeekBoard } from './ui/useWeekBoard'
 export { loadWeek, type WeekContents, type LoadWeekError } from './infrastructure/board-repository'
+export { BacklogShelf } from './ui/BacklogShelf'
+export { loadBacklog, type LoadBacklogError } from './infrastructure/backlog-repository'

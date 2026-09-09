@@ -159,7 +159,7 @@ const mondayOfThisWeek = (): string => {
 const addDays = (iso: string, days: number): string =>
   new Date(Date.parse(`${iso}T00:00:00.000Z`) + days * DAY_MS).toISOString().slice(0, 10)
 
-const seedWeek = async (householdId: string): Promise<void> => {
+const seedWeek = async (householdId: string, userId: (email: string) => string): Promise<void> => {
   const weekStart = mondayOfThisWeek()
 
   const { data: plan, error } = await admin
@@ -227,7 +227,17 @@ const seedWeek = async (householdId: string): Promise<void> => {
   })
   if (leftoverError !== null) fail('Leftover', leftoverError.message)
 
-  process.stdout.write(`Seeded Week Plan for ${weekStart}\n`)
+  const { error: backlogError } = await admin.from('backlog_item').insert([
+    { week_plan_id: weekPlanId, meal_id: mealId('Tacos'), added_by: userId('sanni@example.test') },
+    {
+      week_plan_id: weekPlanId,
+      meal_id: mealId('Munavoileivät'),
+      added_by: userId('mikko@example.test'),
+    },
+  ])
+  if (backlogError !== null) fail('Backlog Items', backlogError.message)
+
+  process.stdout.write(`Seeded Week Plan for ${weekStart} with 2 Backlog Items\n`)
 }
 
 const seed = async (): Promise<void> => {
@@ -265,7 +275,7 @@ const seed = async (): Promise<void> => {
   process.stdout.write(`Seeded Household ${householdId} with ${String(MEMBERS.length)} Members\n`)
 
   await seedMeals(householdId)
-  await seedWeek(householdId)
+  await seedWeek(householdId, userId)
 
   process.stdout.write(
     `\nSign in as any of:\n${MEMBERS.map((m) => `  ${m.email} / ${DEMO_PASSWORD}`).join('\n')}\n`,

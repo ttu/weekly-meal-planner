@@ -5,10 +5,12 @@ import { useSession } from '@/features/household'
 import { currentWeekStart } from '../domain/week'
 import { buildBoard, type BoardDay } from '../domain/board'
 import { loadWeek } from '../infrastructure/board-repository'
-import type { WeekStart } from '../domain/types'
+import { loadBacklog } from '../infrastructure/backlog-repository'
+import type { BacklogItem, WeekStart } from '../domain/types'
 
 export type WeekBoard = {
   readonly board: readonly BoardDay[]
+  readonly backlog: readonly BacklogItem[]
   readonly weekStart: WeekStart
   readonly householdName: string
   readonly isLoading: boolean
@@ -29,7 +31,13 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
       const result = await loadWeek(client, weekStart)
       // A Week Plan that does not exist yet is an expected outcome, not an
       // error: nobody has planned this week. Render an empty board.
-      return isErr(result) ? { cookEvents: [], leftovers: [] } : result.value
+      if (isErr(result)) return { cookEvents: [], leftovers: [], backlog: [] }
+
+      const backlog = await loadBacklog(client, result.value.weekPlanId)
+      return {
+        ...result.value,
+        backlog: isErr(backlog) ? [] : backlog.value,
+      }
     },
   })
 
@@ -40,6 +48,7 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
       cookEvents: data?.cookEvents ?? [],
       leftovers: data?.leftovers ?? [],
     }),
+    backlog: data?.backlog ?? [],
     weekStart,
     householdName: household?.name ?? '',
     isLoading: isLoading || household === undefined,
