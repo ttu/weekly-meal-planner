@@ -34,6 +34,12 @@ const styles = StyleSheet.create({
   add: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
   row: { flexDirection: 'row', gap: tokens.space.sm, paddingHorizontal: tokens.space.md },
   card: { width: 200 },
+  remove: {
+    ...tokens.type.body,
+    color: tokens.color.textMuted,
+    textAlign: 'center',
+    paddingVertical: tokens.space.xs,
+  },
   empty: { paddingHorizontal: tokens.space.md, paddingVertical: tokens.space.sm },
   emptyText: { ...tokens.type.body, color: tokens.color.textMuted },
 })
@@ -42,13 +48,14 @@ type Props = {
   readonly items: readonly BacklogItem[]
   readonly onAdd?: () => void
   readonly onPlan?: (id: BacklogItemId) => void
+  readonly onRemove?: (id: BacklogItemId) => void
 }
 
 /**
  * Docked, not a tab: the design keeps the Backlog visible at every scroll
  * position so a card is three taps from the board without any dragging.
  */
-export const BacklogShelf = ({ items, onAdd, onPlan }: Props): React.JSX.Element => {
+export const BacklogShelf = ({ items, onAdd, onPlan, onRemove }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
   return (
@@ -80,24 +87,32 @@ export const BacklogShelf = ({ items, onAdd, onPlan }: Props): React.JSX.Element
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.row}>
             {items.map((backlogItem) => (
-              <Pressable
-                key={backlogItem.id}
-                style={styles.card}
-                onPress={() => onPlan?.(backlogItem.id)}
-                accessibilityRole="button"
-                accessibilityLabel={backlogItem.mealName}
-                testID={`backlog-item-${backlogItem.id}`}
-              >
-                <MealCard
-                  variant="backlog"
-                  addedBy={backlogItem.addedByName}
-                  meal={{
-                    id: backlogItem.mealId,
-                    name: backlogItem.mealName,
-                    servings: backlogItem.servings,
-                  }}
-                />
-              </Pressable>
+              <View key={backlogItem.id} style={styles.card}>
+                <Pressable
+                  onPress={() => onPlan?.(backlogItem.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={backlogItem.mealName}
+                  testID={`backlog-item-${backlogItem.id}`}
+                >
+                  <MealCard
+                    variant="backlog"
+                    addedBy={backlogItem.addedByName}
+                    meal={{
+                      id: backlogItem.mealId,
+                      name: backlogItem.mealName,
+                      servings: backlogItem.servings,
+                    }}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={() => onRemove?.(backlogItem.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('unplan.removeBacklog')}
+                  testID={`backlog-remove-${backlogItem.id}`}
+                >
+                  <Text style={styles.remove}>×</Text>
+                </Pressable>
+              </View>
             ))}
           </View>
         </ScrollView>

@@ -22,3 +22,12 @@ export { describePlacement, type PlacementDescription } from './domain/placement
 export { planMeal, type PlanMealError } from './application/plan-meal'
 export { PlanSheet, type PlanChoice } from './ui/PlanSheet'
 export { usePlanMeal, type PlanMeal, type PlanRequest } from './ui/usePlanMeal'
+export { addLeftover, type AddLeftoverError } from './application/add-leftover'
+export { unplanMeal, type UnplanMealError } from './application/unplan-meal'
+export { removeBacklogItem, type RemoveBacklogItemError } from './application/remove-backlog-item'
+export {
+  usePlanningActions,
+  type PlanningActions,
+  type LeftoverRequest,
+} from './ui/usePlanningActions'
+export { ConfirmSheet } from './ui/ConfirmSheet'

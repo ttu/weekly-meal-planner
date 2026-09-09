@@ -13,7 +13,12 @@
     "cookingCount": "Cooking {{count}}"
   },
   "leftover": {
-    "suffix": "{{meal}} — leftovers"
+    "suffix": "{{meal}} — leftovers",
+    "add": "Add leftovers",
+    "title": "Leftovers from {{meal}}",
+    "sameSlot": "That is the same sitting as the Meal itself.",
+    "submit": "Add to {{day}}",
+    "failed": "Could not add leftovers. Try again."
   },
   "auth": {
     "title": "Sign in",
@@ -59,5 +64,19 @@
     "5": "Fri",
     "6": "Sat",
     "7": "Sun"
+  },
+  "unplan": {
+    "action": "Unplan",
+    "confirm": "Put this Meal back in the Backlog?",
+    "confirmWithLeftovers_one": "This also removes {{count}} leftover card.",
+    "confirmWithLeftovers_other": "This also removes {{count}} leftover cards.",
+    "confirmYes": "Unplan",
+    "confirmNo": "Keep it",
+    "failed": "Could not unplan. Try again.",
+    "removeBacklog": "Remove from the Backlog?"
+  },
+  "noHousehold": {
+    "title": "No Household yet",
+    "body": "This account is not a member of any Household. Sign out and back in, or ask someone to invite you."
   }
 }

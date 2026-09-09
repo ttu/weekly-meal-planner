@@ -11,8 +11,10 @@ import { DayColumn } from './DayColumn'
 import { useWeekBoard } from './useWeekBoard'
 import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
+import { usePlanningActions } from './usePlanningActions'
 import { PlanSheet } from './PlanSheet'
-import type { BacklogItem } from '../domain/types'
+import { ConfirmSheet } from './ConfirmSheet'
+import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface },
@@ -43,6 +45,25 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
   const { plan, hasFailed: planFailed } = usePlanMeal(clock)
   const [isPickerOpen, setPickerOpen] = useState(false)
   const [planning, setPlanning] = useState<BacklogItem | undefined>(undefined)
+  const { addLeftoverFor, unplan, removeFromBacklog, leftoverFailed, unplanFailed } =
+    usePlanningActions(clock)
+  const [leftoverFor, setLeftoverFor] = useState<CookEvent | undefined>(undefined)
+  const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
+
+  // Unplanning takes Leftovers with it, and they may be days away on the board,
+  // so the confirmation says how many.
+  const leftoverCountFor = (id: CookEventId): number =>
+    board
+      .flatMap((day) => day.slots)
+      .flatMap((slot) => slot.cards)
+      .filter((card) => card.kind === 'leftover' && card.leftover.cookEventId === id).length
+
+  const cookEventById = (id: CookEventId): CookEvent | undefined =>
+    board
+      .flatMap((day) => day.slots)
+      .flatMap((slot) => slot.cards)
+      .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
+      .find((cookEvent) => cookEvent.id === id)
   const today = clock.now().toISOString().slice(0, 10)
 
   return (
@@ -68,7 +89,17 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
 
         <View testID="board">
           {board.map((day) => (
-            <DayColumn key={day.date} day={day} isToday={day.date === today} />
+            <DayColumn
+              key={day.date}
+              day={day}
+              isToday={day.date === today}
+              onAddLeftover={(id) => {
+                setLeftoverFor(cookEventById(id))
+              }}
+              onUnplan={(id) => {
+                setUnplanning(cookEventById(id))
+              }}
+            />
           ))}
         </View>
       </ScrollView>
@@ -85,6 +116,18 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
         </Text>
       )}
 
+      {leftoverFailed && (
+        <Text style={styles.error} testID="leftover-error">
+          {t('leftover.failed')}
+        </Text>
+      )}
+
+      {unplanFailed && (
+        <Text style={styles.error} testID="unplan-error">
+          {t('unplan.failed')}
+        </Text>
+      )}
+
       {/* Docked below the board, visible at every scroll position. */}
       <BacklogShelf
         items={backlog}
@@ -94,6 +137,7 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
         onPlan={(id) => {
           setPlanning(backlog.find((item) => item.id === id))
         }}
+        onRemove={removeFromBacklog}
       />
 
       {planning !== undefined && weekPlanId !== undefined && (
@@ -116,6 +160,52 @@ export const BoardScreen = ({ clock = systemClock }: Props): React.JSX.Element =
           }}
           onDismiss={() => {
             setPlanning(undefined)
+          }}
+        />
+      )}
+
+      {leftoverFor !== undefined && (
+        <PlanSheet
+          visible
+          forLeftover
+          mealName={leftoverFor.mealName}
+          defaultServings={leftoverFor.servingsCooked}
+          parentDate={leftoverFor.date}
+          parentSlotKey={leftoverFor.slotKey}
+          board={board}
+          slots={household?.slots ?? []}
+          today={today}
+          onSubmit={(choice) => {
+            addLeftoverFor({
+              cookEventId: leftoverFor.id,
+              date: choice.date,
+              slotKey: choice.slotKey,
+            })
+            setLeftoverFor(undefined)
+          }}
+          onDismiss={() => {
+            setLeftoverFor(undefined)
+          }}
+        />
+      )}
+
+      {unplanning !== undefined && (
+        <ConfirmSheet
+          visible
+          message={t('unplan.confirm')}
+          detail={
+            leftoverCountFor(unplanning.id) > 0
+              ? t('unplan.confirmWithLeftovers', { count: leftoverCountFor(unplanning.id) })
+              : undefined
+          }
+          confirmLabel={t('unplan.confirmYes')}
+          cancelLabel={t('unplan.confirmNo')}
+          onConfirm={() => {
+            unplan(unplanning.id)
+            setUnplanning(undefined)
+          }}
+          onCancel={() => {
+            setUnplanning(undefined)
           }}
         />
       )}

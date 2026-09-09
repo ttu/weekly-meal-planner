@@ -191,6 +191,7 @@ const seedWeek = async (householdId: string, userId: (email: string) => string):
         date: weekStart,
         slot_key: 'lunch',
         servings_cooked: 2,
+        added_by: userId('mikko@example.test'),
       },
       {
         week_plan_id: weekPlanId,
@@ -198,6 +199,7 @@ const seedWeek = async (householdId: string, userId: (email: string) => string):
         date: weekStart,
         slot_key: 'dinner',
         servings_cooked: 6,
+        added_by: userId('aino@example.test'),
       },
       {
         week_plan_id: weekPlanId,
@@ -205,6 +207,7 @@ const seedWeek = async (householdId: string, userId: (email: string) => string):
         date: addDays(weekStart, 1),
         slot_key: 'dinner',
         servings_cooked: 3,
+        added_by: userId('aino@example.test'),
       },
       {
         week_plan_id: weekPlanId,
@@ -212,6 +215,7 @@ const seedWeek = async (householdId: string, userId: (email: string) => string):
         date: addDays(weekStart, 1),
         slot_key: 'dinner',
         servings_cooked: 2,
+        added_by: userId('sanni@example.test'),
       },
     ])
     .select('id,meal_id')

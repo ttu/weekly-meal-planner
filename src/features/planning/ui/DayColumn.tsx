@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { LeftoverCard, MealCard } from '@/features/meals'
-import type { BoardCard } from '../domain/types'
+import type { BoardCard, CookEventId } from '../domain/types'
 import type { BoardDay } from '../domain/board'
 
 const styles = StyleSheet.create({
@@ -19,29 +19,76 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.space.sm,
   },
   emptyText: { ...tokens.type.body, color: tokens.color.textMuted },
+  actions: {
+    flexDirection: 'row',
+    gap: tokens.space.md,
+    paddingHorizontal: tokens.space.md,
+    paddingBottom: tokens.space.sm,
+  },
+  action: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
 })
 
-const Card = ({ card }: { readonly card: BoardCard }): React.JSX.Element =>
-  card.kind === 'cook-event' ? (
-    <MealCard
-      variant="planned"
-      servingsCooked={card.cookEvent.servingsCooked}
-      meal={{
-        id: card.cookEvent.mealId,
-        name: card.cookEvent.mealName,
-        servings: card.cookEvent.servingsCooked,
-      }}
-    />
-  ) : (
-    <LeftoverCard parentMealName={card.leftover.parentMealName} />
+type CardProps = {
+  readonly card: BoardCard
+  // Explicitly `| undefined`: exactOptionalPropertyTypes distinguishes an
+  // absent prop from one passed as undefined, and DayColumn forwards both.
+  readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
+}
+
+const Card = ({ card, onAddLeftover, onUnplan }: CardProps): React.JSX.Element => {
+  const { t } = useTranslation()
+
+  if (card.kind === 'leftover') {
+    return <LeftoverCard parentMealName={card.leftover.parentMealName} />
+  }
+
+  const { cookEvent } = card
+
+  return (
+    <View>
+      <MealCard
+        variant="planned"
+        servingsCooked={cookEvent.servingsCooked}
+        meal={{
+          id: cookEvent.mealId,
+          name: cookEvent.mealName,
+          servings: cookEvent.servingsCooked,
+        }}
+      />
+      <View style={styles.actions}>
+        <Pressable
+          onPress={() => onAddLeftover?.(cookEvent.id)}
+          accessibilityRole="button"
+          accessibilityLabel={t('leftover.add')}
+          testID={`add-leftover-${cookEvent.id}`}
+        >
+          <Text style={styles.action}>{t('leftover.add')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => onUnplan?.(cookEvent.id)}
+          accessibilityRole="button"
+          accessibilityLabel={t('unplan.action')}
+          testID={`unplan-${cookEvent.id}`}
+        >
+          <Text style={styles.action}>{t('unplan.action')}</Text>
+        </Pressable>
+      </View>
+    </View>
   )
+}
 
 const cardKey = (card: BoardCard): string =>
   card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id
 
-type Props = { readonly day: BoardDay; readonly isToday: boolean }
+type Props = {
+  readonly day: BoardDay
+  readonly isToday: boolean
+  readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
+}
 
-export const DayColumn = ({ day, isToday }: Props): React.JSX.Element => {
+export const DayColumn = ({ day, isToday, onAddLeftover, onUnplan }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
   return (
@@ -65,7 +112,14 @@ export const DayColumn = ({ day, isToday }: Props): React.JSX.Element => {
               <Text style={styles.emptyText}>{t('board.addMeal')}</Text>
             </View>
           ) : (
-            slot.cards.map((card) => <Card key={cardKey(card)} card={card} />)
+            slot.cards.map((card) => (
+              <Card
+                key={cardKey(card)}
+                card={card}
+                onAddLeftover={onAddLeftover}
+                onUnplan={onUnplan}
+              />
+            ))
           )}
         </View>
       ))}

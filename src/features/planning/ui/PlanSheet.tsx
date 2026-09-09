@@ -88,6 +88,14 @@ type Props = {
   readonly mealName: string
   readonly addedByName?: string
   readonly defaultServings: Servings
+  /**
+   * Leftovers reuse the same day and Slot choice, without servings — a Leftover
+   * borrows its servings from its Cook Event (ADR 0004). One component rather
+   * than two near-identical choosers.
+   */
+  readonly forLeftover?: boolean
+  readonly parentSlotKey?: SlotKey
+  readonly parentDate?: string
   readonly board: readonly BoardDay[]
   readonly slots: readonly Slot[]
   readonly today: string
@@ -105,6 +113,9 @@ export const PlanSheet = ({
   mealName,
   addedByName,
   defaultServings,
+  forLeftover = false,
+  parentSlotKey,
+  parentDate,
   board,
   slots,
   today,
@@ -136,7 +147,11 @@ export const PlanSheet = ({
         testID="plan-sheet"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{t('plan.title', { meal: mealName })}</Text>
+          <Text style={styles.title}>
+            {forLeftover
+              ? t('leftover.title', { meal: mealName })
+              : t('plan.title', { meal: mealName })}
+          </Text>
           <Pressable
             onPress={onDismiss}
             accessibilityRole="button"
@@ -147,7 +162,7 @@ export const PlanSheet = ({
           </Pressable>
         </View>
 
-        {addedByName !== undefined && (
+        {!forLeftover && addedByName !== undefined && (
           <Text style={styles.addedBy}>
             {t('plan.addedBy', { name: addedByName, servings: defaultServings })}
           </Text>
@@ -195,34 +210,44 @@ export const PlanSheet = ({
           ))}
         </View>
 
-        <Text style={styles.label}>{t('plan.cookingFor')}</Text>
-        <View style={styles.stepperRow}>
-          <Pressable
-            style={styles.chip}
-            onPress={() => {
-              setServings((n) => Math.max(1, n - 1))
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('plan.cookingFor')}
-            testID="plan-servings-down"
-          >
-            <Text style={styles.chipText}>−</Text>
-          </Pressable>
-          <Text style={styles.stepperValue} testID="plan-servings">
-            {String(servings)}
+        {!forLeftover && <Text style={styles.label}>{t('plan.cookingFor')}</Text>}
+        {!forLeftover && (
+          <View style={styles.stepperRow}>
+            <Pressable
+              style={styles.chip}
+              onPress={() => {
+                setServings((n) => Math.max(1, n - 1))
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('plan.cookingFor')}
+              testID="plan-servings-down"
+            >
+              <Text style={styles.chipText}>−</Text>
+            </Pressable>
+            <Text style={styles.stepperValue} testID="plan-servings">
+              {String(servings)}
+            </Text>
+            <Pressable
+              style={styles.chip}
+              onPress={() => {
+                setServings((n) => Math.min(50, n + 1))
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('plan.cookingFor')}
+              testID="plan-servings-up"
+            >
+              <Text style={styles.chipText}>+</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Placing a Leftover on its parent's own sitting is pointless but not
+            forbidden: warn, never refuse. */}
+        {forLeftover && date === parentDate && slotKey === parentSlotKey && (
+          <Text style={styles.notice} testID="leftover-same-slot">
+            {t('leftover.sameSlot')}
           </Text>
-          <Pressable
-            style={styles.chip}
-            onPress={() => {
-              setServings((n) => Math.min(50, n + 1))
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('plan.cookingFor')}
-            testID="plan-servings-up"
-          >
-            <Text style={styles.chipText}>+</Text>
-          </Pressable>
-        </View>
+        )}
 
         {/* The app never refuses an edit; it says what will happen instead. */}
         {placement.willJoinExisting && (

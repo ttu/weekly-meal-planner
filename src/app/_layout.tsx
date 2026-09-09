@@ -12,6 +12,7 @@ import {
   createSupabaseClient,
   loadHousehold,
   SessionProvider,
+  NoHouseholdScreen,
   SignInScreen,
   useAuthSession,
   type Household,
@@ -24,13 +25,16 @@ export default function RootLayout(): React.JSX.Element {
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
   const { userId, isLoading } = useAuthSession(client)
   const [household, setHousehold] = useState<Household | undefined>(undefined)
+  const [householdChecked, setHouseholdChecked] = useState(false)
 
   useEffect(() => {
     if (userId === undefined) {
       setHousehold(undefined)
+      setHouseholdChecked(false)
       return
     }
     void loadHousehold(client).then(async (result) => {
+      setHouseholdChecked(true)
       if (!isOk(result)) return
       setHousehold(result.value)
       // The Household's Locale overrides the device guess (ADR 0009).
@@ -49,6 +53,8 @@ export default function RootLayout(): React.JSX.Element {
             />
           ) : userId === undefined ? (
             <SignInScreen client={client} />
+          ) : householdChecked && household === undefined ? (
+            <NoHouseholdScreen client={client} />
           ) : (
             <Stack screenOptions={{ headerShown: false }} />
           )}

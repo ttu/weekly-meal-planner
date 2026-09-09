@@ -13,7 +13,12 @@
     "cookingCount": "Valmistetaan {{count}}"
   },
   "leftover": {
-    "suffix": "{{meal}} — tähteet"
+    "suffix": "{{meal}} — tähteet",
+    "add": "Lisää tähteet",
+    "title": "Tähteet ateriasta {{meal}}",
+    "sameSlot": "Se on sama ateriahetki kuin ruoka itse.",
+    "submit": "Lisää {{day}}",
+    "failed": "Tähteiden lisääminen epäonnistui. Yritä uudelleen."
   },
   "auth": {
     "title": "Kirjaudu sisään",
@@ -59,5 +64,19 @@
     "5": "Pe",
     "6": "La",
     "7": "Su"
+  },
+  "unplan": {
+    "action": "Poista suunnitelmasta",
+    "confirm": "Palautetaanko ateria toivelistalle?",
+    "confirmWithLeftovers_one": "Tämä poistaa myös {{count}} tähdekortin.",
+    "confirmWithLeftovers_other": "Tämä poistaa myös {{count}} tähdekorttia.",
+    "confirmYes": "Poista",
+    "confirmNo": "Säilytä",
+    "failed": "Poistaminen epäonnistui. Yritä uudelleen.",
+    "removeBacklog": "Poistetaanko toivelistalta?"
+  },
+  "noHousehold": {
+    "title": "Ei taloutta",
+    "body": "Tämä tili ei kuulu mihinkään talouteen. Kirjaudu ulos ja takaisin sisään, tai pyydä kutsu."
   }
 }
