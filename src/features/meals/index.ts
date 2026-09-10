@@ -5,7 +5,7 @@ export type {
   IngredientSlug,
   Servings,
   Quantity,
-  HouseholdRef,
+  HouseholdId,
 } from './domain/types'
 export { isCatalogueMeal } from './domain/types'
 export { MealCard, type MealCardVariant } from './ui/MealCard'
@@ -28,7 +28,7 @@ export { IngredientPicker } from './ui/IngredientPicker'
 export { IngredientRow } from './ui/IngredientRow'
 export { useIngredients } from './ui/useIngredients'
 export { loadIngredients, type LoadIngredientsError } from './infrastructure/ingredient-repository'
-export { unitsFor, dimensionOf, parseQuantity } from './domain/units'
+export { unitsFor, dimensionOf, parseQuantity } from '@/shared/units'
 export type { Ingredient, Dimension } from './domain/types'
 export { loadMeal, type MealDetail, type LoadMealError } from './infrastructure/meal-repository'
 export { copyCatalogueMeal, type CopyCatalogueMealError } from './application/copy-catalogue-meal'

@@ -1,26 +1,25 @@
-import type { Brand } from '@/shared/types/brand'
+import type {
+  HouseholdId,
+  IngredientId,
+  IngredientSlug,
+  MealId,
+  Servings,
+} from '@/shared/types/ids'
+import type { Dimension } from '@/shared/units'
 
-export type HouseholdRef = Brand<string, 'HouseholdId'>
-export type MealId = Brand<string, 'MealId'>
-export type IngredientId = Brand<string, 'IngredientId'>
-export type IngredientSlug = Brand<string, 'IngredientSlug'>
-
-/**
- * Servings and Quantity are branded for the same reason ids are:
- * `scale(quantity, servings)` taking two bare numbers is the bug that puts four
- * kilos of onions on a Shopping List.
- */
-export type Servings = Brand<number, 'Servings'>
-export type Quantity = Brand<number, 'Quantity'>
-
-/** Mass, volume or count. Quantities convert only within one, which is what
- *  makes the Shopping List's aggregation honest. Declared here rather than in
- *  units.ts so the two modules do not form a cycle. */
-export type Dimension = 'mass' | 'volume' | 'count'
+export type {
+  HouseholdId,
+  IngredientId,
+  IngredientSlug,
+  MealId,
+  Quantity,
+  Servings,
+} from '@/shared/types/ids'
+export type { Dimension } from '@/shared/units'
 
 export type Meal = {
   readonly id: MealId
-  readonly householdId?: HouseholdRef
+  readonly householdId?: HouseholdId
   readonly name: string
   readonly servings: Servings
   readonly photoUrl?: string

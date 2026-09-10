@@ -1,11 +1,15 @@
-import { ok, err, type Result } from '@/shared/types/result'
-import { brand } from '@/shared/types/brand'
-import type { Dimension, Quantity } from './types'
+import { ok, err, type Result } from '../types/result'
+import { brand } from '../types/brand'
+import type { Quantity } from '../types/ids'
+
+/** Mass, volume or count. Quantities convert only within one, which is what
+ *  makes the Shopping List's aggregation honest. */
+export type Dimension = 'mass' | 'volume' | 'count'
 
 /**
- * A unit belongs to exactly one dimension. The Shopping List's conversion in
- * plan 04 depends on that: 200 g + 0.5 kg sums, 200 g + 2 tbsp does not, and a
- * unit appearing in two dimensions would make the distinction meaningless.
+ * A unit belongs to exactly one dimension. The Shopping List's conversion
+ * depends on that: 200 g + 0.5 kg sums, 200 g + 2 tbsp does not, and a unit
+ * appearing in two dimensions would make the distinction meaningless.
  */
 const UNITS = {
   mass: ['g', 'kg'],

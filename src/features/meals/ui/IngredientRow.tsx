@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
-import { unitsFor } from '../domain/units'
+import { unitsFor } from '@/shared/units'
 import type { Ingredient } from '../domain/types'
 
 const styles = StyleSheet.create({

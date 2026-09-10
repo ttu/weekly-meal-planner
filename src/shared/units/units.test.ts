@@ -1,5 +1,5 @@
-import { unitsFor, dimensionOf, parseQuantity } from './units'
-import { isOk, isErr } from '@/shared/types/result'
+import { unitsFor, dimensionOf, parseQuantity } from './index'
+import { isOk, isErr } from '../types/result'
 
 describe('unitsFor', () => {
   it('lists mass units', () => {

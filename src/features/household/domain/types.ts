@@ -1,9 +1,7 @@
-import type { Brand } from '@/shared/types/brand'
 import type { Locale } from '@/shared/i18n'
+import type { HouseholdId, MemberId, SlotKey } from '@/shared/types/ids'
 
-export type HouseholdId = Brand<string, 'HouseholdId'>
-export type MemberId = Brand<string, 'MemberId'>
-export type SlotKey = Brand<string, 'SlotKey'>
+export type { HouseholdId, MemberId, SlotKey } from '@/shared/types/ids'
 
 /** `labelKey` is a translation key, never display text: storing "Lounas" would
  *  make the board monolingual (ADR 0009). */

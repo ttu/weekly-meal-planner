@@ -5,7 +5,7 @@ import { fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
 import { initI18n, setLocale } from '@/shared/i18n'
 import { MealPicker } from './MealPicker'
-import type { HouseholdRef, Meal, MealId, Servings } from '../domain/types'
+import type { HouseholdId, Meal, MealId, Servings } from '../domain/types'
 
 beforeAll(async () => {
   initI18n('en')
@@ -14,7 +14,7 @@ beforeAll(async () => {
 
 const own = (id: string, name: string): Meal => ({
   id: id as MealId,
-  householdId: 'h1' as HouseholdRef,
+  householdId: 'h1' as HouseholdId,
   name,
   servings: 4 as Servings,
   ingredientCount: 0,

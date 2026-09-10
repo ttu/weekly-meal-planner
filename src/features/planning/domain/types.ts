@@ -1,12 +1,19 @@
-import type { Brand } from '@/shared/types/brand'
-import type { SlotKey } from '@/features/household'
-import type { MealId, Servings } from '@/features/meals'
+import type {
+  BacklogItemId,
+  CookEventId,
+  LeftoverId,
+  MealId,
+  Servings,
+  SlotKey,
+} from '@/shared/types/ids'
 
-export type WeekStart = Brand<string, 'WeekStart'>
-export type WeekPlanId = Brand<string, 'WeekPlanId'>
-export type CookEventId = Brand<string, 'CookEventId'>
-export type LeftoverId = Brand<string, 'LeftoverId'>
-export type BacklogItemId = Brand<string, 'BacklogItemId'>
+export type {
+  BacklogItemId,
+  CookEventId,
+  LeftoverId,
+  WeekPlanId,
+  WeekStart,
+} from '@/shared/types/ids'
 
 /** The only thing that contributes Ingredients to a Shopping List. */
 export type CookEvent = {
