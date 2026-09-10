@@ -112,5 +112,25 @@
     "heading": "Ingredients",
     "search": "Search Ingredients",
     "noResults": "No Ingredients match that."
+  },
+  "shopping": {
+    "title": "Shopping",
+    "buy": "Buy",
+    "cupboard": "Check the cupboard",
+    "extras": "Extras",
+    "outOf": "We're out",
+    "addExtra": "Add an item",
+    "extraPlaceholder": "Something else",
+    "empty": "Nothing to buy yet — plan some Meals first.",
+    "incomplete": "{{meal}} — no Ingredients yet",
+    "summary_one": "{{count}} to buy",
+    "summary_other": "{{count}} to buy",
+    "why": "Why?",
+    "overridden": "Amount set by you",
+    "promoted": "Moved from the cupboard",
+    "copyPrompt": "Copy as agent prompt",
+    "copied": "Copied",
+    "share": "Share",
+    "promptIntro": "Order groceries for the week:"
   }
 }

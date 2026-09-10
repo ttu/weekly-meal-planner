@@ -112,5 +112,25 @@
     "heading": "Raaka-aineet",
     "search": "Hae raaka-aineita",
     "noResults": "Yksikään raaka-aine ei vastaa hakua."
+  },
+  "shopping": {
+    "title": "Ostokset",
+    "buy": "Ostettavat",
+    "cupboard": "Tarkista kaapista",
+    "extras": "Muut",
+    "outOf": "Loppu",
+    "addExtra": "Lisää tuote",
+    "extraPlaceholder": "Jotain muuta",
+    "empty": "Ei vielä ostettavaa — suunnittele ensin aterioita.",
+    "incomplete": "{{meal}} — ei vielä raaka-aineita",
+    "summary_one": "{{count}} ostettava",
+    "summary_other": "{{count}} ostettavaa",
+    "why": "Miksi?",
+    "overridden": "Määrä asettamasi",
+    "promoted": "Siirretty kaapista",
+    "copyPrompt": "Kopioi agentin kehotteeksi",
+    "copied": "Kopioitu",
+    "share": "Jaa",
+    "promptIntro": "Tilaa viikon ruokaostokset:"
   }
 }

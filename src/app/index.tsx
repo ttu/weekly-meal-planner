@@ -7,6 +7,9 @@ export default function Index(): React.JSX.Element {
       onOpenLibrary={() => {
         router.push('/meals')
       }}
+      onOpenShopping={() => {
+        router.push('/shopping')
+      }}
     />
   )
 }

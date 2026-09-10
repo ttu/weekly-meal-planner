@@ -241,7 +241,25 @@ const seedWeek = async (householdId: string, userId: (email: string) => string):
   ])
   if (backlogError !== null) fail('Backlog Items', backlogError.message)
 
-  process.stdout.write(`Seeded Week Plan for ${weekStart} with 2 Backlog Items\n`)
+  // Staples so the Cupboard Check has something to show. Cumin is the classic
+  // case: used by a Meal this week, but nobody buys it weekly.
+  const { data: stapleIngredients } = await admin
+    .from('ingredient')
+    .select('id,slug')
+    .in('slug', ['ground-cumin', 'potato'])
+
+  if (stapleIngredients !== null) {
+    const { error: stapleError } = await admin.from('household_staple').insert(
+      stapleIngredients.map((i) => ({
+        household_id: householdId,
+        ingredient_id: i.id,
+        running_low: false,
+      })),
+    )
+    if (stapleError !== null) fail('Staples', stapleError.message)
+  }
+
+  process.stdout.write(`Seeded Week Plan for ${weekStart} with 2 Backlog Items and 2 Staples\n`)
 }
 
 const seed = async (): Promise<void> => {

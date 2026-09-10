@@ -33,9 +33,17 @@ const styles = StyleSheet.create({
   title: { ...tokens.type.display, color: tokens.color.textPrimary, marginBottom: tokens.space.md },
 })
 
-type Props = { readonly clock?: Clock; readonly onOpenLibrary?: (() => void) | undefined }
+type Props = {
+  readonly clock?: Clock
+  readonly onOpenLibrary?: (() => void) | undefined
+  readonly onOpenShopping?: (() => void) | undefined
+}
 
-export const BoardScreen = ({ clock = systemClock, onOpenLibrary }: Props): React.JSX.Element => {
+export const BoardScreen = ({
+  clock = systemClock,
+  onOpenLibrary,
+  onOpenShopping,
+}: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const session = useSession()
@@ -76,6 +84,14 @@ export const BoardScreen = ({ clock = systemClock, onOpenLibrary }: Props): Reac
         <View style={styles.headerRow}>
           <Text style={styles.household}>{householdName}</Text>
           <View style={styles.headerActions}>
+            <Pressable
+              onPress={onOpenShopping}
+              accessibilityRole="button"
+              accessibilityLabel={t('shopping.title')}
+              testID="open-shopping"
+            >
+              <Text style={styles.signOut}>{t('shopping.title')}</Text>
+            </Pressable>
             <Pressable
               onPress={onOpenLibrary}
               accessibilityRole="button"

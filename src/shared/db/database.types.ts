@@ -186,6 +186,42 @@ export type Database = {
           },
         ]
       }
+      household_staple: {
+        Row: {
+          household_id: string
+          ingredient_id: string
+          marked_low_at: string | null
+          running_low: boolean
+        }
+        Insert: {
+          household_id: string
+          ingredient_id: string
+          marked_low_at?: string | null
+          running_low?: boolean
+        }
+        Update: {
+          household_id?: string
+          ingredient_id?: string
+          marked_low_at?: string | null
+          running_low?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_staple_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "household"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "household_staple_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredient"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredient: {
         Row: {
           base_unit: string
@@ -362,6 +398,110 @@ export type Database = {
             columns: ["meal_id"]
             isOneToOne: false
             referencedRelation: "meal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_check: {
+        Row: {
+          checked_at: string
+          ingredient_id: string
+          week_plan_id: string
+        }
+        Insert: {
+          checked_at?: string
+          ingredient_id: string
+          week_plan_id: string
+        }
+        Update: {
+          checked_at?: string
+          ingredient_id?: string
+          week_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_check_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredient"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopping_check_week_plan_id_fkey"
+            columns: ["week_plan_id"]
+            isOneToOne: false
+            referencedRelation: "week_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_extra: {
+        Row: {
+          checked_at: string | null
+          created_at: string
+          id: string
+          label: string
+          week_plan_id: string
+        }
+        Insert: {
+          checked_at?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          week_plan_id: string
+        }
+        Update: {
+          checked_at?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          week_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_extra_week_plan_id_fkey"
+            columns: ["week_plan_id"]
+            isOneToOne: false
+            referencedRelation: "week_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_override: {
+        Row: {
+          ingredient_id: string
+          quantity: number
+          reason: string | null
+          unit: string
+          week_plan_id: string
+        }
+        Insert: {
+          ingredient_id: string
+          quantity: number
+          reason?: string | null
+          unit: string
+          week_plan_id: string
+        }
+        Update: {
+          ingredient_id?: string
+          quantity?: number
+          reason?: string | null
+          unit?: string
+          week_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_override_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredient"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopping_override_week_plan_id_fkey"
+            columns: ["week_plan_id"]
+            isOneToOne: false
+            referencedRelation: "week_plan"
             referencedColumns: ["id"]
           },
         ]
