@@ -24,3 +24,9 @@ export {
   type MealIngredientDraft,
   type MealDraftError,
 } from './domain/meal-draft'
+export { IngredientPicker } from './ui/IngredientPicker'
+export { IngredientRow } from './ui/IngredientRow'
+export { useIngredients } from './ui/useIngredients'
+export { loadIngredients, type LoadIngredientsError } from './infrastructure/ingredient-repository'
+export { unitsFor, dimensionOf, parseQuantity } from './domain/units'
+export type { Ingredient, Dimension } from './domain/types'

@@ -92,5 +92,17 @@
     "add": "Add a Meal",
     "ingredientCount_one": "{{count}} Ingredient",
     "ingredientCount_other": "{{count}} Ingredients"
+  },
+  "ingredient": {
+    "add": "Add an Ingredient",
+    "pick": "Choose an Ingredient",
+    "quantity": "Amount",
+    "unit": "Unit",
+    "remove": "Remove",
+    "none": "No Ingredients yet — add the first one.",
+    "badQuantity": "Give an amount above zero.",
+    "heading": "Ingredients",
+    "search": "Search Ingredients",
+    "noResults": "No Ingredients match that."
   }
 }

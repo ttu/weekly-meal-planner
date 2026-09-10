@@ -92,5 +92,17 @@
     "add": "Lisää ateria",
     "ingredientCount_one": "{{count}} raaka-aine",
     "ingredientCount_other": "{{count}} raaka-ainetta"
+  },
+  "ingredient": {
+    "add": "Lisää raaka-aine",
+    "pick": "Valitse raaka-aine",
+    "quantity": "Määrä",
+    "unit": "Yksikkö",
+    "remove": "Poista",
+    "none": "Ei vielä raaka-aineita — lisää ensimmäinen.",
+    "badQuantity": "Anna määrä, joka on suurempi kuin nolla.",
+    "heading": "Raaka-aineet",
+    "search": "Hae raaka-aineita",
+    "noResults": "Yksikään raaka-aine ei vastaa hakua."
   }
 }

@@ -5,6 +5,11 @@ import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
 import { formStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
+import { isOk } from '@/shared/types/result'
+import { parseQuantity } from '../domain/units'
+import { IngredientPicker } from './IngredientPicker'
+import { IngredientRow } from './IngredientRow'
+import type { Ingredient, IngredientId } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
 import type { SaveMealError } from '../application/save-meal'
 
@@ -42,13 +47,25 @@ const styles = StyleSheet.create({
     marginBottom: tokens.space.lg,
   },
   saveText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
+  noIngredients: { paddingVertical: tokens.space.sm },
+  addIngredient: { minHeight: 54, justifyContent: 'center', marginBottom: tokens.space.lg },
 })
 
 const errorKey = (error: SaveMealError): string =>
   error === 'name-required' ? 'meal.nameRequired' : 'meal.saveFailed'
 
+/** The editor keeps quantities as text while typing: "0," is a legitimate
+ *  intermediate state on a Finnish keyboard, and reformatting mid-keystroke is
+ *  what makes a form feel hostile. */
+type IngredientEntry = {
+  readonly ingredientId: IngredientId
+  readonly quantityText: string
+  readonly unit: string
+}
+
 type Props = {
   readonly initial?: MealDraft | undefined
+  readonly ingredients: readonly Ingredient[]
   readonly isPending: boolean
   readonly error?: SaveMealError | undefined
   readonly onSave: (draft: MealDraft) => void
@@ -57,6 +74,7 @@ type Props = {
 
 export const MealEditorScreen = ({
   initial,
+  ingredients,
   isPending,
   error,
   onSave,
@@ -66,6 +84,23 @@ export const MealEditorScreen = ({
   const insets = useSafeAreaInsets()
   const [name, setName] = useState(initial?.name ?? '')
   const [servings, setServings] = useState<number>(initial?.servings ?? 4)
+  const [entries, setEntries] = useState<readonly IngredientEntry[]>(
+    initial?.ingredients.map((i) => ({
+      ingredientId: i.ingredientId,
+      quantityText: String(i.quantity),
+      unit: i.unit,
+    })) ?? [],
+  )
+  const [isPickerOpen, setPickerOpen] = useState(false)
+
+  const byId = new Map(ingredients.map((i) => [i.id, i]))
+  const unpicked = ingredients.filter((i) => !entries.some((e) => e.ingredientId === i.id))
+
+  const updateEntry = (id: IngredientId, patch: Partial<IngredientEntry>): void => {
+    setEntries((current) =>
+      current.map((entry) => (entry.ingredientId === id ? { ...entry, ...patch } : entry)),
+    )
+  }
 
   return (
     <ScrollView
@@ -123,6 +158,67 @@ export const MealEditorScreen = ({
         </Pressable>
       </View>
 
+      <Text style={formStyles.label}>{t('ingredient.heading')}</Text>
+
+      {entries.length === 0 ? (
+        <Text style={[formStyles.muted, styles.noIngredients]} testID="editor-no-ingredients">
+          {t('ingredient.none')}
+        </Text>
+      ) : (
+        entries.map((entry) => {
+          const ingredient = byId.get(entry.ingredientId)
+          if (ingredient === undefined) return null
+          return (
+            <IngredientRow
+              key={entry.ingredientId}
+              ingredient={ingredient}
+              quantityText={entry.quantityText}
+              unit={entry.unit}
+              isQuantityValid={isOk(parseQuantity(entry.quantityText))}
+              onQuantityChange={(quantityText) => {
+                updateEntry(entry.ingredientId, { quantityText })
+              }}
+              onUnitChange={(unit) => {
+                updateEntry(entry.ingredientId, { unit })
+              }}
+              onRemove={() => {
+                setEntries((current) =>
+                  current.filter((e) => e.ingredientId !== entry.ingredientId),
+                )
+              }}
+            />
+          )
+        })
+      )}
+
+      <Pressable
+        style={styles.addIngredient}
+        onPress={() => {
+          setPickerOpen(true)
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('ingredient.add')}
+        testID="editor-add-ingredient"
+      >
+        <Text style={formStyles.quietAction}>{t('ingredient.add')}</Text>
+      </Pressable>
+
+      <IngredientPicker
+        visible={isPickerOpen}
+        ingredients={unpicked}
+        onSelect={(ingredientId) => {
+          const ingredient = byId.get(ingredientId)
+          setEntries((current) => [
+            ...current,
+            { ingredientId, quantityText: '1', unit: ingredient?.baseUnit ?? 'g' },
+          ])
+          setPickerOpen(false)
+        }}
+        onDismiss={() => {
+          setPickerOpen(false)
+        }}
+      />
+
       {error !== undefined && (
         <Text style={formStyles.error} testID="editor-error">
           {t(errorKey(error))}
@@ -136,7 +232,22 @@ export const MealEditorScreen = ({
           onSave({
             name,
             servings: brand<number, 'Servings'>(servings),
-            ingredients: initial?.ingredients ?? [],
+            // Rows with an unusable amount are dropped rather than blocking the
+            // save; the row already shows why, and losing a whole edit to one
+            // stray keystroke is worse.
+            ingredients: entries.flatMap((entry) => {
+              const quantity = parseQuantity(entry.quantityText)
+              return isOk(quantity)
+                ? [
+                    {
+                      ingredientId: entry.ingredientId,
+                      quantity: quantity.value,
+                      unit: entry.unit,
+                      optional: false,
+                    },
+                  ]
+                : []
+            }),
           })
         }}
         accessibilityRole="button"
