@@ -25,7 +25,8 @@
     "db:seed": "tsx --env-file=.env scripts/seed-demo.ts",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/shared/db/database.types.ts",
-    "test:e2e": "maestro test .maestro"
+    "test:e2e": "maestro test .maestro",
+    "catalogue:sync": "tsx --env-file=.env scripts/catalogue-sync.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",

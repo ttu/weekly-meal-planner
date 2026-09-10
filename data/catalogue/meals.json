@@ -1,0 +1,1032 @@
+[
+  {
+    "names": {
+      "fi": "Chili con carne",
+      "en": "Chili con carne"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "onion",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "garlic",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "minced-beef",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "tinned-tomatoes",
+        "quantity": 2,
+        "unit": "tin"
+      },
+      {
+        "slug": "kidney-beans",
+        "quantity": 2,
+        "unit": "tin"
+      },
+      {
+        "slug": "ground-cumin",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "slug": "paprika-powder",
+        "quantity": 5,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Jauhelihakastike ja perunat",
+      "en": "Minced beef sauce with potatoes"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "minced-beef",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "milk",
+        "quantity": 400,
+        "unit": "ml"
+      },
+      {
+        "slug": "flour",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "slug": "potato",
+        "quantity": 1000,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Spagetti bolognese",
+      "en": "Spaghetti bolognese"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "minced-beef",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "carrot",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "tinned-tomatoes",
+        "quantity": 2,
+        "unit": "tin"
+      },
+      {
+        "slug": "pasta",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "garlic",
+        "quantity": 2,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Uunilohi ja perunamuusi",
+      "en": "Baked salmon with mashed potato"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "salmon-fillet",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "slug": "potato",
+        "quantity": 1000,
+        "unit": "g"
+      },
+      {
+        "slug": "milk",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "slug": "butter",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "slug": "dill",
+        "quantity": 1,
+        "unit": "bunch"
+      },
+      {
+        "slug": "lemon",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Lohikeitto",
+      "en": "Salmon soup"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "salmon-fillet",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "slug": "potato",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "slug": "carrot",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "leek",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "cream",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "slug": "dill",
+        "quantity": 1,
+        "unit": "bunch"
+      },
+      {
+        "slug": "stock-cube",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kanacurry",
+      "en": "Chicken curry"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "chicken-breast",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "slug": "curry-paste",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "slug": "coconut-milk",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "rice",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kasviscurry",
+      "en": "Vegetable curry"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "chickpeas",
+        "quantity": 2,
+        "unit": "tin"
+      },
+      {
+        "slug": "coconut-milk",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "curry-paste",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "slug": "spinach",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "rice",
+        "quantity": 300,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Tacot",
+      "en": "Tacos"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "minced-beef",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "tortilla",
+        "quantity": 1,
+        "unit": "pack"
+      },
+      {
+        "slug": "tomato",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "sour-cream",
+        "quantity": 200,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kasvistacot",
+      "en": "Vegetarian tacos"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "kidney-beans",
+        "quantity": 2,
+        "unit": "tin"
+      },
+      {
+        "slug": "tortilla",
+        "quantity": 1,
+        "unit": "pack"
+      },
+      {
+        "slug": "tomato",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 200,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Pizza",
+      "en": "Pizza"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "pizza-base",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "tomato-puree",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "bacon",
+        "quantity": 150,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kasvispizza",
+      "en": "Vegetable pizza"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "pizza-base",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "tomato-puree",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "mushroom",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Munakas",
+      "en": "Omelette"
+    },
+    "servings": 2,
+    "ingredients": [
+      {
+        "slug": "egg",
+        "quantity": 6,
+        "unit": "pcs"
+      },
+      {
+        "slug": "milk",
+        "quantity": 100,
+        "unit": "ml"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "slug": "butter",
+        "quantity": 20,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Munavoileivät",
+      "en": "Egg sandwiches"
+    },
+    "servings": 2,
+    "ingredients": [
+      {
+        "slug": "rye-bread",
+        "quantity": 4,
+        "unit": "pcs"
+      },
+      {
+        "slug": "egg",
+        "quantity": 4,
+        "unit": "pcs"
+      },
+      {
+        "slug": "butter",
+        "quantity": 30,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kaurapuuro",
+      "en": "Porridge"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "oats",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "milk",
+        "quantity": 800,
+        "unit": "ml"
+      },
+      {
+        "slug": "salt",
+        "quantity": 2,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Pannukakku",
+      "en": "Oven pancake"
+    },
+    "servings": 6,
+    "ingredients": [
+      {
+        "slug": "egg",
+        "quantity": 4,
+        "unit": "pcs"
+      },
+      {
+        "slug": "milk",
+        "quantity": 1000,
+        "unit": "ml"
+      },
+      {
+        "slug": "flour",
+        "quantity": 250,
+        "unit": "g"
+      },
+      {
+        "slug": "butter",
+        "quantity": 50,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Lihapullat ja perunat",
+      "en": "Meatballs with potatoes"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "minced-beef",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "slug": "egg",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "potato",
+        "quantity": 1000,
+        "unit": "g"
+      },
+      {
+        "slug": "cream",
+        "quantity": 200,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Broileripasta",
+      "en": "Chicken pasta"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "chicken-breast",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "slug": "pasta",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "cream",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "slug": "mushroom",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "garlic",
+        "quantity": 2,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Carbonara",
+      "en": "Carbonara"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "pasta",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "bacon",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "egg",
+        "quantity": 3,
+        "unit": "pcs"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 150,
+        "unit": "g"
+      },
+      {
+        "slug": "black-pepper",
+        "quantity": 5,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Nuudeliwokki",
+      "en": "Noodle stir-fry"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "noodles",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "pork-strips",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "carrot",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "soy-sauce",
+        "quantity": 50,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Tofuwokki",
+      "en": "Tofu stir-fry"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "noodles",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "tofu",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "carrot",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "soy-sauce",
+        "quantity": 50,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Linssikeitto",
+      "en": "Lentil soup"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "lentils",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "carrot",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "tinned-tomatoes",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "stock-cube",
+        "quantity": 2,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kaalilaatikko",
+      "en": "Cabbage casserole"
+    },
+    "servings": 6,
+    "ingredients": [
+      {
+        "slug": "cabbage",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "minced-beef",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "slug": "rice",
+        "quantity": 150,
+        "unit": "g"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Makkarakastike",
+      "en": "Sausage stew"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "sausage",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "milk",
+        "quantity": 400,
+        "unit": "ml"
+      },
+      {
+        "slug": "flour",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "slug": "potato",
+        "quantity": 800,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Uunikala ja peruna",
+      "en": "Baked white fish with potato"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "white-fish",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "slug": "potato",
+        "quantity": 1000,
+        "unit": "g"
+      },
+      {
+        "slug": "lemon",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "butter",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "slug": "dill",
+        "quantity": 1,
+        "unit": "bunch"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Tonnikalapasta",
+      "en": "Tuna pasta"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "tuna-tin",
+        "quantity": 2,
+        "unit": "tin"
+      },
+      {
+        "slug": "pasta",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "tinned-tomatoes",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "olive-oil",
+        "quantity": 30,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kreikkalainen salaatti",
+      "en": "Greek salad"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "tomato",
+        "quantity": 4,
+        "unit": "pcs"
+      },
+      {
+        "slug": "feta",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "olive-oil",
+        "quantity": 50,
+        "unit": "ml"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Shakshuka",
+      "en": "Shakshuka"
+    },
+    "servings": 2,
+    "ingredients": [
+      {
+        "slug": "egg",
+        "quantity": 4,
+        "unit": "pcs"
+      },
+      {
+        "slug": "tinned-tomatoes",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "ground-cumin",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "slug": "coriander",
+        "quantity": 1,
+        "unit": "bunch"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Kasvispata",
+      "en": "Vegetable stew"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "potato",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "slug": "carrot",
+        "quantity": 3,
+        "unit": "pcs"
+      },
+      {
+        "slug": "leek",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "tinned-tomatoes",
+        "quantity": 1,
+        "unit": "tin"
+      },
+      {
+        "slug": "stock-cube",
+        "quantity": 2,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Broileriwrapit",
+      "en": "Chicken wraps"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "chicken-breast",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "slug": "tortilla",
+        "quantity": 1,
+        "unit": "pack"
+      },
+      {
+        "slug": "yoghurt",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "slug": "tomato",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "bell-pepper",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ]
+  },
+  {
+    "names": {
+      "fi": "Sienirisotto",
+      "en": "Mushroom risotto"
+    },
+    "servings": 4,
+    "ingredients": [
+      {
+        "slug": "rice",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "slug": "mushroom",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "slug": "onion",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "slug": "grated-cheese",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "slug": "stock-cube",
+        "quantity": 2,
+        "unit": "pcs"
+      },
+      {
+        "slug": "butter",
+        "quantity": 40,
+        "unit": "g"
+      }
+    ]
+  }
+]

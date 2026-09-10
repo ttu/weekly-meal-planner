@@ -1,0 +1,366 @@
+[
+  {
+    "slug": "onion",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "sipuli", "en": "onion" }
+  },
+  {
+    "slug": "garlic",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "valkosipulinkynsi", "en": "garlic clove" }
+  },
+  {
+    "slug": "carrot",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "porkkana", "en": "carrot" }
+  },
+  {
+    "slug": "potato",
+    "category": "produce",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "peruna", "en": "potato" }
+  },
+  {
+    "slug": "tomato",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "tomaatti", "en": "tomato" }
+  },
+  {
+    "slug": "bell-pepper",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "paprika", "en": "bell pepper" }
+  },
+  {
+    "slug": "cabbage",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "kaali", "en": "cabbage" }
+  },
+  {
+    "slug": "leek",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "purjo", "en": "leek" }
+  },
+  {
+    "slug": "mushroom",
+    "category": "produce",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "herkkusieni", "en": "mushroom" }
+  },
+  {
+    "slug": "spinach",
+    "category": "produce",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "pinaatti", "en": "spinach" }
+  },
+  {
+    "slug": "minced-beef",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "jauheliha", "en": "minced beef" }
+  },
+  {
+    "slug": "chicken-breast",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "broilerin rintafile", "en": "chicken breast" }
+  },
+  {
+    "slug": "pork-strips",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "porsaan suikale", "en": "pork strips" }
+  },
+  {
+    "slug": "bacon",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "pekoni", "en": "bacon" }
+  },
+  {
+    "slug": "sausage",
+    "category": "meat",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "makkara", "en": "sausage" }
+  },
+  {
+    "slug": "salmon-fillet",
+    "category": "fish",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "lohifile", "en": "salmon fillet" }
+  },
+  {
+    "slug": "white-fish",
+    "category": "fish",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "valkoinen kala", "en": "white fish" }
+  },
+  {
+    "slug": "tuna-tin",
+    "category": "fish",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "tonnikalapurkki", "en": "tin of tuna" }
+  },
+  {
+    "slug": "milk",
+    "category": "dairy",
+    "dimension": "volume",
+    "baseUnit": "ml",
+    "names": { "fi": "maito", "en": "milk" }
+  },
+  {
+    "slug": "cream",
+    "category": "dairy",
+    "dimension": "volume",
+    "baseUnit": "ml",
+    "names": { "fi": "kerma", "en": "cream" }
+  },
+  {
+    "slug": "sour-cream",
+    "category": "dairy",
+    "dimension": "volume",
+    "baseUnit": "ml",
+    "names": { "fi": "kermaviili", "en": "sour cream" }
+  },
+  {
+    "slug": "butter",
+    "category": "dairy",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "voi", "en": "butter" }
+  },
+  {
+    "slug": "grated-cheese",
+    "category": "dairy",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "juustoraaste", "en": "grated cheese" }
+  },
+  {
+    "slug": "feta",
+    "category": "dairy",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "fetajuusto", "en": "feta" }
+  },
+  {
+    "slug": "egg",
+    "category": "dairy",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "kananmuna", "en": "egg" }
+  },
+  {
+    "slug": "yoghurt",
+    "category": "dairy",
+    "dimension": "volume",
+    "baseUnit": "ml",
+    "names": { "fi": "jogurtti", "en": "yoghurt" }
+  },
+  {
+    "slug": "tinned-tomatoes",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "tomaattimurska", "en": "tinned tomatoes" }
+  },
+  {
+    "slug": "kidney-beans",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "kidneypavut", "en": "kidney beans" }
+  },
+  {
+    "slug": "chickpeas",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "kikherneet", "en": "chickpeas" }
+  },
+  {
+    "slug": "lentils",
+    "category": "dry-goods",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "linssit", "en": "lentils" }
+  },
+  {
+    "slug": "rice",
+    "category": "dry-goods",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "riisi", "en": "rice" }
+  },
+  {
+    "slug": "pasta",
+    "category": "dry-goods",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "pasta", "en": "pasta" }
+  },
+  {
+    "slug": "noodles",
+    "category": "dry-goods",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "nuudelit", "en": "noodles" }
+  },
+  {
+    "slug": "flour",
+    "category": "dry-goods",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "vehnäjauho", "en": "flour" }
+  },
+  {
+    "slug": "oats",
+    "category": "dry-goods",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "kaurahiutale", "en": "oats" }
+  },
+  {
+    "slug": "rye-bread",
+    "category": "bakery",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "ruisleipä", "en": "rye bread" }
+  },
+  {
+    "slug": "tortilla",
+    "category": "bakery",
+    "dimension": "count",
+    "baseUnit": "pack",
+    "names": { "fi": "tortilla", "en": "tortilla" }
+  },
+  {
+    "slug": "pizza-base",
+    "category": "bakery",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "pizzapohja", "en": "pizza base" }
+  },
+  {
+    "slug": "tofu",
+    "category": "vegetarian",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "tofu", "en": "tofu" }
+  },
+  {
+    "slug": "coconut-milk",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "kookosmaito", "en": "coconut milk" }
+  },
+  {
+    "slug": "stock-cube",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "liemikuutio", "en": "stock cube" }
+  },
+  {
+    "slug": "tomato-puree",
+    "category": "dry-goods",
+    "dimension": "count",
+    "baseUnit": "tin",
+    "names": { "fi": "tomaattipyree", "en": "tomato purée" }
+  },
+  {
+    "slug": "olive-oil",
+    "category": "spices",
+    "dimension": "volume",
+    "baseUnit": "ml",
+    "names": { "fi": "oliiviöljy", "en": "olive oil" }
+  },
+  {
+    "slug": "salt",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "suola", "en": "salt" }
+  },
+  {
+    "slug": "black-pepper",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "mustapippuri", "en": "black pepper" }
+  },
+  {
+    "slug": "ground-cumin",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "juustokumina", "en": "ground cumin" }
+  },
+  {
+    "slug": "paprika-powder",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "paprikajauhe", "en": "paprika powder" }
+  },
+  {
+    "slug": "curry-paste",
+    "category": "spices",
+    "dimension": "mass",
+    "baseUnit": "g",
+    "names": { "fi": "currytahna", "en": "curry paste" }
+  },
+  {
+    "slug": "soy-sauce",
+    "category": "spices",
+    "dimension": "volume",
+    "baseUnit": "ml",
+    "names": { "fi": "soijakastike", "en": "soy sauce" }
+  },
+  {
+    "slug": "dill",
+    "category": "spices",
+    "dimension": "count",
+    "baseUnit": "bunch",
+    "names": { "fi": "tilli", "en": "dill" }
+  },
+  {
+    "slug": "coriander",
+    "category": "spices",
+    "dimension": "count",
+    "baseUnit": "bunch",
+    "names": { "fi": "korianteri", "en": "coriander" }
+  },
+  {
+    "slug": "lemon",
+    "category": "produce",
+    "dimension": "count",
+    "baseUnit": "pcs",
+    "names": { "fi": "sitruuna", "en": "lemon" }
+  }
+]

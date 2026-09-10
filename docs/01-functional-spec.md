@@ -378,10 +378,14 @@ None blocking.
 
 **Resolved by the visual design:** the public catalogue is sized at ~120
 everyday meals ("120 everyday meals, copy any of them"), each with Finnish and
-English names and descriptions. Writing that content is a real task — 120 meals
-with validated ingredient slugs, in two languages — and it must be scheduled as
-work, not assumed to appear. It is the single largest non-code deliverable in
-v1, and the app is not usable by a first household without it.
+English names.
+
+**Status: 30 Meals and 52 Ingredients written**, living as version-controlled
+reference data in `data/catalogue/` and synced by `pnpm run catalogue:sync`. The
+schema, the consistency check and the sync are done; the remaining ~90 Meals are
+content work, scheduled rather than assumed. A test asserts the shipped
+Catalogue is internally consistent and carries both Locales, so growing it
+cannot quietly break it.
 
 **Still open:**
 
