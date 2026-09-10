@@ -13,7 +13,7 @@ import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
 import { PlanSheet } from './PlanSheet'
-import { ConfirmSheet } from './ConfirmSheet'
+import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
 
 const styles = StyleSheet.create({

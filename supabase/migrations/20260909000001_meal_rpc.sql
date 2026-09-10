@@ -46,3 +46,38 @@ end;
 $fn$;
 
 grant execute on function public.save_meal(uuid, text, integer, jsonb, uuid) to authenticated;
+
+-- A Catalogue Meal is copied, never referenced (ADR 0005): the family's copy is
+-- theirs to edit, and a Catalogue edit must never change a planned week. The
+-- Meal row and its Ingredient rows have to arrive together, so this is an RPC.
+create or replace function public.copy_catalogue_meal(
+  p_household_id uuid,
+  p_source_meal_id uuid
+) returns uuid
+language plpgsql
+security invoker
+as $fn$
+declare
+  new_id uuid;
+begin
+  insert into meal (household_id, name, description, servings, source_url, photo_url,
+                    copied_from_meal_id)
+  select p_household_id, name, description, servings, source_url, photo_url, id
+  from meal
+  where id = p_source_meal_id and household_id is null
+  returning id into new_id;
+
+  if new_id is null then
+    raise exception 'Not a Catalogue Meal';
+  end if;
+
+  insert into meal_ingredient (meal_id, ingredient_id, quantity, unit, optional)
+  select new_id, ingredient_id, quantity, unit, optional
+  from meal_ingredient
+  where meal_id = p_source_meal_id;
+
+  return new_id;
+end;
+$fn$;
+
+grant execute on function public.copy_catalogue_meal(uuid, uuid) to authenticated;

@@ -91,7 +91,15 @@
     "emptyLibrary": "No Meals yet. Add the first one.",
     "add": "Add a Meal",
     "ingredientCount_one": "{{count}} Ingredient",
-    "ingredientCount_other": "{{count}} Ingredients"
+    "ingredientCount_other": "{{count}} Ingredients",
+    "delete": "Delete Meal",
+    "deleteConfirm": "Delete \"{{meal}}\"?",
+    "deletePlanned_one": "It is planned {{count}} time this week; that will go too.",
+    "deletePlanned_other": "It is planned {{count}} times this week; those will go too.",
+    "edit": "Edit Meal",
+    "copy": "Copy to your Meals",
+    "copied": "Copied to your Meals.",
+    "catalogueReadOnly": "Catalogue Meals cannot be edited. Copy it first."
   },
   "ingredient": {
     "add": "Add an Ingredient",

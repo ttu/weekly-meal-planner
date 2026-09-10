@@ -91,7 +91,15 @@
     "emptyLibrary": "Ei vielä aterioita. Lisää ensimmäinen.",
     "add": "Lisää ateria",
     "ingredientCount_one": "{{count}} raaka-aine",
-    "ingredientCount_other": "{{count}} raaka-ainetta"
+    "ingredientCount_other": "{{count}} raaka-ainetta",
+    "delete": "Poista ateria",
+    "deleteConfirm": "Poistetaanko \"{{meal}}\"?",
+    "deletePlanned_one": "Se on suunniteltu {{count}} kerran tällä viikolla, ja katoaa myös.",
+    "deletePlanned_other": "Se on suunniteltu {{count}} kertaa tällä viikolla, ja ne katoavat myös.",
+    "edit": "Muokkaa ateriaa",
+    "copy": "Kopioi omiin aterioihin",
+    "copied": "Kopioitu omiin aterioihin.",
+    "catalogueReadOnly": "Luettelon aterioita ei voi muokata. Kopioi se ensin."
   },
   "ingredient": {
     "add": "Lisää raaka-aine",

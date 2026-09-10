@@ -7,6 +7,7 @@ import { formStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { isOk } from '@/shared/types/result'
 import { parseQuantity } from '../domain/units'
+import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
 import { IngredientRow } from './IngredientRow'
 import type { Ingredient, IngredientId } from '../domain/types'
@@ -49,6 +50,12 @@ const styles = StyleSheet.create({
   saveText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
   noIngredients: { paddingVertical: tokens.space.sm },
   addIngredient: { minHeight: 54, justifyContent: 'center', marginBottom: tokens.space.lg },
+  delete: {
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: tokens.space.lg,
+  },
 })
 
 const errorKey = (error: SaveMealError): string =>
@@ -66,6 +73,12 @@ type IngredientEntry = {
 type Props = {
   readonly initial?: MealDraft | undefined
   readonly ingredients: readonly Ingredient[]
+  /** A Catalogue Meal is read-only through the client; the editor offers to
+   *  copy it instead (ADR 0005). */
+  readonly isReadOnly?: boolean | undefined
+  readonly plannedCount?: number | undefined
+  readonly onCopy?: (() => void) | undefined
+  readonly onDelete?: (() => void) | undefined
   readonly isPending: boolean
   readonly error?: SaveMealError | undefined
   readonly onSave: (draft: MealDraft) => void
@@ -77,6 +90,10 @@ export const MealEditorScreen = ({
   ingredients,
   isPending,
   error,
+  isReadOnly = false,
+  plannedCount = 0,
+  onCopy,
+  onDelete,
   onSave,
   onCancel,
 }: Props): React.JSX.Element => {
@@ -92,6 +109,7 @@ export const MealEditorScreen = ({
     })) ?? [],
   )
   const [isPickerOpen, setPickerOpen] = useState(false)
+  const [isConfirmingDelete, setConfirmingDelete] = useState(false)
 
   const byId = new Map(ingredients.map((i) => [i.id, i]))
   const unpicked = ingredients.filter((i) => !entries.some((e) => e.ingredientId === i.id))
@@ -109,7 +127,9 @@ export const MealEditorScreen = ({
       testID="meal-editor-screen"
     >
       <View style={formStyles.header}>
-        <Text style={formStyles.title}>{t('meal.new')}</Text>
+        <Text style={formStyles.title}>
+          {initial === undefined ? t('meal.new') : t('meal.edit')}
+        </Text>
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"
@@ -225,37 +245,85 @@ export const MealEditorScreen = ({
         </Text>
       )}
 
-      <Pressable
-        style={styles.save}
-        disabled={isPending}
-        onPress={() => {
-          onSave({
-            name,
-            servings: brand<number, 'Servings'>(servings),
-            // Rows with an unusable amount are dropped rather than blocking the
-            // save; the row already shows why, and losing a whole edit to one
-            // stray keystroke is worse.
-            ingredients: entries.flatMap((entry) => {
-              const quantity = parseQuantity(entry.quantityText)
-              return isOk(quantity)
-                ? [
-                    {
-                      ingredientId: entry.ingredientId,
-                      quantity: quantity.value,
-                      unit: entry.unit,
-                      optional: false,
-                    },
-                  ]
-                : []
-            }),
-          })
+      {isReadOnly && (
+        <>
+          <Text style={formStyles.muted} testID="editor-read-only">
+            {t('meal.catalogueReadOnly')}
+          </Text>
+          <Pressable
+            style={styles.save}
+            onPress={onCopy}
+            accessibilityRole="button"
+            accessibilityLabel={t('meal.copy')}
+            testID="editor-copy"
+          >
+            <Text style={styles.saveText}>{t('meal.copy')}</Text>
+          </Pressable>
+        </>
+      )}
+
+      {!isReadOnly && onDelete !== undefined && (
+        <Pressable
+          style={styles.delete}
+          onPress={() => {
+            setConfirmingDelete(true)
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('meal.delete')}
+          testID="editor-delete"
+        >
+          <Text style={formStyles.quietAction}>{t('meal.delete')}</Text>
+        </Pressable>
+      )}
+
+      <ConfirmSheet
+        visible={isConfirmingDelete}
+        message={t('meal.deleteConfirm', { meal: name })}
+        detail={plannedCount > 0 ? t('meal.deletePlanned', { count: plannedCount }) : undefined}
+        confirmLabel={t('meal.delete')}
+        cancelLabel={t('unplan.confirmNo')}
+        onConfirm={() => {
+          setConfirmingDelete(false)
+          onDelete?.()
         }}
-        accessibilityRole="button"
-        accessibilityLabel={t('meal.save')}
-        testID="editor-save"
-      >
-        <Text style={styles.saveText}>{t('meal.save')}</Text>
-      </Pressable>
+        onCancel={() => {
+          setConfirmingDelete(false)
+        }}
+      />
+
+      {!isReadOnly && (
+        <Pressable
+          style={styles.save}
+          disabled={isPending}
+          onPress={() => {
+            onSave({
+              name,
+              servings: brand<number, 'Servings'>(servings),
+              // Rows with an unusable amount are dropped rather than blocking the
+              // save; the row already shows why, and losing a whole edit to one
+              // stray keystroke is worse.
+              ingredients: entries.flatMap((entry) => {
+                const quantity = parseQuantity(entry.quantityText)
+                return isOk(quantity)
+                  ? [
+                      {
+                        ingredientId: entry.ingredientId,
+                        quantity: quantity.value,
+                        unit: entry.unit,
+                        optional: false,
+                      },
+                    ]
+                  : []
+              }),
+            })
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('meal.save')}
+          testID="editor-save"
+        >
+          <Text style={styles.saveText}>{t('meal.save')}</Text>
+        </Pressable>
+      )}
     </ScrollView>
   )
 }

@@ -397,6 +397,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      copy_catalogue_meal: {
+        Args: { p_household_id: string; p_source_meal_id: string }
+        Returns: string
+      }
       plan_meal: {
         Args: {
           p_added_by: string
