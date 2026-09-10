@@ -62,3 +62,17 @@ the likely failure, and it is the token carrying the most meaning.
 
 Tokens must therefore be defined as semantic names from day one — `surfaceRaised`,
 not `white` — so a dark theme is a value swap rather than a refactor.
+
+## Implemented
+
+The three-pane wide layout is in `WideBoardLayout`, at the 1024px breakpoint
+from the design. Library 320px, Backlog 260px, Board taking the rest.
+
+One React Native Web trap worth recording: **a width must sit on a plain `View`,
+not on the `ScrollView` inside it.** A `ScrollView` sizes itself to its content
+on web, which first made the Board — the pane that matters most — the narrowest
+of the three.
+
+Drag-and-drop between panes is not implemented. Tap-to-plan works identically in
+both layouts, which the design always required as the phone path; drag was only
+ever the wide-screen accelerator.

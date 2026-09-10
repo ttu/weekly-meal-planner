@@ -31,3 +31,4 @@ export {
   type LeftoverRequest,
 } from './ui/usePlanningActions'
 export { useWeekRealtime } from './ui/useWeekRealtime'
+export { WideBoardLayout } from './ui/WideBoardLayout'

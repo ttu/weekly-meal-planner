@@ -4,8 +4,9 @@ import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { useState } from 'react'
 import { signOut, usePresence, useSession } from '@/features/household'
-import { MealPicker, useHouseholdMeals } from '@/features/meals'
+import { MealLibraryScreen, MealPicker, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
+import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
 import { DayColumn } from './DayColumn'
 import { useWeekBoard } from './useWeekBoard'
@@ -13,6 +14,7 @@ import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
 import { useWeekRealtime } from './useWeekRealtime'
+import { WideBoardLayout } from './WideBoardLayout'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
@@ -71,6 +73,7 @@ export const BoardScreen = ({
     usePlanningActions(clock)
   const [leftoverFor, setLeftoverFor] = useState<CookEvent | undefined>(undefined)
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
+  const isWide = useWideScreen()
 
   // Unplanning takes Leftovers with it, and they may be days away on the board,
   // so the confirmation says how many.
@@ -87,6 +90,59 @@ export const BoardScreen = ({
       .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
       .find((cookEvent) => cookEvent.id === id)
   const today = clock.now().toISOString().slice(0, 10)
+
+  const days = (
+    <View testID="board">
+      {board.map((day) => (
+        <DayColumn
+          key={day.date}
+          day={day}
+          isToday={day.date === today}
+          onAddLeftover={(id) => {
+            setLeftoverFor(cookEventById(id))
+          }}
+          onUnplan={(id) => {
+            setUnplanning(cookEventById(id))
+          }}
+        />
+      ))}
+    </View>
+  )
+
+  const shelf = (
+    <BacklogShelf
+      items={backlog}
+      onAdd={() => {
+        setPickerOpen(true)
+      }}
+      onPlan={(id) => {
+        setPlanning(backlog.find((item) => item.id === id))
+      }}
+      onRemove={removeFromBacklog}
+    />
+  )
+
+  // Above the breakpoint the same nodes are arranged as three panes: library →
+  // backlog → board, left to right. Only the arrangement differs, so a change
+  // to a card is a change in both.
+  if (isWide) {
+    return (
+      <WideBoardLayout
+        style={{ paddingTop: insets.top }}
+        library={
+          <MealLibraryScreen
+            meals={meals}
+            onSelect={(mealId) => {
+              add(mealId)
+            }}
+            onAdd={onOpenLibrary}
+          />
+        }
+        backlog={shelf}
+        board={days}
+      />
+    )
+  }
 
   return (
     <View style={styles.screen} testID="board-screen">
@@ -140,21 +196,7 @@ export const BoardScreen = ({
         </View>
         <Text style={styles.title}>{t('board.thisWeek')}</Text>
 
-        <View testID="board">
-          {board.map((day) => (
-            <DayColumn
-              key={day.date}
-              day={day}
-              isToday={day.date === today}
-              onAddLeftover={(id) => {
-                setLeftoverFor(cookEventById(id))
-              }}
-              onUnplan={(id) => {
-                setUnplanning(cookEventById(id))
-              }}
-            />
-          ))}
-        </View>
+        {days}
       </ScrollView>
 
       {hasFailed && (
@@ -181,17 +223,9 @@ export const BoardScreen = ({
         </Text>
       )}
 
-      {/* Docked below the board, visible at every scroll position. */}
-      <BacklogShelf
-        items={backlog}
-        onAdd={() => {
-          setPickerOpen(true)
-        }}
-        onPlan={(id) => {
-          setPlanning(backlog.find((item) => item.id === id))
-        }}
-        onRemove={removeFromBacklog}
-      />
+      {/* Docked below the board, visible at every scroll position. The wide
+          layout returned earlier, so this is the phone flow. */}
+      {shelf}
 
       {planning !== undefined && weekPlanId !== undefined && (
         <PlanSheet
