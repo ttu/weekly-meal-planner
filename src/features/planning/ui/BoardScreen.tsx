@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { useState } from 'react'
-import { signOut, useSession } from '@/features/household'
+import { signOut, usePresence, useSession } from '@/features/household'
 import { MealPicker, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { BacklogShelf } from './BacklogShelf'
@@ -12,6 +12,7 @@ import { useWeekBoard } from './useWeekBoard'
 import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
+import { useWeekRealtime } from './useWeekRealtime'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
@@ -28,6 +29,15 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: tokens.space.md, paddingBottom: tokens.space.xl },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerActions: { flexDirection: 'row', gap: tokens.space.md },
+  presence: { flexDirection: 'row', gap: tokens.space.xs },
+  avatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { ...tokens.type.label, color: tokens.color.surfaceRaised },
   household: { ...tokens.type.label, color: tokens.color.textMuted, textTransform: 'uppercase' },
   signOut: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
   title: { ...tokens.type.display, color: tokens.color.textPrimary, marginBottom: tokens.space.md },
@@ -48,7 +58,10 @@ export const BoardScreen = ({
   const insets = useSafeAreaInsets()
   const session = useSession()
   const household = session.household
-  const { board, backlog, weekPlanId, householdName } = useWeekBoard(clock)
+  const me = session.member
+  const { board, backlog, weekPlanId, householdName, weekStart } = useWeekBoard(clock)
+  useWeekRealtime(weekStart)
+  const present = usePresence(weekStart, me)
   const { meals } = useHouseholdMeals()
   const { add, hasFailed } = useAddToBacklog(clock)
   const { plan, hasFailed: planFailed } = usePlanMeal(clock)
@@ -83,6 +96,19 @@ export const BoardScreen = ({
       >
         <View style={styles.headerRow}>
           <Text style={styles.household}>{householdName}</Text>
+          {present.length > 0 && (
+            <View style={styles.presence} testID="presence">
+              {present.map((member) => (
+                <View
+                  key={member.userId}
+                  style={[styles.avatar, { backgroundColor: member.colour }]}
+                  accessibilityLabel={t('presence.editing', { name: member.displayName })}
+                >
+                  <Text style={styles.avatarText}>{member.displayName.slice(0, 1)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
           <View style={styles.headerActions}>
             <Pressable
               onPress={onOpenShopping}

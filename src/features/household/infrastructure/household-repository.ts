@@ -3,7 +3,7 @@ import type { AppSupabaseClient } from './supabase-client'
 import { brand } from '@/shared/types/brand'
 import { ok, err, isErr, type Result } from '@/shared/types/result'
 import { parseSlots } from '../domain/slot'
-import type { Household } from '../domain/types'
+import type { Household, Member } from '../domain/types'
 
 const rowSchema = z.object({
   id: z.uuid(),
@@ -37,5 +37,41 @@ export const loadHousehold = async (
     name: row.data.name,
     locale: row.data.locale,
     slots: slots.value,
+  })
+}
+
+const memberSchema = z.object({
+  user_id: z.uuid(),
+  household_id: z.uuid(),
+  display_name: z.string(),
+  colour: z.string(),
+  avatar_url: z.string().nullable(),
+})
+
+export type LoadMemberError = 'not-found' | 'invalid-row'
+
+/** The signed-in Member's own row. RLS already restricts this to their
+ *  Household, so the only filter needed is their user id. */
+export const loadMember = async (
+  client: AppSupabaseClient,
+  userId: string,
+): Promise<Result<Member, LoadMemberError>> => {
+  const { data } = await client
+    .from('household_member')
+    .select('user_id,household_id,display_name,colour,avatar_url')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (data === null) return err('not-found')
+
+  const row = memberSchema.safeParse(data)
+  if (!row.success) return err('invalid-row')
+
+  return ok({
+    id: brand<string, 'MemberId'>(row.data.user_id),
+    householdId: brand<string, 'HouseholdId'>(row.data.household_id),
+    displayName: row.data.display_name,
+    colour: row.data.colour,
+    ...(row.data.avatar_url === null ? {} : { avatarUrl: row.data.avatar_url }),
   })
 }

@@ -11,11 +11,13 @@ import { tokens } from '@/shared/theme/tokens'
 import {
   createSupabaseClient,
   loadHousehold,
+  loadMember,
   SessionProvider,
   NoHouseholdScreen,
   SignInScreen,
   useAuthSession,
   type Household,
+  type Member,
 } from '@/features/household'
 
 initI18n(detectDeviceLocale())
@@ -25,11 +27,13 @@ export default function RootLayout(): React.JSX.Element {
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
   const { userId, isLoading } = useAuthSession(client)
   const [household, setHousehold] = useState<Household | undefined>(undefined)
+  const [member, setMember] = useState<Member | undefined>(undefined)
   const [householdChecked, setHouseholdChecked] = useState(false)
 
   useEffect(() => {
     if (userId === undefined) {
       setHousehold(undefined)
+      setMember(undefined)
       setHouseholdChecked(false)
       return
     }
@@ -39,13 +43,16 @@ export default function RootLayout(): React.JSX.Element {
       setHousehold(result.value)
       // The Household's Locale overrides the device guess (ADR 0009).
       await setLocale(result.value.locale)
+
+      const memberResult = await loadMember(client, userId)
+      if (isOk(memberResult)) setMember(memberResult.value)
     })
   }, [client, userId])
 
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <SessionProvider client={client} household={household} userId={userId}>
+        <SessionProvider client={client} household={household} member={member} userId={userId}>
           {isLoading ? (
             <View
               style={{ flex: 1, backgroundColor: tokens.color.surface }}

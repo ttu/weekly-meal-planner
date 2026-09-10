@@ -132,5 +132,10 @@
     "copied": "Kopioitu",
     "share": "Jaa",
     "promptIntro": "Tilaa viikon ruokaostokset:"
+  },
+  "presence": {
+    "editing": "{{name}} on myös täällä",
+    "alsoHere_one": "{{count}} muu on täällä",
+    "alsoHere_other": "{{count}} muuta on täällä"
   }
 }

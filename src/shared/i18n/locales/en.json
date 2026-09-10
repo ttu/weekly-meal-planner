@@ -132,5 +132,10 @@
     "copied": "Copied",
     "share": "Share",
     "promptIntro": "Order groceries for the week:"
+  },
+  "presence": {
+    "editing": "{{name}} is here too",
+    "alsoHere_one": "{{count}} other person is here",
+    "alsoHere_other": "{{count}} others are here"
   }
 }
