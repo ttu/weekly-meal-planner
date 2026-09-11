@@ -4,5 +4,7 @@
   "absolute": true,
   "gitignore": true,
   "path": ["src"],
-  "ignore": ["**/*.test.ts", "**/*.test.tsx", "**/*.stories.tsx", "**/fixtures/**"]
+  "ignore": ["**/*.test.ts", "**/*.test.tsx", "**/*.stories.tsx", "**/fixtures/**"],
+  "minTokens": 75,
+  "minLines": 12
 }

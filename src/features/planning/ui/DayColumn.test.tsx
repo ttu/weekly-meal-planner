@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react-native'
+import { renderWithProviders as render } from '@/test/render'
 import { initI18n, setLocale } from '@/shared/i18n'
 import { DayColumn } from './DayColumn'
 import type { BoardDay } from '../domain/board'
@@ -65,35 +65,41 @@ const withLeftover: BoardDay = {
 
 describe('DayColumn', () => {
   it('renders an empty Slot as an add affordance, not a hole', async () => {
-    const view = await render(<DayColumn day={emptyDay} isToday={false} />)
+    const view = await render(<DayColumn day={emptyDay} isToday={false} locale="en" />)
     expect(view.getAllByTestId('slot-empty')).toHaveLength(2)
   })
 
   it('translates the Slot labels', async () => {
-    const view = await render(<DayColumn day={emptyDay} isToday={false} />)
+    const view = await render(<DayColumn day={emptyDay} isToday={false} locale="en" />)
     expect(view.getByText('Lunch')).toBeTruthy()
     expect(view.getByText('Dinner')).toBeTruthy()
   })
 
   it('renders both Meals when a Slot holds two', async () => {
-    const view = await render(<DayColumn day={twoDinners} isToday={false} />)
+    const view = await render(<DayColumn day={twoDinners} isToday={false} locale="en" />)
     expect(view.getByText('Meal 1')).toBeTruthy()
     expect(view.getByText('Meal 2')).toBeTruthy()
   })
 
   it('renders a Leftover as a leftover card, naming its parent', async () => {
-    const view = await render(<DayColumn day={withLeftover} isToday={false} />)
+    const view = await render(<DayColumn day={withLeftover} isToday={false} locale="en" />)
     expect(view.getByTestId('meal-card-leftover')).toBeTruthy()
     expect(view.getByText('Chili con carne — leftovers')).toBeTruthy()
   })
 
+  // The heading is a named weekday, not the ISO date it is keyed by.
+  it('names the weekday', async () => {
+    const view = await render(<DayColumn day={emptyDay} isToday={false} locale="en" />)
+    expect(view.getByText('Monday 24 Aug')).toBeTruthy()
+  })
+
   it('marks today', async () => {
-    const view = await render(<DayColumn day={emptyDay} isToday />)
+    const view = await render(<DayColumn day={emptyDay} isToday locale="en" />)
     expect(view.getByTestId('day-today-marker')).toBeTruthy()
   })
 
   it('does not mark a day that is not today', async () => {
-    const view = await render(<DayColumn day={emptyDay} isToday={false} />)
+    const view = await render(<DayColumn day={emptyDay} isToday={false} locale="en" />)
     expect(view.queryByTestId('day-today-marker')).toBeNull()
   })
 })

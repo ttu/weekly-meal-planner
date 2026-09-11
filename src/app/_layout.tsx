@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useFonts } from 'expo-font'
+import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
+import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { Stack } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -23,6 +26,11 @@ import {
 initI18n(detectDeviceLocale())
 
 export default function RootLayout(): React.JSX.Element {
+  // Held before first paint so text never swaps face mid-read.
+  const [fontsLoaded] = useFonts({
+    'InstrumentSerif-Regular': InstrumentSerif,
+    'InstrumentSans-Variable': InstrumentSans,
+  })
   const queryClient = useMemo(() => new QueryClient(), [])
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
   const { userId, isLoading } = useAuthSession(client)
@@ -53,7 +61,7 @@ export default function RootLayout(): React.JSX.Element {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <SessionProvider client={client} household={household} member={member} userId={userId}>
-          {isLoading ? (
+          {isLoading || !fontsLoaded ? (
             <View
               style={{ flex: 1, backgroundColor: tokens.color.surface }}
               testID="auth-loading"

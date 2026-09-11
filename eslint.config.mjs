@@ -73,6 +73,8 @@ export default defineConfig([
         { type: 'shared', pattern: 'src/shared', partialMatch: true },
         { type: 'test', pattern: 'src/test', partialMatch: true },
       ],
+      // Font and image files are assets, not architectural elements.
+      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg'],
       'boundaries/files': [{ category: 'feature-public', pattern: 'src/features/*/index.ts' }],
     },
     rules: {

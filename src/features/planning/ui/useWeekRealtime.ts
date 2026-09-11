@@ -11,7 +11,10 @@ import type { WeekStart } from '../domain/types'
  * and the board needs Meal names and Member colours that come from joins. A
  * hand-built patch would guess at both.
  */
-export const useWeekRealtime = (weekStart: WeekStart): void => {
+export const useWeekRealtime = (
+  weekStart: WeekStart,
+  onDayChanged?: (date: string) => void,
+): void => {
   const { client, household } = useSession()
   const queryClient = useQueryClient()
   const householdId = household?.id
@@ -19,9 +22,15 @@ export const useWeekRealtime = (weekStart: WeekStart): void => {
   useEffect(() => {
     if (householdId === undefined) return
 
-    const invalidate = (): void => {
+    const invalidate = (payload: { new?: unknown; old?: unknown }): void => {
       void queryClient.invalidateQueries({ queryKey: ['week', householdId, weekStart] })
       void queryClient.invalidateQueries({ queryKey: ['shopping', householdId, weekStart] })
+
+      // The row carries the day it belongs to, which is what the hairline needs.
+      const row: unknown = payload.new ?? payload.old
+      if (typeof row !== 'object' || row === null || !('date' in row)) return
+      const { date } = row
+      if (typeof date === 'string') onDayChanged?.(date)
     }
 
     const channel = client
@@ -36,5 +45,5 @@ export const useWeekRealtime = (weekStart: WeekStart): void => {
     return () => {
       void client.removeChannel(channel)
     }
-  }, [client, householdId, queryClient, weekStart])
+  }, [client, householdId, onDayChanged, queryClient, weekStart])
 }

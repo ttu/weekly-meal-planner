@@ -3,8 +3,8 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
-import { matchesSearch } from '../domain/search'
-import { isCatalogueMeal, type Meal, type MealId } from '../domain/types'
+import { partitionMeals } from '../domain/partition'
+import type { Meal, MealId } from '../domain/types'
 import { MealCard } from './MealCard'
 
 const styles = StyleSheet.create({
@@ -58,13 +58,7 @@ export const MealPicker = ({ visible, meals, onSelect, onDismiss }: Props): Reac
 
   // Own Meals first: a family reaches for what they already cook far more often
   // than for the Catalogue.
-  const { ours, catalogue } = useMemo(() => {
-    const matching = meals.filter((meal) => matchesSearch(meal.name, query))
-    return {
-      ours: matching.filter((meal) => !isCatalogueMeal(meal)),
-      catalogue: matching.filter(isCatalogueMeal),
-    }
-  }, [meals, query])
+  const { ours, catalogue } = useMemo(() => partitionMeals(meals, query), [meals, query])
 
   const nothingMatches = ours.length === 0 && catalogue.length === 0
 

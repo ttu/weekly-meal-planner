@@ -1,14 +1,23 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
-import { useTranslation } from '@/shared/i18n'
+import { useTranslation, type Locale } from '@/shared/i18n'
+import { formatDayHeading } from '../domain/format-day'
+import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { LeftoverCard, MealCard } from '@/features/meals'
 import type { BoardCard, CookEventId } from '../domain/types'
 import type { BoardDay } from '../domain/board'
 
 const styles = StyleSheet.create({
-  day: { paddingVertical: tokens.space.md, gap: tokens.space.sm },
+  day: {
+    paddingVertical: tokens.space.md,
+    gap: tokens.space.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: 'transparent',
+    paddingLeft: tokens.space.sm,
+  },
+  dayChanged: { borderLeftColor: tokens.color.affirm },
   header: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
-  dayName: { ...tokens.type.display, color: tokens.color.textPrimary },
+  dayName: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
   today: { ...tokens.type.label, color: tokens.color.affirm, textTransform: 'uppercase' },
   slot: { gap: tokens.space.xs },
   slotLabel: { ...tokens.type.label, color: tokens.color.textMuted, textTransform: 'uppercase' },
@@ -80,17 +89,28 @@ const cardKey = (card: BoardCard): string =>
 type Props = {
   readonly day: BoardDay
   readonly isToday: boolean
+  readonly locale: Locale
+  /** Another Member just changed this day. Shown as a sage edge for two
+   *  seconds — presence, not a notification. */
+  readonly recentlyChanged?: boolean | undefined
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
 }
 
-export const DayColumn = ({ day, isToday, onAddLeftover, onUnplan }: Props): React.JSX.Element => {
+export const DayColumn = ({
+  day,
+  isToday,
+  locale,
+  recentlyChanged = false,
+  onAddLeftover,
+  onUnplan,
+}: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
   return (
-    <View style={styles.day} testID={`day-${day.date}`}>
+    <View style={[styles.day, recentlyChanged && styles.dayChanged]} testID={`day-${day.date}`}>
       <View style={styles.header}>
-        <Text style={styles.dayName}>{day.date}</Text>
+        <Text style={styles.dayName}>{formatDayHeading(day.date, locale)}</Text>
         {isToday && (
           <Text style={styles.today} testID="day-today-marker">
             {t('board.today')}
@@ -109,12 +129,9 @@ export const DayColumn = ({ day, isToday, onAddLeftover, onUnplan }: Props): Rea
             </View>
           ) : (
             slot.cards.map((card) => (
-              <Card
-                key={cardKey(card)}
-                card={card}
-                onAddLeftover={onAddLeftover}
-                onUnplan={onUnplan}
-              />
+              <AnimatedCard key={cardKey(card)}>
+                <Card card={card} onAddLeftover={onAddLeftover} onUnplan={onUnplan} />
+              </AnimatedCard>
             ))
           )}
         </View>

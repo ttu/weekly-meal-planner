@@ -62,3 +62,10 @@ prerequisite, not an npm dependency, and is not yet wired into CI — that needs
 an EAS build in the pipeline and belongs with the deployment work.
 
 `pnpm run validate:all` locally reproduces CI, and pre-push runs it.
+
+## Web output
+
+`app.json` sets `web.output: "single"`, not `"static"`. Static output prerenders
+every route in Node, where `requestAnimationFrame` does not exist — Reanimated
+throws during the build. Prerendering buys nothing here in any case: every
+screen is behind authentication, so there is no public HTML worth generating.

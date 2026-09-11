@@ -53,5 +53,21 @@ export const formStyles = StyleSheet.create({
   primaryPressed: { backgroundColor: tokens.color.actionPressed },
   primaryText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
   error: { ...tokens.type.body, color: tokens.color.action, marginBottom: tokens.space.md },
+  /** A selectable box: day and Slot chips, unit choices, steppers. Selected
+   *  state is a thicker terracotta edge rather than a fill, so the chip does
+   *  not compete with the primary action. */
+  chip: {
+    borderWidth: 1,
+    borderColor: tokens.color.rule,
+    backgroundColor: tokens.color.surfaceRaised,
+    borderRadius: 8,
+    paddingHorizontal: tokens.space.md,
+    minHeight: 54,
+    minWidth: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipSelected: { borderColor: tokens.color.action, borderWidth: 2 },
+  chipText: { ...tokens.type.body, color: tokens.color.textPrimary },
   muted: { ...tokens.type.body, color: tokens.color.textMuted },
 })

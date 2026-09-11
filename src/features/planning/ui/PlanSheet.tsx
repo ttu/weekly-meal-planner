@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
+import { formStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import type { Slot, SlotKey } from '@/features/household'
 import type { Servings } from '@/features/meals'
@@ -32,20 +33,7 @@ const styles = StyleSheet.create({
     gap: tokens.space.sm,
     marginBottom: tokens.space.md,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: tokens.color.rule,
-    backgroundColor: tokens.color.surfaceRaised,
-    borderRadius: 8,
-    paddingHorizontal: tokens.space.md,
-    minHeight: 54,
-    minWidth: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipSelected: { borderColor: tokens.color.action, borderWidth: 2 },
   chipToday: { borderColor: tokens.color.affirm },
-  chipText: { ...tokens.type.body, color: tokens.color.textPrimary },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,9 +162,9 @@ export const PlanSheet = ({
             <Pressable
               key={day.date}
               style={[
-                styles.chip,
+                formStyles.chip,
                 day.date === today && styles.chipToday,
-                day.date === date && styles.chipSelected,
+                day.date === date && formStyles.chipSelected,
               ]}
               onPress={() => {
                 setDate(day.date)
@@ -186,7 +174,7 @@ export const PlanSheet = ({
               accessibilityLabel={day.date}
               testID={`plan-day-${day.date}`}
             >
-              <Text style={styles.chipText}>{t(weekdayKey(day.date))}</Text>
+              <Text style={formStyles.chipText}>{t(weekdayKey(day.date))}</Text>
             </Pressable>
           ))}
         </View>
@@ -196,7 +184,7 @@ export const PlanSheet = ({
           {slots.map((slot) => (
             <Pressable
               key={slot.key}
-              style={[styles.chip, slot.key === slotKey && styles.chipSelected]}
+              style={[formStyles.chip, slot.key === slotKey && formStyles.chipSelected]}
               onPress={() => {
                 setSlotKey(slot.key)
               }}
@@ -205,7 +193,7 @@ export const PlanSheet = ({
               accessibilityLabel={t(slot.labelKey)}
               testID={`plan-slot-${slot.key}`}
             >
-              <Text style={styles.chipText}>{t(slot.labelKey)}</Text>
+              <Text style={formStyles.chipText}>{t(slot.labelKey)}</Text>
             </Pressable>
           ))}
         </View>
@@ -214,7 +202,7 @@ export const PlanSheet = ({
         {!forLeftover && (
           <View style={styles.stepperRow}>
             <Pressable
-              style={styles.chip}
+              style={formStyles.chip}
               onPress={() => {
                 setServings((n) => Math.max(1, n - 1))
               }}
@@ -222,13 +210,13 @@ export const PlanSheet = ({
               accessibilityLabel={t('plan.cookingFor')}
               testID="plan-servings-down"
             >
-              <Text style={styles.chipText}>−</Text>
+              <Text style={formStyles.chipText}>−</Text>
             </Pressable>
             <Text style={styles.stepperValue} testID="plan-servings">
               {String(servings)}
             </Text>
             <Pressable
-              style={styles.chip}
+              style={formStyles.chip}
               onPress={() => {
                 setServings((n) => Math.min(50, n + 1))
               }}
@@ -236,7 +224,7 @@ export const PlanSheet = ({
               accessibilityLabel={t('plan.cookingFor')}
               testID="plan-servings-up"
             >
-              <Text style={styles.chipText}>+</Text>
+              <Text style={formStyles.chipText}>+</Text>
             </Pressable>
           </View>
         )}

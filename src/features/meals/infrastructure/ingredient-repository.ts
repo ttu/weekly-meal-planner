@@ -3,6 +3,7 @@ import { brand } from '@/shared/types/brand'
 import { ok, err, type Result } from '@/shared/types/result'
 import type { AppSupabaseClient } from '@/features/household'
 import type { Locale } from '@/shared/i18n'
+import { localisedNameSchema, resolveLocalisedName } from '@/shared/i18n/localised-name'
 import type { Ingredient } from '../domain/types'
 
 const rowSchema = z.object({
@@ -11,7 +12,7 @@ const rowSchema = z.object({
   category: z.string(),
   dimension: z.enum(['mass', 'volume', 'count']),
   base_unit: z.string(),
-  ingredient_name: z.array(z.object({ locale: z.enum(['fi', 'en']), name: z.string() })),
+  ingredient_name: localisedNameSchema,
 })
 
 export type LoadIngredientsError = 'invalid-row'
@@ -36,10 +37,7 @@ export const loadIngredients = async (
       .map((r) => ({
         id: brand<string, 'IngredientId'>(r.id),
         slug: brand<string, 'IngredientSlug'>(r.slug),
-        name:
-          r.ingredient_name.find((n) => n.locale === locale)?.name ??
-          r.ingredient_name[0]?.name ??
-          r.slug,
+        name: resolveLocalisedName(r.ingredient_name, locale, r.slug),
         category: r.category,
         dimension: r.dimension,
         baseUnit: r.base_unit,

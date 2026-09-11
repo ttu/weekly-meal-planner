@@ -14,6 +14,7 @@ import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
 import { useWeekRealtime } from './useWeekRealtime'
+import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
@@ -62,7 +63,8 @@ export const BoardScreen = ({
   const household = session.household
   const me = session.member
   const { board, backlog, weekPlanId, householdName, weekStart } = useWeekBoard(clock)
-  useWeekRealtime(weekStart)
+  const { changedDays, markChanged } = useRecentlyChangedDays()
+  useWeekRealtime(weekStart, markChanged)
   const present = usePresence(weekStart, me)
   const { meals } = useHouseholdMeals()
   const { add, hasFailed } = useAddToBacklog(clock)
@@ -98,6 +100,8 @@ export const BoardScreen = ({
           key={day.date}
           day={day}
           isToday={day.date === today}
+          locale={household?.locale ?? 'fi'}
+          recentlyChanged={changedDays.has(day.date)}
           onAddLeftover={(id) => {
             setLeftoverFor(cookEventById(id))
           }}

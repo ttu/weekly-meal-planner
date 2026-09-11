@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { brand } from '@/shared/types/brand'
-import { ok, err, type Result } from '@/shared/types/result'
+import { ok, err, isErr, type Result } from '@/shared/types/result'
 import type { AppSupabaseClient } from '@/features/household'
+import { loadIngredients } from '@/features/meals'
 import type { Locale } from '@/shared/i18n'
 import type { DeriveInput } from '../domain/derive'
 
@@ -15,14 +16,6 @@ const cookEventRow = z.object({
       z.object({ ingredient_id: z.uuid(), quantity: z.number(), unit: z.string() }),
     ),
   }),
-})
-
-const ingredientRow = z.object({
-  id: z.uuid(),
-  category: z.string(),
-  dimension: z.enum(['mass', 'volume', 'count']),
-  base_unit: z.string(),
-  ingredient_name: z.array(z.object({ locale: z.enum(['fi', 'en']), name: z.string() })),
 })
 
 const stapleRow = z.object({ ingredient_id: z.uuid(), running_low: z.boolean() })
@@ -52,7 +45,7 @@ export const loadShoppingData = async (
 ): Promise<Result<DeriveInput, LoadShoppingError>> => {
   const [
     { data: cookEvents },
-    { data: ingredients },
+    ingredientResult,
     { data: staples },
     { data: checks },
     { data: overrides },
@@ -64,9 +57,9 @@ export const loadShoppingData = async (
         'meal_id,servings_cooked,meal(name,servings,meal_ingredient(ingredient_id,quantity,unit))',
       )
       .eq('week_plan_id', weekPlanId),
-    client
-      .from('ingredient')
-      .select('id,category,dimension,base_unit,ingredient_name(locale,name)'),
+    // One source of truth for how an Ingredient is read, including its
+    // Locale name.
+    loadIngredients(client, locale),
     client.from('household_staple').select('ingredient_id,running_low'),
     client.from('shopping_check').select('ingredient_id').eq('week_plan_id', weekPlanId),
     client
@@ -81,15 +74,14 @@ export const loadShoppingData = async (
   ])
 
   const parsedEvents = z.array(cookEventRow).safeParse(cookEvents ?? [])
-  const parsedIngredients = z.array(ingredientRow).safeParse(ingredients ?? [])
   const parsedStaples = z.array(stapleRow).safeParse(staples ?? [])
   const parsedChecks = z.array(checkRow).safeParse(checks ?? [])
   const parsedOverrides = z.array(overrideRow).safeParse(overrides ?? [])
   const parsedExtras = z.array(extraRow).safeParse(extras ?? [])
 
   if (
+    isErr(ingredientResult) ||
     !parsedEvents.success ||
-    !parsedIngredients.success ||
     !parsedStaples.success ||
     !parsedChecks.success ||
     !parsedOverrides.success ||
@@ -113,15 +105,12 @@ export const loadShoppingData = async (
         unit: mi.unit,
       })),
     ),
-    ingredients: parsedIngredients.data.map((i) => ({
-      id: brand<string, 'IngredientId'>(i.id),
-      name:
-        i.ingredient_name.find((n) => n.locale === locale)?.name ??
-        i.ingredient_name[0]?.name ??
-        '',
+    ingredients: ingredientResult.value.map((i) => ({
+      id: i.id,
+      name: i.name,
       category: i.category,
       dimension: i.dimension,
-      baseUnit: i.base_unit,
+      baseUnit: i.baseUnit,
     })),
     staples: parsedStaples.data.map((s) => ({
       ingredientId: brand<string, 'IngredientId'>(s.ingredient_id),

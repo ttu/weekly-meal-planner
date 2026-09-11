@@ -62,6 +62,15 @@ is ignorable, it is logged with the reason it is ignorable.
 `jscpd` with a threshold in `validate`. DRY is a build gate here, not a
 reviewer's judgement call.
 
+`minTokens` is raised to 75 (`minLines` 12) so the gate reports duplicated
+_logic_, not duplicated import headers and four-line mutation wrappers. At the
+default it flagged things whose only fix was to make the code less readable,
+which teaches people to route around the gate rather than listen to it.
+
+Real duplications it has caught and that were extracted rather than suppressed:
+`formStyles`, `resolveLocalisedName`, `partitionMeals`, and shopping reading
+Ingredients through `loadIngredients` instead of repeating the query.
+
 ## Observability
 
 Structured logging at boundaries: auth, every Supabase call that fails, the
