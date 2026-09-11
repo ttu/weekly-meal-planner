@@ -128,23 +128,44 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          join_password_hash: string | null
           locale: string
           name: string
+          share_token: string
           slots: Json
         }
         Insert: {
           created_at?: string
           id?: string
+          join_password_hash?: string | null
           locale?: string
           name: string
+          share_token?: string
           slots?: Json
         }
         Update: {
           created_at?: string
           id?: string
+          join_password_hash?: string | null
           locale?: string
           name?: string
+          share_token?: string
           slots?: Json
+        }
+        Relationships: []
+      }
+      household_join_attempt: {
+        Row: {
+          attempted_at: string
+          share_token: string
+        }
+        Insert: {
+          attempted_at?: string
+          share_token: string
+        }
+        Update: {
+          attempted_at?: string
+          share_token?: string
         }
         Relationships: []
       }
@@ -541,6 +562,26 @@ export type Database = {
         Args: { p_household_id: string; p_source_meal_id: string }
         Returns: string
       }
+      create_board: {
+        Args: {
+          p_colour: string
+          p_display_name: string
+          p_locale: string
+          p_name: string
+          p_password: string
+        }
+        Returns: {
+          out_household_id: string
+          out_share_token: string
+        }[]
+      }
+      join_board: {
+        Args: { p_password: string; p_share_token: string }
+        Returns: {
+          out_household_id: string
+          out_status: Database["public"]["Enums"]["join_board_status"]
+        }[]
+      }
       plan_meal: {
         Args: {
           p_added_by: string
@@ -566,7 +607,7 @@ export type Database = {
       unplan_meal: { Args: { p_cook_event_id: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      join_board_status: "joined" | "rejected" | "rate-limited"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -696,7 +737,9 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      join_board_status: ["joined", "rejected", "rate-limited"],
+    },
   },
 } as const
 

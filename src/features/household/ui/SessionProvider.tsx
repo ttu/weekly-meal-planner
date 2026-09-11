@@ -9,6 +9,9 @@ type SessionValue = {
   /** The signed-in Member's user id. household_member has no separate primary
    *  key — its identity is (household_id, user_id). */
   readonly userId: string | undefined
+  /** Whether the Household lookup has finished. Distinguishes "still loading"
+   *  from "signed in but a Member of nothing", which look identical otherwise. */
+  readonly householdChecked: boolean
 }
 
 const SessionContext = createContext<SessionValue | undefined>(undefined)
@@ -18,11 +21,12 @@ export const SessionProvider = ({
   household,
   member,
   userId,
+  householdChecked,
   children,
 }: SessionValue & { readonly children: ReactNode }): React.JSX.Element => {
   const value = useMemo(
-    () => ({ client, household, member, userId }),
-    [client, household, member, userId],
+    () => ({ client, household, member, userId, householdChecked }),
+    [client, household, member, userId, householdChecked],
   )
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

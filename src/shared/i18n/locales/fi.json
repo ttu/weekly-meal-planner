@@ -1,8 +1,25 @@
 {
   "board": {
-    "thisWeek": "Tämä viikko",
-    "today": "Tänään",
-    "addMeal": "Lisää ateria"
+    "startTitle": "Aloita taulu",
+    "startBody": "Tiliä ei tarvita. Valitse taululle nimi, itsellesi nimi ja salasana, jolla perhe liittyy.",
+    "boardName": "Taulun nimi",
+    "yourName": "Nimesi",
+    "password": "Taulun salasana",
+    "passwordHint": "Vähintään 6 merkkiä. Jokainen liittyjä tarvitsee sen.",
+    "create": "Luo taulu",
+    "haveLink": "Minulla on linkki",
+    "signInInstead": "Kirjaudu sähköpostilla",
+    "shortPassword": "Taulun salasanassa on oltava vähintään 6 merkkiä.",
+    "createFailed": "Taulun luonti epäonnistui. Yritä uudelleen.",
+    "joinTitle": "Liity tauluun",
+    "joinBody": "Anna taulun salasana liittyäksesi.",
+    "join": "Liity",
+    "joinRejected": "Linkki ja salasana eivät vastaa mitään taulua.",
+    "joinRateLimited": "Liian monta yritystä. Odota muutama minuutti.",
+    "share": "Jaa tämä taulu",
+    "shareCopied": "Linkki kopioitu",
+    "shareBody": "Lähetä linkki ja kerro salasana erikseen.",
+    "anonymousWarning": "Tämä laite on ainoa avaimesi tälle taululle. Selaimen tietojen tyhjennys hukkaa sen."
   },
   "slot": {
     "lunch": "Lounas",

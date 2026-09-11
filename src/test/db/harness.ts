@@ -1,4 +1,5 @@
 import { PGlite } from '@electric-sql/pglite'
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -16,7 +17,9 @@ export type TestDb = {
 // Order matters: the auth shim must exist before policies that call auth.uid().
 const SCHEMA_FILES = [
   'supabase/schemas/00_extensions.sql',
+  'supabase/schemas/05_extensions_crypto.sql',
   'supabase/schemas/10_household.sql',
+  'supabase/schemas/11_household_sharing.sql',
   'supabase/schemas/20_meals.sql',
   'supabase/schemas/30_planning.sql',
   'supabase/schemas/50_shopping.sql',
@@ -26,27 +29,31 @@ const SCHEMA_FILES = [
   'supabase/schemas/92_policies_planning.sql',
   'supabase/schemas/40_planning_rpc.sql',
   'supabase/schemas/41_meal_rpc.sql',
+  'supabase/schemas/42_sharing_rpc.sql',
   'supabase/schemas/93_policies_shopping.sql',
 ]
 
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8')
 
 export const createTestDb = async (): Promise<TestDb> => {
-  const db = new PGlite()
+  // pgcrypto so board password hashing is exercised for real, not stubbed.
+  const db = new PGlite({ extensions: { pgcrypto } })
 
   // Supabase provides these roles; pglite does not. They must exist before the
   // schema loads, because policies name them in `to authenticated`.
   await db.exec('create role authenticated nologin; create role anon nologin;')
+  await db.exec('create schema if not exists extensions;')
 
   for (const file of SCHEMA_FILES) await db.exec(read(file))
 
   // Policies do not apply to the table owner, so tests must run as a role that
   // is subject to them — exactly as anon/authenticated are in production.
   await db.exec(`
-    grant usage on schema public, app, auth to authenticated, anon;
+    grant usage on schema public, app, auth, extensions to authenticated, anon;
     grant select, insert, update, delete on all tables in schema public to authenticated, anon;
     grant execute on all functions in schema app to authenticated, anon;
     grant execute on all functions in schema auth to authenticated, anon;
+    grant execute on all functions in schema extensions to authenticated, anon;
     grant execute on all functions in schema public to authenticated, anon;
   `)
 

@@ -1,8 +1,25 @@
 {
   "board": {
-    "thisWeek": "This week",
-    "today": "Today",
-    "addMeal": "Add a meal"
+    "startTitle": "Start a board",
+    "startBody": "No account needed. Pick a name for the board, a name for yourself, and a password the family will use to join.",
+    "boardName": "Board name",
+    "yourName": "Your name",
+    "password": "Board password",
+    "passwordHint": "At least 6 characters. Everyone joining needs it.",
+    "create": "Create the board",
+    "haveLink": "I have a link",
+    "signInInstead": "Sign in with email",
+    "shortPassword": "The board password needs at least 6 characters.",
+    "createFailed": "Could not create the board. Try again.",
+    "joinTitle": "Join this board",
+    "joinBody": "Enter the board password to join.",
+    "join": "Join",
+    "joinRejected": "That link and password do not match a board.",
+    "joinRateLimited": "Too many tries. Wait a few minutes.",
+    "share": "Share this board",
+    "shareCopied": "Link copied",
+    "shareBody": "Send the link and tell them the password separately.",
+    "anonymousWarning": "This device is the only key to your seat on this board. Clearing browser data loses it."
   },
   "slot": {
     "lunch": "Lunch",

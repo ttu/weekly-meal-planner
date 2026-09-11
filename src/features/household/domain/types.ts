@@ -12,6 +12,9 @@ export type Household = {
   readonly name: string
   readonly locale: Locale
   readonly slots: readonly Slot[]
+  /** The token the board is shared with. Held by Members only — RLS keeps the
+   *  household row out of everyone else's reach (ADR 0010). */
+  readonly shareToken: string
 }
 
 export type Member = {

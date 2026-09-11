@@ -19,11 +19,10 @@ alter table household_member enable row level security;
 create policy household_select on household
   for select using (app.is_member(id));
 
--- Any authenticated user may create a Household; they become its first Member
--- through the bootstrap branch on household_member_insert below. Without this
--- policy nobody can create a Household at all.
-create policy household_insert on household
-  for insert to authenticated with check (true);
+-- No insert policy on household on purpose. A Household is created only through
+-- create_board (ADR 0010), which is SECURITY DEFINER and controls every column
+-- it writes — including the share token and the hashed board password. A client
+-- cannot write a household row directly.
 
 create policy household_update on household
   for update using (app.is_member(id)) with check (app.is_member(id));

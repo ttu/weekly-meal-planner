@@ -10,6 +10,7 @@ const rowSchema = z.object({
   name: z.string(),
   locale: z.enum(['fi', 'en']),
   slots: z.unknown(),
+  share_token: z.string(),
 })
 
 export type LoadHouseholdError = 'not-found' | 'invalid-row'
@@ -21,7 +22,7 @@ export const loadHousehold = async (
   // own Household (ADR 0002). A filter here would be a second enforcement point.
   const { data } = await client
     .from('household')
-    .select('id,name,locale,slots')
+    .select('id,name,locale,slots,share_token')
     .limit(1)
     .maybeSingle()
   if (data === null) return err('not-found')
@@ -37,6 +38,7 @@ export const loadHousehold = async (
     name: row.data.name,
     locale: row.data.locale,
     slots: slots.value,
+    shareToken: row.data.share_token,
   })
 }
 

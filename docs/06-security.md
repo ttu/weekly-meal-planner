@@ -7,8 +7,41 @@ membership of a household, and carries the display name and colour. The
 distinction matters because leaving a household must revoke data access without
 deleting the account.
 
-Household joining is by invite link with a single-use, expiring token. An invite
-grants `member`; only an `owner` can invite or remove.
+**Anonymous identities are a first-class path** (ADR 0010). Starting a board
+asks for no account: the app signs in anonymously and creates the board. Email
+sign-in remains, and an anonymous identity can be upgraded by adding an email.
+
+`household_member.user_id` is a foreign key to `auth.users` with
+`on delete cascade`. Without it a deleted account leaves a ghost Member that
+still shows a name on Backlog cards and that nothing can clean up — likely
+rather than theoretical once identities are disposable.
+
+## Board sharing
+
+A board is shared as a URL carrying a **share token** — 32 random bytes,
+base64url — and joining also requires the **board password**, stored as a
+bcrypt hash and never in plaintext.
+
+**The URL is a bearer credential; the password is what makes that survivable.**
+URLs leak in ways people do not anticipate: browser history, referrer headers,
+chat link previews, a screenshot in a family group. Requiring the password means
+a leaked link is not a leaked board.
+
+Two functions are `SECURITY DEFINER`, and they are the only ones in the system:
+
+- **`create_board`** — a person creating their first board is not a Member of
+  anything, so no policy has anything to check. Making this the only way to
+  create a Household is stronger than a permissive insert policy: a client
+  cannot write a household row at all.
+- **`join_board`** — someone holding a link is not yet a Member, so RLS
+  correctly hides the row they are trying to join. It returns `rejected` for a
+  wrong token and a wrong password alike, so it cannot be used to discover which
+  links are real, and it counts failures per token and refuses past ten in
+  fifteen minutes, because the password is the guessable half.
+
+`join_board` returns a status rather than raising. Raising would abort the
+transaction and roll back the record of the failed attempt, leaving the rate
+limiter counting nothing — which it did, until a test caught it.
 
 ## Authorization
 

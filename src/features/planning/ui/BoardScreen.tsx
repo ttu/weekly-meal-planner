@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { useState } from 'react'
-import { signOut, usePresence, useSession } from '@/features/household'
+import { boardUrl, signOut, usePresence, useSession } from '@/features/household'
 import { MealLibraryScreen, MealPicker, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
@@ -49,14 +49,20 @@ const styles = StyleSheet.create({
 
 type Props = {
   readonly clock?: Clock
+  readonly origin?: string
   readonly onOpenLibrary?: (() => void) | undefined
   readonly onOpenShopping?: (() => void) | undefined
+  readonly onShare?: ((url: string) => void) | undefined
+  readonly shared?: boolean | undefined
 }
 
 const Board = ({
   clock = systemClock,
+  origin = '',
   onOpenLibrary,
   onOpenShopping,
+  onShare: onShareUrl,
+  shared = false,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
@@ -78,6 +84,13 @@ const Board = ({
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
   const isWide = useWideScreen()
 
+  // The link carries the token; the password is deliberately not in it, and the
+  // copy tells the sharer to send it separately (ADR 0010).
+  const onShare = (): void => {
+    if (household === undefined) return
+    onShareUrl?.(boardUrl(origin, household.shareToken))
+  }
+
   // Unplanning takes Leftovers with it, and they may be days away on the board,
   // so the confirmation says how many.
   const leftoverCountFor = (id: CookEventId): number =>
@@ -93,6 +106,61 @@ const Board = ({
       .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
       .find((cookEvent) => cookEvent.id === id)
   const today = clock.now().toISOString().slice(0, 10)
+
+  const header = (
+    <View style={styles.headerRow}>
+      <Text style={styles.household}>{householdName}</Text>
+      {present.length > 0 && (
+        <View style={styles.presence} testID="presence">
+          {present.map((member) => (
+            <View
+              key={member.userId}
+              style={[styles.avatar, { backgroundColor: member.colour }]}
+              accessibilityLabel={t('presence.editing', { name: member.displayName })}
+            >
+              <Text style={styles.avatarText}>{member.displayName.slice(0, 1)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      <View style={styles.headerActions}>
+        <Pressable
+          onPress={onShare}
+          accessibilityRole="button"
+          accessibilityLabel={t('board.share')}
+          testID="share-board"
+        >
+          <Text style={styles.signOut}>{shared ? t('board.shareCopied') : t('board.share')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={onOpenShopping}
+          accessibilityRole="button"
+          accessibilityLabel={t('shopping.title')}
+          testID="open-shopping"
+        >
+          <Text style={styles.signOut}>{t('shopping.title')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={onOpenLibrary}
+          accessibilityRole="button"
+          accessibilityLabel={t('meal.library')}
+          testID="open-library"
+        >
+          <Text style={styles.signOut}>{t('meal.library')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            void signOut(session.client)
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth.signOut')}
+          testID="sign-out"
+        >
+          <Text style={styles.signOut}>{t('auth.signOut')}</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
 
   const days = (
     <View testID="board">
@@ -151,6 +219,7 @@ const Board = ({
     return (
       <WideBoardLayout
         style={{ paddingTop: insets.top }}
+        header={header}
         library={
           <MealLibraryScreen
             meals={meals}
@@ -172,50 +241,7 @@ const Board = ({
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
       >
-        <View style={styles.headerRow}>
-          <Text style={styles.household}>{householdName}</Text>
-          {present.length > 0 && (
-            <View style={styles.presence} testID="presence">
-              {present.map((member) => (
-                <View
-                  key={member.userId}
-                  style={[styles.avatar, { backgroundColor: member.colour }]}
-                  accessibilityLabel={t('presence.editing', { name: member.displayName })}
-                >
-                  <Text style={styles.avatarText}>{member.displayName.slice(0, 1)}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-          <View style={styles.headerActions}>
-            <Pressable
-              onPress={onOpenShopping}
-              accessibilityRole="button"
-              accessibilityLabel={t('shopping.title')}
-              testID="open-shopping"
-            >
-              <Text style={styles.signOut}>{t('shopping.title')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={onOpenLibrary}
-              accessibilityRole="button"
-              accessibilityLabel={t('meal.library')}
-              testID="open-library"
-            >
-              <Text style={styles.signOut}>{t('meal.library')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                void signOut(session.client)
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('auth.signOut')}
-              testID="sign-out"
-            >
-              <Text style={styles.signOut}>{t('auth.signOut')}</Text>
-            </Pressable>
-          </View>
-        </View>
+        {header}
         <Text style={styles.title}>{t('board.thisWeek')}</Text>
 
         {days}

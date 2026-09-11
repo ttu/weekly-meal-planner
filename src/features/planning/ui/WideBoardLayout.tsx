@@ -7,6 +7,13 @@ import { tokens } from '@/shared/theme/tokens'
  * most — the narrowest of the three.
  */
 const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: tokens.color.surface },
+  header: {
+    paddingHorizontal: tokens.space.md,
+    paddingVertical: tokens.space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.color.rule,
+  },
   panes: { flex: 1, flexDirection: 'row' },
   libraryPane: {
     width: 320,
@@ -25,6 +32,9 @@ const styles = StyleSheet.create({
 })
 
 type Props = {
+  /** The same header the phone layout shows. Without it, sign-out, sharing and
+   *  every other destination are unreachable above the breakpoint. */
+  readonly header: React.ReactNode
   readonly library: React.ReactNode
   readonly backlog: React.ReactNode
   readonly board: React.ReactNode
@@ -36,16 +46,25 @@ type Props = {
  * The panes are the same components the phone layout uses; only the arrangement
  * differs, so a change to a card is a change in both.
  */
-export const WideBoardLayout = ({ library, backlog, board, style }: Props): React.JSX.Element => (
-  <View style={[styles.panes, style]} testID="wide-board-layout">
-    <View style={styles.libraryPane} testID="pane-library">
-      <ScrollView style={styles.scroll}>{library}</ScrollView>
-    </View>
-    <View style={styles.backlogPane} testID="pane-backlog">
-      <ScrollView style={styles.scroll}>{backlog}</ScrollView>
-    </View>
-    <View style={styles.boardPane} testID="pane-board">
-      <ScrollView style={styles.scroll}>{board}</ScrollView>
+export const WideBoardLayout = ({
+  header,
+  library,
+  backlog,
+  board,
+  style,
+}: Props): React.JSX.Element => (
+  <View style={[styles.page, style]} testID="wide-board-layout">
+    <View style={styles.header}>{header}</View>
+    <View style={styles.panes}>
+      <View style={styles.libraryPane} testID="pane-library">
+        <ScrollView style={styles.scroll}>{library}</ScrollView>
+      </View>
+      <View style={styles.backlogPane} testID="pane-backlog">
+        <ScrollView style={styles.scroll}>{backlog}</ScrollView>
+      </View>
+      <View style={styles.boardPane} testID="pane-board">
+        <ScrollView style={styles.scroll}>{board}</ScrollView>
+      </View>
     </View>
   </View>
 )
