@@ -16,6 +16,7 @@ import { usePlanningActions } from './usePlanningActions'
 import { useWeekRealtime } from './useWeekRealtime'
 import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
+import { DragProvider, type DropTarget } from './DragContext'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
@@ -52,7 +53,7 @@ type Props = {
   readonly onOpenShopping?: (() => void) | undefined
 }
 
-export const BoardScreen = ({
+const Board = ({
   clock = systemClock,
   onOpenLibrary,
   onOpenShopping,
@@ -113,8 +114,25 @@ export const BoardScreen = ({
     </View>
   )
 
+  // Dropping is itself the decision — opening a sheet afterwards would undo
+  // the point of the gesture — so the Meal's own servings are used and the
+  // amount can be changed on the card afterwards.
+  const planFromDrop = (item: BacklogItem, target: DropTarget): void => {
+    if (weekPlanId === undefined) return
+    plan({
+      weekPlanId,
+      mealId: item.mealId,
+      backlogItemId: item.id,
+      date: target.date,
+      slotKey: target.slotKey,
+      servingsCooked: item.servings,
+    })
+  }
+
   const shelf = (
     <BacklogShelf
+      draggable={isWide}
+      onDropOnBoard={planFromDrop}
       items={backlog}
       onAdd={() => {
         setPickerOpen(true)
@@ -315,3 +333,13 @@ export const BoardScreen = ({
     </View>
   )
 }
+
+/**
+ * Drag state wraps the whole board: the Backlog cards that start a drag and the
+ * Slots that receive it are in different subtrees.
+ */
+export const BoardScreen = (props: Props): React.JSX.Element => (
+  <DragProvider>
+    <Board {...props} />
+  </DragProvider>
+)

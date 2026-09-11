@@ -1,10 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation, type Locale } from '@/shared/i18n'
+import type { SlotKey } from '@/features/household'
 import { formatDayHeading } from '../domain/format-day'
+import { useEffect, useRef } from 'react'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { LeftoverCard, MealCard } from '@/features/meals'
 import type { BoardCard, CookEventId } from '../domain/types'
+import { useDrag } from './DragContext'
 import type { BoardDay } from '../domain/board'
 
 const styles = StyleSheet.create({
@@ -19,7 +22,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
   dayName: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
   today: { ...tokens.type.label, color: tokens.color.affirm, textTransform: 'uppercase' },
-  slot: { gap: tokens.space.xs },
+  slot: {
+    gap: tokens.space.xs,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  /** The Slot the card will land in. A terracotta edge rather than a fill, so
+   *  the cards already there stay readable while deciding. */
+  slotHovered: { borderColor: tokens.color.action, backgroundColor: tokens.color.surfaceInset },
   slotLabel: { ...tokens.type.label, color: tokens.color.textMuted, textTransform: 'uppercase' },
   empty: {
     borderTopWidth: 1,
@@ -86,6 +97,48 @@ const Card = ({ card, onAddLeftover, onUnplan }: CardProps): React.JSX.Element =
 const cardKey = (card: BoardCard): string =>
   card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id
 
+/**
+ * A Slot that can receive a dragged card. It reports its own position to the
+ * drag layer and lights up when the pointer is over it, so the drop is
+ * predictable rather than a guess.
+ */
+const DropSlot = ({
+  date,
+  slotKey,
+  children,
+}: {
+  readonly date: string
+  readonly slotKey: SlotKey
+  readonly children: React.ReactNode
+}): React.JSX.Element => {
+  const { hovered, registerSlot } = useDrag()
+  const ref = useRef<View>(null)
+  const isHovered = hovered?.date === date && hovered.slotKey === slotKey
+
+  useEffect(() => {
+    registerSlot({ date, slotKey }, (report) => {
+      ref.current?.measureInWindow((x, y, width, height) => {
+        report({ x, y, width, height })
+      })
+    })
+
+    return () => {
+      registerSlot({ date, slotKey }, undefined)
+    }
+  }, [date, slotKey, registerSlot])
+
+  return (
+    <View
+      ref={ref}
+      style={[styles.slot, isHovered && styles.slotHovered]}
+      testID={`slot-${slotKey}`}
+      accessibilityLabel={isHovered ? `${date} ${slotKey}` : undefined}
+    >
+      {children}
+    </View>
+  )
+}
+
 type Props = {
   readonly day: BoardDay
   readonly isToday: boolean
@@ -119,7 +172,7 @@ export const DayColumn = ({
       </View>
 
       {day.slots.map((slot) => (
-        <View key={slot.slotKey} style={styles.slot} testID={`slot-${slot.slotKey}`}>
+        <DropSlot key={slot.slotKey} date={day.date} slotKey={slot.slotKey}>
           <Text style={styles.slotLabel}>{t(slot.labelKey)}</Text>
 
           {/* An empty Slot is one dashed add-line, never a blank gap. */}
@@ -134,7 +187,7 @@ export const DayColumn = ({
               </AnimatedCard>
             ))
           )}
-        </View>
+        </DropSlot>
       ))}
     </View>
   )

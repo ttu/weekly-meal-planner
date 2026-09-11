@@ -46,3 +46,4 @@ nutrition, cost tracking, monetisation.
 **Dark mode is not designed.** `07-design-system.md` carries the gap. Tokens are
 semantic from day one so it stays a value swap, but the palette itself needs a
 round trip to Claude Design.
+| 08 | [Drag, motion and polish](2026-09-11-08-motion-and-polish.md) | The real typefaces, readable day headings, motion that explains change, the presence hairline, and drag-and-drop on wide screens | **Done** |

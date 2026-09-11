@@ -2,6 +2,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { MealCard } from '@/features/meals'
+import { DraggableBacklogCard } from './DraggableBacklogCard'
+import type { DropTarget } from './DragContext'
 import type { BacklogItem, BacklogItemId } from '../domain/types'
 
 const styles = StyleSheet.create({
@@ -49,13 +51,24 @@ type Props = {
   readonly onAdd?: () => void
   readonly onPlan?: (id: BacklogItemId) => void
   readonly onRemove?: (id: BacklogItemId) => void
+  /** Wide screens only: dragging is the accelerator, tapping is the path that
+   *  always works. */
+  readonly onDropOnBoard?: ((item: BacklogItem, target: DropTarget) => void) | undefined
+  readonly draggable?: boolean | undefined
 }
 
 /**
  * Docked, not a tab: the design keeps the Backlog visible at every scroll
  * position so a card is three taps from the board without any dragging.
  */
-export const BacklogShelf = ({ items, onAdd, onPlan, onRemove }: Props): React.JSX.Element => {
+export const BacklogShelf = ({
+  items,
+  onAdd,
+  onPlan,
+  onRemove,
+  onDropOnBoard,
+  draggable = false,
+}: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
   return (
@@ -88,18 +101,22 @@ export const BacklogShelf = ({ items, onAdd, onPlan, onRemove }: Props): React.J
           <View style={styles.row}>
             {items.map((backlogItem) => (
               <View key={backlogItem.id} style={styles.card}>
-                <Pressable
-                  onPress={() => onPlan?.(backlogItem.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={backlogItem.mealName}
-                  testID={`backlog-item-${backlogItem.id}`}
-                >
-                  <MealCard
-                    variant="backlog"
-                    name={backlogItem.mealName}
-                    addedBy={backlogItem.addedByName}
-                  />
-                </Pressable>
+                {draggable && onDropOnBoard !== undefined ? (
+                  <DraggableBacklogCard item={backlogItem} onDropped={onDropOnBoard} />
+                ) : (
+                  <Pressable
+                    onPress={() => onPlan?.(backlogItem.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={backlogItem.mealName}
+                    testID={`backlog-item-${backlogItem.id}`}
+                  >
+                    <MealCard
+                      variant="backlog"
+                      name={backlogItem.mealName}
+                      addedBy={backlogItem.addedByName}
+                    />
+                  </Pressable>
+                )}
                 <Pressable
                   onPress={() => onRemove?.(backlogItem.id)}
                   accessibilityRole="button"

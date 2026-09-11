@@ -5,6 +5,7 @@ import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { Stack } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { View } from 'react-native'
 import { readAppEnv } from '@/shared/env'
 import { initI18n, setLocale } from '@/shared/i18n'
@@ -58,23 +59,25 @@ export default function RootLayout(): React.JSX.Element {
   }, [client, userId])
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <SessionProvider client={client} household={household} member={member} userId={userId}>
-          {isLoading || !fontsLoaded ? (
-            <View
-              style={{ flex: 1, backgroundColor: tokens.color.surface }}
-              testID="auth-loading"
-            />
-          ) : userId === undefined ? (
-            <SignInScreen client={client} />
-          ) : householdChecked && household === undefined ? (
-            <NoHouseholdScreen client={client} />
-          ) : (
-            <Stack screenOptions={{ headerShown: false }} />
-          )}
-        </SessionProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <SessionProvider client={client} household={household} member={member} userId={userId}>
+            {isLoading || !fontsLoaded ? (
+              <View
+                style={{ flex: 1, backgroundColor: tokens.color.surface }}
+                testID="auth-loading"
+              />
+            ) : userId === undefined ? (
+              <SignInScreen client={client} />
+            ) : householdChecked && household === undefined ? (
+              <NoHouseholdScreen client={client} />
+            ) : (
+              <Stack screenOptions={{ headerShown: false }} />
+            )}
+          </SessionProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }

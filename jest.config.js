@@ -23,6 +23,7 @@ module.exports = {
         // third-party native library, not our own code — so components still
         // render real output.
         '^react-native-reanimated$': '<rootDir>/src/test/mocks/react-native-reanimated.tsx',
+        '^react-native-worklets$': '<rootDir>/src/test/mocks/react-native-worklets.ts',
       },
     },
   ],
