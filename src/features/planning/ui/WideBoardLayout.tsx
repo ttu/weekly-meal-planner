@@ -38,6 +38,7 @@ type Props = {
   readonly library: React.ReactNode
   readonly backlog: React.ReactNode
   readonly board: React.ReactNode
+  readonly overlays?: React.ReactNode
   readonly style?: ViewStyle | undefined
 }
 
@@ -51,6 +52,7 @@ export const WideBoardLayout = ({
   library,
   backlog,
   board,
+  overlays,
   style,
 }: Props): React.JSX.Element => (
   <View style={[styles.page, style]} testID="wide-board-layout">
@@ -66,5 +68,6 @@ export const WideBoardLayout = ({
         <ScrollView style={styles.scroll}>{board}</ScrollView>
       </View>
     </View>
+    {overlays}
   </View>
 )

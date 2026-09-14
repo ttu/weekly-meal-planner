@@ -1,8 +1,8 @@
-import { StyleSheet, View } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 // The gesture runs on the UI thread; these hop back to JS, where the drag state
-// and the mutation live. runOnJS is deprecated in Reanimated 4.
+// and the mutation live.
 import { scheduleOnRN } from 'react-native-worklets'
 import { motion, useReducedMotion } from '@/shared/motion'
 import { MealCard } from '@/features/meals'
@@ -11,24 +11,22 @@ import type { BacklogItem } from '../domain/types'
 
 const styles = StyleSheet.create({
   card: { width: 200 },
-  lifted: { opacity: 0.95 },
 })
 
 type Props = {
   readonly item: BacklogItem
   readonly onDropped: (item: BacklogItem, target: DropTarget) => void
+  readonly onTap: (item: BacklogItem) => void
 }
 
 /**
- * A Backlog card that can be carried onto a day and Slot.
+ * A Backlog card you can either tap or carry onto a day and Slot.
  *
- * Dragging is the wide-screen accelerator, never the only path: tapping the
- * same card still opens the plan sheet, which is what a phone uses.
- *
- * Let go anywhere that is not a Slot and the card returns rather than snapping,
- * so a mis-drag reads as "nothing happened" instead of "something broke".
+ * Both, not one or the other: an earlier version swapped the tappable card for
+ * a draggable one on wide screens, which quietly removed tap-to-plan for
+ * anyone on a laptop.
  */
-export const DraggableBacklogCard = ({ item, onDropped }: Props): React.JSX.Element => {
+export const DraggableBacklogCard = ({ item, onDropped, onTap }: Props): React.JSX.Element => {
   const { begin, moveTo, end } = useDrag()
   const reduced = useReducedMotion()
 
@@ -50,9 +48,11 @@ export const DraggableBacklogCard = ({ item, onDropped }: Props): React.JSX.Elem
   }
 
   const pan = Gesture.Pan()
-    // A short hold before the card lifts, so scrolling the shelf does not start
-    // a drag by accident.
-    .activateAfterLongPress(180)
+    // On a pointer, waiting out a hold before the card moves feels broken. On
+    // touch the hold is what stops a drag stealing the shelf's own scroll.
+    .manualActivation(false)
+    .activateAfterLongPress(Platform.OS === 'web' ? 0 : 180)
+    .minDistance(Platform.OS === 'web' ? 6 : 0)
     .onStart(() => {
       scale.value = withTiming(1.04, { duration: motion.duration.instant })
       scheduleOnRN(begin, item)
@@ -66,6 +66,13 @@ export const DraggableBacklogCard = ({ item, onDropped }: Props): React.JSX.Elem
       scheduleOnRN(onEnd)
     })
 
+  const tap = Gesture.Tap().onEnd(() => {
+    scheduleOnRN(onTap, item)
+  })
+
+  // Pan wins once it activates; until then a clean press is a tap.
+  const gesture = Gesture.Exclusive(pan, tap)
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: offsetX.value },
@@ -76,11 +83,14 @@ export const DraggableBacklogCard = ({ item, onDropped }: Props): React.JSX.Elem
   }))
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.card, animatedStyle]} testID={`draggable-${item.id}`}>
-        <View style={styles.lifted}>
-          <MealCard variant="backlog" name={item.mealName} addedBy={item.addedByName} />
-        </View>
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={[styles.card, animatedStyle]}
+        accessibilityRole="button"
+        accessibilityLabel={item.mealName}
+        testID={`backlog-item-${item.id}`}
+      >
+        <MealCard variant="backlog" name={item.mealName} addedBy={item.addedByName} />
       </Animated.View>
     </GestureDetector>
   )

@@ -199,7 +199,6 @@ const Board = ({
 
   const shelf = (
     <BacklogShelf
-      draggable={isWide}
       onDropOnBoard={planFromDrop}
       items={backlog}
       onAdd={() => {
@@ -212,69 +211,10 @@ const Board = ({
     />
   )
 
-  // Above the breakpoint the same nodes are arranged as three panes: library →
-  // backlog → board, left to right. Only the arrangement differs, so a change
-  // to a card is a change in both.
-  if (isWide) {
-    return (
-      <WideBoardLayout
-        style={{ paddingTop: insets.top }}
-        header={header}
-        library={
-          <MealLibraryScreen
-            meals={meals}
-            onSelect={(mealId) => {
-              add(mealId)
-            }}
-            onAdd={onOpenLibrary}
-          />
-        }
-        backlog={shelf}
-        board={days}
-      />
-    )
-  }
-
-  return (
-    <View style={styles.screen} testID="board-screen">
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
-      >
-        {header}
-        <Text style={styles.title}>{t('board.thisWeek')}</Text>
-
-        {days}
-      </ScrollView>
-
-      {hasFailed && (
-        <Text style={styles.error} testID="backlog-add-error">
-          {t('picker.addFailed')}
-        </Text>
-      )}
-
-      {planFailed && (
-        <Text style={styles.error} testID="plan-error">
-          {t('plan.failed')}
-        </Text>
-      )}
-
-      {leftoverFailed && (
-        <Text style={styles.error} testID="leftover-error">
-          {t('leftover.failed')}
-        </Text>
-      )}
-
-      {unplanFailed && (
-        <Text style={styles.error} testID="unplan-error">
-          {t('unplan.failed')}
-        </Text>
-      )}
-
-      {/* Docked below the board, visible at every scroll position. The wide
-          layout returned earlier, so this is the phone flow. */}
-      {shelf}
-
+  // Rendered by both layouts. Leaving them out of the wide branch removed the
+  // Meal picker, the plan sheet and every confirmation above the breakpoint.
+  const overlays = (
+    <>
       {planning !== undefined && weekPlanId !== undefined && (
         <PlanSheet
           visible
@@ -356,6 +296,74 @@ const Board = ({
           setPickerOpen(false)
         }}
       />
+    </>
+  )
+
+  // Above the breakpoint the same nodes are arranged as three panes: library →
+  // backlog → board, left to right. Only the arrangement differs, so a change
+  // to a card is a change in both.
+  if (isWide) {
+    return (
+      <WideBoardLayout
+        style={{ paddingTop: insets.top }}
+        header={header}
+        library={
+          <MealLibraryScreen
+            meals={meals}
+            onSelect={(mealId) => {
+              add(mealId)
+            }}
+            onAdd={onOpenLibrary}
+          />
+        }
+        backlog={shelf}
+        board={days}
+        overlays={overlays}
+      />
+    )
+  }
+
+  return (
+    <View style={styles.screen} testID="board-screen">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+      >
+        {header}
+        <Text style={styles.title}>{t('board.thisWeek')}</Text>
+
+        {days}
+      </ScrollView>
+
+      {hasFailed && (
+        <Text style={styles.error} testID="backlog-add-error">
+          {t('picker.addFailed')}
+        </Text>
+      )}
+
+      {planFailed && (
+        <Text style={styles.error} testID="plan-error">
+          {t('plan.failed')}
+        </Text>
+      )}
+
+      {leftoverFailed && (
+        <Text style={styles.error} testID="leftover-error">
+          {t('leftover.failed')}
+        </Text>
+      )}
+
+      {unplanFailed && (
+        <Text style={styles.error} testID="unplan-error">
+          {t('unplan.failed')}
+        </Text>
+      )}
+
+      {/* Docked below the board, visible at every scroll position. The wide
+          layout returned earlier, so this is the phone flow. */}
+      {shelf}
+
+      {overlays}
     </View>
   )
 }

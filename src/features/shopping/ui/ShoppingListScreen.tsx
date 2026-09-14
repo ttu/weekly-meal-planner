@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
   footer: { gap: tokens.space.sm, paddingVertical: tokens.space.lg },
 })
 
-const formatAmounts = (line: BuyLine): string =>
-  line.amounts.map((a) => `${String(a.quantity)} ${a.unit}`).join(' + ')
+const formatAmounts = (line: BuyLine, unitLabel: (unit: string) => string): string =>
+  line.amounts.map((a) => `${String(a.quantity)} ${unitLabel(a.unit)}`).join(' + ')
 
 type Props = {
   readonly list: ShoppingList
@@ -77,6 +77,9 @@ export const ShoppingListScreen = ({
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
   const [extraLabel, setExtraLabel] = useState('')
+
+  // Units are stable keys in the database, translated only where they are read.
+  const unitLabel = (unit: string): string => t(`unit.${unit}`)
 
   const isEmpty =
     list.buy.length === 0 && list.cupboard.length === 0 && list.incomplete.length === 0
@@ -108,7 +111,7 @@ export const ShoppingListScreen = ({
             }}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: line.checked }}
-            accessibilityLabel={`${line.name} ${formatAmounts(line)}`}
+            accessibilityLabel={`${line.name} ${formatAmounts(line, unitLabel)}`}
             testID={`buy-${line.ingredientId}`}
           >
             <View style={[styles.checkbox, line.checked && styles.checkboxOn]}>
@@ -116,7 +119,7 @@ export const ShoppingListScreen = ({
             </View>
             <Text style={[styles.label, line.checked && styles.labelChecked]}>{line.name}</Text>
             <Text style={[styles.amount, line.isOverridden && styles.overridden]}>
-              {formatAmounts(line)}
+              {formatAmounts(line, unitLabel)}
             </Text>
           </Pressable>
 
@@ -146,7 +149,7 @@ export const ShoppingListScreen = ({
             <View style={styles.provenance} testID={`provenance-${line.ingredientId}`}>
               {line.contributions.map((c, index) => (
                 <Text key={`${c.mealName}-${String(index)}`} style={styles.note}>
-                  {c.mealName} · {String(c.quantity)} {c.unit}
+                  {c.mealName} · {String(c.quantity)} {unitLabel(c.unit)}
                 </Text>
               ))}
             </View>

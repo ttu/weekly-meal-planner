@@ -51,10 +51,9 @@ type Props = {
   readonly onAdd?: () => void
   readonly onPlan?: (id: BacklogItemId) => void
   readonly onRemove?: (id: BacklogItemId) => void
-  /** Wide screens only: dragging is the accelerator, tapping is the path that
-   *  always works. */
+  /** Dragging is the accelerator; tapping always works and does the same thing
+   *  through the plan sheet. */
   readonly onDropOnBoard?: ((item: BacklogItem, target: DropTarget) => void) | undefined
-  readonly draggable?: boolean | undefined
 }
 
 /**
@@ -67,7 +66,6 @@ export const BacklogShelf = ({
   onPlan,
   onRemove,
   onDropOnBoard,
-  draggable = false,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
@@ -101,9 +99,7 @@ export const BacklogShelf = ({
           <View style={styles.row}>
             {items.map((backlogItem) => (
               <View key={backlogItem.id} style={styles.card}>
-                {draggable && onDropOnBoard !== undefined ? (
-                  <DraggableBacklogCard item={backlogItem} onDropped={onDropOnBoard} />
-                ) : (
+                {onDropOnBoard === undefined ? (
                   <Pressable
                     onPress={() => onPlan?.(backlogItem.id)}
                     accessibilityRole="button"
@@ -116,6 +112,12 @@ export const BacklogShelf = ({
                       addedBy={backlogItem.addedByName}
                     />
                   </Pressable>
+                ) : (
+                  <DraggableBacklogCard
+                    item={backlogItem}
+                    onDropped={onDropOnBoard}
+                    onTap={(dragged) => onPlan?.(dragged.id)}
+                  />
                 )}
                 <Pressable
                   onPress={() => onRemove?.(backlogItem.id)}

@@ -1,5 +1,8 @@
 {
   "board": {
+    "thisWeek": "This week",
+    "today": "Today",
+    "addMeal": "Add a meal",
     "startTitle": "Start a board",
     "startBody": "No account needed. Pick a name for the board, a name for yourself, and a password the family will use to join.",
     "boardName": "Board name",
@@ -154,5 +157,27 @@
     "editing": "{{name}} is here too",
     "alsoHere_one": "{{count}} other person is here",
     "alsoHere_other": "{{count}} others are here"
+  },
+  "category": {
+    "produce": "Produce",
+    "meat": "Meat",
+    "fish": "Fish",
+    "dairy": "Dairy",
+    "dry-goods": "Dry goods",
+    "bakery": "Bakery",
+    "spices": "Spices",
+    "vegetarian": "Vegetarian",
+    "other": "Other"
+  },
+  "unit": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "dl": "dl",
+    "l": "l",
+    "pcs": "pcs",
+    "tin": "tin",
+    "pack": "pack",
+    "bunch": "bunch"
   }
 }

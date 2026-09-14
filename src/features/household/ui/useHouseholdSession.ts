@@ -54,11 +54,21 @@ export const useHouseholdSession = (
   }
 }
 
-/** Called after creating or joining a board, so the app stops believing the
- *  person is a Member of nothing. */
+/**
+ * Called after creating or joining a board, so the app stops believing the
+ * person is a Member of nothing.
+ *
+ * Reset rather than invalidate. Signing in anonymously starts this query
+ * immediately, so it is usually still in flight — reading "no Household"
+ * moments before create_board creates one — when the board arrives. An
+ * invalidated in-flight query is not restarted, and that stale empty answer
+ * became the cached truth: a person who had just named their board landed on
+ * the "no Household" screen. Reset cancels the fetch in flight and starts a
+ * new one, which can only see the world after the board exists.
+ */
 export const useRefreshHousehold = (): (() => void) => {
   const queryClient = useQueryClient()
   return () => {
-    void queryClient.invalidateQueries({ queryKey: HOUSEHOLD_QUERY_KEY })
+    void queryClient.resetQueries({ queryKey: HOUSEHOLD_QUERY_KEY })
   }
 }

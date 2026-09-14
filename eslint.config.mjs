@@ -28,6 +28,8 @@ export default defineConfig([
       '.storybook/**/*.ts',
       '.storybook/**/*.tsx',
       'scripts/**/*.ts',
+      'e2e/**/*.ts',
+      'playwright.config.ts',
     ],
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
@@ -54,6 +56,7 @@ export default defineConfig([
       'src/**/fixtures/**',
       '.storybook/**',
       'scripts/**',
+      'e2e/**',
     ],
     rules: {
       'no-restricted-syntax': 'off',

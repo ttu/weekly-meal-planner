@@ -64,14 +64,35 @@ with tests written to kill a mutant.
 
 ## E2E — critical flows only
 
-Maestro on a real device build. One flow is mandatory:
+Playwright against the web build (`pnpm run test:e2e`), in `e2e/`. Maestro on a
+device build covers the same flow when a native change warrants it. One flow is
+mandatory:
 
-sign in → add a meal → put it in the backlog → plan it on a day → see it on the
-shopping list → copy the agent prompt.
+start a board → add a Meal to the Backlog → plan it on a day → drag a second one
+onto a Slot → see both on the Shopping List → copy the agent prompt.
 
 Selectors are `data-testid` only, or `getByRole`/`aria-label` for interactive
 controls. Never CSS classes, text content or structural position — the copy is
 translated and the layout has a breakpoint, so both would be lying.
+
+### One page per spec
+
+An anonymous board lives entirely in browser storage, and Playwright gives each
+test a fresh context. A spec that tells one story therefore shares one page
+(`openSharedPage`, `test.describe.configure({ mode: 'serial' })`); a test that
+needs its own board calls `asNewVisitor` and creates one.
+
+### Drag needs real mouse moves
+
+`dragTo` sends too few pointer events for a gesture recogniser to activate.
+`dragOnto` in `e2e/fixtures.ts` walks the pointer across in twenty steps, which
+is what react-native-gesture-handler is waiting to see.
+
+### `count()` does not retry
+
+Playwright's auto-waiting lives in `expect`, not in `Locator.count()`. Wait for
+`expect(rows.first()).toBeVisible()` before counting, or the count is of
+whatever had rendered by that microsecond.
 
 ## Not unit-tested
 

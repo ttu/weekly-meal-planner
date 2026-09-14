@@ -89,7 +89,7 @@ export const IngredientPicker = ({
           ) : (
             grouped.map(([category, items]) => (
               <View key={category}>
-                <Text style={formStyles.section}>{category}</Text>
+                <Text style={formStyles.section}>{t(`category.${category}`)}</Text>
                 {items.map((ingredient) => (
                   <Pressable
                     key={ingredient.id}

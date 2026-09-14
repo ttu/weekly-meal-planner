@@ -1,5 +1,8 @@
 {
   "board": {
+    "thisWeek": "Tämä viikko",
+    "today": "Tänään",
+    "addMeal": "Lisää ateria",
     "startTitle": "Aloita taulu",
     "startBody": "Tiliä ei tarvita. Valitse taululle nimi, itsellesi nimi ja salasana, jolla perhe liittyy.",
     "boardName": "Taulun nimi",
@@ -154,5 +157,27 @@
     "editing": "{{name}} on myös täällä",
     "alsoHere_one": "{{count}} muu on täällä",
     "alsoHere_other": "{{count}} muuta on täällä"
+  },
+  "category": {
+    "produce": "Hedelmät ja vihannekset",
+    "meat": "Liha",
+    "fish": "Kala",
+    "dairy": "Maitotuotteet",
+    "dry-goods": "Kuivatuotteet",
+    "bakery": "Leipä",
+    "spices": "Mausteet",
+    "vegetarian": "Kasvisproteiini",
+    "other": "Muut"
+  },
+  "unit": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "dl": "dl",
+    "l": "l",
+    "pcs": "kpl",
+    "tin": "tlk",
+    "pack": "pkt",
+    "bunch": "nippu"
   }
 }

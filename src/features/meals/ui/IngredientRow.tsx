@@ -79,10 +79,10 @@ export const IngredientRow = ({
             }}
             accessibilityRole="button"
             accessibilityState={{ selected: option === unit }}
-            accessibilityLabel={`${t('ingredient.unit')} ${option}`}
+            accessibilityLabel={`${t('ingredient.unit')} ${t(`unit.${option}`)}`}
             testID={`ingredient-unit-${ingredient.slug}-${option}`}
           >
-            <Text style={formStyles.chipText}>{option}</Text>
+            <Text style={formStyles.chipText}>{t(`unit.${option}`)}</Text>
           </Pressable>
         ))}
       </View>

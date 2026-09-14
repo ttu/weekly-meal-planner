@@ -10,3 +10,5 @@ expo-env.d.ts
 storybook-static/
 .playwright-mcp/
 .jscpd/
+test-results/
+playwright-report/
