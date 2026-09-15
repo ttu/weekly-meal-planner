@@ -88,6 +88,17 @@ needs its own board calls `asNewVisitor` and creates one.
 `dragOnto` in `e2e/fixtures.ts` walks the pointer across in twenty steps, which
 is what react-native-gesture-handler is waiting to see.
 
+### Resetting between specs
+
+`resetDatabase` truncates `household` and `auth.users` — which cascades through
+Members, Week Plans, Backlog Items, Cook Events and Household Meals — and
+leaves the Catalogue and the Ingredient taxonomy alone, so nothing needs
+re-syncing. It runs `psql` inside the database container.
+
+Not `supabase db reset`: that re-runs every migration and cycles the
+containers, taking the better part of a minute per spec. It is also the only
+part of the harness that has ever taken the whole local stack down with it.
+
 ### `count()` does not retry
 
 Playwright's auto-waiting lives in `expect`, not in `Locator.count()`. Wait for

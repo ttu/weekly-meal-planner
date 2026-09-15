@@ -3,12 +3,41 @@ import { expect, type Browser, type Locator, type Page } from '@playwright/test'
 
 export const DEMO_PASSWORD = 'kaalikaari'
 
+const DB_CONTAINER = 'supabase_db_weekly-meal-planner'
+
 /**
- * A clean database. Slow, so it runs once per spec rather than per test.
+ * A clean board, between specs.
+ *
+ * A truncate rather than `supabase db reset`: the reset re-runs every migration
+ * and cycles the containers, which takes the better part of a minute and — when
+ * the CLI misreads its own state — tears the stack down instead. Truncating
+ * `household` cascades through Members, Week Plans, Backlog Items, Cook Events
+ * and Household Meals, and dropping the anonymous users with it leaves the
+ * Catalogue and the Ingredient taxonomy where they are, so nothing needs
+ * re-syncing.
+ *
+ * Run inside the container rather than over the host's psql: the client there
+ * is whatever Homebrew last installed, and it does not have to match the
+ * server.
  */
 export const resetDatabase = (): void => {
-  execFileSync('pnpm', ['exec', 'supabase', 'db', 'reset'], { stdio: 'ignore' })
-  execFileSync('pnpm', ['run', 'catalogue:sync'], { stdio: 'ignore' })
+  execFileSync(
+    'docker',
+    [
+      'exec',
+      DB_CONTAINER,
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      'postgres',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      'truncate household, auth.users cascade',
+    ],
+    { stdio: 'ignore' },
+  )
 }
 
 /**
