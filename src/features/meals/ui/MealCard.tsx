@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
@@ -25,6 +25,10 @@ type Props = {
   readonly isCatalogue?: boolean | undefined
   /** The wide board's library pane is 284px wide and needs the tighter row. */
   readonly compact?: boolean | undefined
+  /** Planned cards carry their two actions as icon buttons on the card itself.
+   *  Omitted, the card is a plain card — which is what the drag layer wants. */
+  readonly onAddLeftover?: (() => void) | undefined
+  readonly onUnplan?: (() => void) | undefined
 }
 
 const styles = StyleSheet.create({
@@ -45,8 +49,32 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     boxShadow: tokens.shadow.card,
   },
-  /** The planned card reads name-then-servings on the left, face on the right. */
-  plannedRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  /** The planned card reads name-then-servings on the left, then its actions,
+   *  then the face of whoever put it there at the outside edge. */
+  plannedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  actions: { flexDirection: 'row', gap: 6 },
+  /**
+   * Glyph buttons rather than an icon font. The app already speaks in glyphs —
+   * × to remove, ✓ to tick, ⌄ to expand — and a whole icon package for two
+   * marks would be the largest dependency here by some margin. Each carries a
+   * real label for anyone listening rather than looking.
+   */
+  action: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: tokens.color.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionPressed: { backgroundColor: tokens.color.surfaceInset },
+  actionGlyph: {
+    fontFamily: tokens.type.body.fontFamily,
+    fontSize: 15,
+    lineHeight: 18,
+    color: tokens.color.textSupport,
+  },
   badge: {
     ...tokens.type.labelTiny,
     color: tokens.color.textMuted,
@@ -92,6 +120,8 @@ export const MealCard = ({
   detail,
   isCatalogue = false,
   compact = false,
+  onAddLeftover,
+  onUnplan,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
@@ -107,6 +137,33 @@ export const MealCard = ({
               </Text>
             )}
           </View>
+          <View style={styles.actions}>
+            {onAddLeftover !== undefined && (
+              <Pressable
+                style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+                onPress={onAddLeftover}
+                accessibilityRole="button"
+                accessibilityLabel={t('leftover.add')}
+                testID="card-add-leftover"
+              >
+                {/* Another sitting of the same pot — the glossary's own word
+                    for a Leftover is "repeat". */}
+                <Text style={styles.actionGlyph}>↻</Text>
+              </Pressable>
+            )}
+            {onUnplan !== undefined && (
+              <Pressable
+                style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+                onPress={onUnplan}
+                accessibilityRole="button"
+                accessibilityLabel={t('unplan.action')}
+                testID="card-unplan"
+              >
+                <Text style={styles.actionGlyph}>×</Text>
+              </Pressable>
+            )}
+          </View>
+
           {addedBy !== undefined && addedBy !== '' && (
             <Avatar name={addedBy} colour={addedByColour ?? ''} />
           )}

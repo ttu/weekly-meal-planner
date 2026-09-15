@@ -91,7 +91,7 @@ test.describe('cards can be carried around the board', () => {
     // "Add leftovers" asks nothing: the second sitting appears under the Meal
     // it came from, on the same day and Slot.
     await page
-      .locator(`[data-testid="day-${wednesday}"] [data-testid^="add-leftover-"]`)
+      .locator(`[data-testid="day-${wednesday}"] [data-testid="card-add-leftover"]`)
       .first()
       .click()
 

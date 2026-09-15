@@ -11,6 +11,12 @@ type Props = {
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
   readonly onTap?: (() => void) | undefined
   readonly accessibilityLabel: string
+  /**
+   * Off when the card carries its own buttons. A button inside a button is
+   * invalid on web and the browser swallows the inner tap — which is how the
+   * planned card's two actions stopped working the moment they moved onto it.
+   */
+  readonly isTappable?: boolean | undefined
   readonly testID?: string | undefined
   readonly children: React.ReactNode
 }
@@ -31,6 +37,7 @@ export const DraggableCard = ({
   onDropped,
   onTap,
   accessibilityLabel,
+  isTappable = true,
   testID,
   children,
 }: Props): React.JSX.Element => {
@@ -95,7 +102,7 @@ export const DraggableCard = ({
       <GestureDetector gesture={gesture}>
         <Animated.View
           style={placeholder}
-          accessibilityRole="button"
+          accessibilityRole={isTappable ? 'button' : undefined}
           accessibilityLabel={accessibilityLabel}
           testID={testID}
         >

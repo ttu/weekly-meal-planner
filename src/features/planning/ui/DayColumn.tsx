@@ -114,42 +114,35 @@ const Card = ({
   const { cookEvent } = card
 
   return (
-    <View>
-      {/* A planned Meal is as portable as one in the Backlog: carry it to
-          another day, another Slot, or back onto the Backlog to drop it. */}
-      <DraggableCard
-        payload={{ kind: 'cook-event', cookEvent }}
-        onDropped={onDropped}
-        accessibilityLabel={cookEvent.mealName}
-        testID={`planned-${cookEvent.id}`}
-      >
-        <MealCard
-          variant="planned"
-          name={cookEvent.mealName}
-          servingsCooked={cookEvent.servingsCooked}
-          addedBy={cookEvent.addedByName}
-          addedByColour={cookEvent.addedByColour}
-        />
-      </DraggableCard>
-      <View style={styles.actions}>
-        <Pressable
-          onPress={() => onAddLeftover?.(cookEvent.id)}
-          accessibilityRole="button"
-          accessibilityLabel={t('leftover.add')}
-          testID={`add-leftover-${cookEvent.id}`}
-        >
-          <Text style={styles.action}>{t('leftover.add')}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => onUnplan?.(cookEvent.id)}
-          accessibilityRole="button"
-          accessibilityLabel={t('unplan.action')}
-          testID={`unplan-${cookEvent.id}`}
-        >
-          <Text style={styles.action}>{t('unplan.action')}</Text>
-        </Pressable>
-      </View>
-    </View>
+    <DraggableCard
+      payload={{ kind: 'cook-event', cookEvent }}
+      onDropped={onDropped}
+      accessibilityLabel={cookEvent.mealName}
+      isTappable={false}
+      testID={`planned-${cookEvent.id}`}
+    >
+      <MealCard
+        variant="planned"
+        name={cookEvent.mealName}
+        servingsCooked={cookEvent.servingsCooked}
+        addedBy={cookEvent.addedByName}
+        addedByColour={cookEvent.addedByColour}
+        onAddLeftover={
+          onAddLeftover === undefined
+            ? undefined
+            : () => {
+                onAddLeftover(cookEvent.id)
+              }
+        }
+        onUnplan={
+          onUnplan === undefined
+            ? undefined
+            : () => {
+                onUnplan(cookEvent.id)
+              }
+        }
+      />
+    </DraggableCard>
   )
 }
 
