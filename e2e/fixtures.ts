@@ -8,12 +8,14 @@ const DB_CONTAINER = 'supabase_db_weekly-meal-planner'
 /**
  * A clean board, between specs.
  *
- * A truncate rather than `supabase db reset`: the reset re-runs every migration
- * and cycles the containers, which takes the better part of a minute and — when
- * the CLI misreads its own state — tears the stack down instead. Truncating
- * `household` cascades through Members, Week Plans, Backlog Items, Cook Events
- * and Household Meals, and dropping the anonymous users with it leaves the
- * Catalogue and the Ingredient taxonomy where they are, so nothing needs
+ * DELETE, not TRUNCATE. `truncate household cascade` empties every table with a
+ * foreign key to it — including all of `meal`, Catalogue rows and all — and the
+ * library came up empty. Deleting rows follows `on delete cascade` one row at a
+ * time, so Household Meals go and the Catalogue stays.
+ *
+ * Deleting the Households takes their Members, Week Plans, Backlog Items, Cook
+ * Events and Meals with them; deleting the users takes the anonymous accounts.
+ * The Catalogue and the Ingredient taxonomy are untouched, so nothing needs
  * re-syncing.
  *
  * Run inside the container rather than over the host's psql: the client there
@@ -34,7 +36,7 @@ export const resetDatabase = (): void => {
       '-v',
       'ON_ERROR_STOP=1',
       '-c',
-      'truncate household, auth.users cascade',
+      'delete from household; delete from auth.users;',
     ],
     { stdio: 'ignore' },
   )

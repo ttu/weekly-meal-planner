@@ -90,10 +90,15 @@ is what react-native-gesture-handler is waiting to see.
 
 ### Resetting between specs
 
-`resetDatabase` truncates `household` and `auth.users` — which cascades through
+`resetDatabase` deletes the Households and the users — which cascades through
 Members, Week Plans, Backlog Items, Cook Events and Household Meals — and
 leaves the Catalogue and the Ingredient taxonomy alone, so nothing needs
 re-syncing. It runs `psql` inside the database container.
+
+`DELETE`, not `TRUNCATE`. `truncate household cascade` empties every table with
+a foreign key to it, which includes all of `meal`: it took the Catalogue with
+it and the library came up empty. `DELETE` follows `on delete cascade` one row
+at a time, so the Catalogue rows — the ones with no Household — survive.
 
 Not `supabase db reset`: that re-runs every migration and cycles the
 containers, taking the better part of a minute per spec. It is also the only
