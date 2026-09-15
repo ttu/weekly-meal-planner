@@ -4,6 +4,7 @@ import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession, type SlotKey } from '@/features/household'
 import { currentWeekStart } from '../domain/week'
 import { addLeftover } from '../application/add-leftover'
+import { moveCookEvent } from '../application/move-cook-event'
 import { unplanMeal } from '../application/unplan-meal'
 import { removeBacklogItem } from '../application/remove-backlog-item'
 import type { BacklogItemId, CookEventId } from '../domain/types'
@@ -14,11 +15,19 @@ export type LeftoverRequest = {
   readonly slotKey: SlotKey
 }
 
+export type MoveRequest = {
+  readonly cookEventId: CookEventId
+  readonly date: string
+  readonly slotKey: SlotKey
+}
+
 export type PlanningActions = {
   readonly addLeftoverFor: (request: LeftoverRequest) => void
+  readonly move: (request: MoveRequest) => void
   readonly unplan: (cookEventId: CookEventId) => void
   readonly removeFromBacklog: (id: BacklogItemId) => void
   readonly leftoverFailed: boolean
+  readonly moveFailed: boolean
   readonly unplanFailed: boolean
 }
 
@@ -38,6 +47,15 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   const leftoverMutation = useMutation({
     mutationFn: async (request: LeftoverRequest) => {
       const result = await addLeftover(client, request)
+      if (isErr(result)) throw new Error(result.error)
+      return result.value
+    },
+    onSettled: invalidate,
+  })
+
+  const moveMutation = useMutation({
+    mutationFn: async (request: MoveRequest) => {
+      const result = await moveCookEvent(client, request)
       if (isErr(result)) throw new Error(result.error)
       return result.value
     },
@@ -65,6 +83,9 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
     addLeftoverFor: (request) => {
       leftoverMutation.mutate(request)
     },
+    move: (request) => {
+      moveMutation.mutate(request)
+    },
     unplan: (cookEventId) => {
       unplanMutation.mutate(cookEventId)
     },
@@ -72,6 +93,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
       removeMutation.mutate(id)
     },
     leftoverFailed: leftoverMutation.isError,
+    moveFailed: moveMutation.isError,
     unplanFailed: unplanMutation.isError,
   }
 }

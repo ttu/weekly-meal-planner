@@ -14,6 +14,7 @@ import { DayColumn } from './DayColumn'
 import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
+import { resolveDrop } from '../domain/drop'
 import { useWeekBoard } from './useWeekBoard'
 import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
@@ -21,7 +22,8 @@ import { usePlanningActions } from './usePlanningActions'
 import { useWeekRealtime } from './useWeekRealtime'
 import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
-import { DragProvider, type DropTarget } from './DragContext'
+import { DragProvider, type DragPayload, type DropTarget } from './DragContext'
+import { DragLayer } from './DragLayer'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
@@ -88,8 +90,15 @@ const Board = ({
   const [isPickerOpen, setPickerOpen] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<DropTarget | undefined>(undefined)
   const [planning, setPlanning] = useState<BacklogItem | undefined>(undefined)
-  const { addLeftoverFor, unplan, removeFromBacklog, leftoverFailed, unplanFailed } =
-    usePlanningActions(clock)
+  const {
+    addLeftoverFor,
+    move,
+    unplan,
+    removeFromBacklog,
+    leftoverFailed,
+    moveFailed,
+    unplanFailed,
+  } = usePlanningActions(clock)
   const [leftoverFor, setLeftoverFor] = useState<CookEvent | undefined>(undefined)
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
   const isWide = useWideScreen()
@@ -123,20 +132,29 @@ const Board = ({
   /** Tapping an empty Slot opens the picker already aimed at that Slot, so the
    *  Meal is planned in one step rather than parked in the Backlog first. */
   const openPickerFor = (date: string, slotKey: SlotKey): void => {
-    setPickerTarget({ date, slotKey })
+    setPickerTarget({ kind: 'slot', date, slotKey })
     setPickerOpen(true)
   }
 
-  const planFromDrop = (item: BacklogItem, target: DropTarget): void => {
-    if (weekPlanId === undefined) return
-    plan({
-      weekPlanId,
-      mealId: item.mealId,
-      backlogItemId: item.id,
-      date: target.date,
-      slotKey: target.slotKey,
-      servingsCooked: item.servings,
-    })
+  /** What a drop means is decided in the domain; this only carries it out,
+   *  through the same mutations the tap path uses. */
+  const onDropped = (payload: DragPayload, target: DropTarget): void => {
+    const action = resolveDrop(payload, target)
+
+    switch (action.kind) {
+      case 'plan':
+        if (weekPlanId === undefined) return
+        plan({ weekPlanId, ...action })
+        return
+      case 'move':
+        move(action)
+        return
+      case 'unplan':
+        unplan(action.cookEventId)
+        return
+      case 'none':
+        return
+    }
   }
 
   const header = (
@@ -157,7 +175,7 @@ const Board = ({
   const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => (
     <BacklogShelf
       layout={layout}
-      onDropOnBoard={planFromDrop}
+      onDropped={onDropped}
       items={backlog}
       onAdd={() => {
         setPickerTarget(undefined)
@@ -250,7 +268,12 @@ const Board = ({
         onSelect={(mealId) => {
           const target = pickerTarget
           const servings = meals.find((meal) => meal.id === mealId)?.servings
-          if (target === undefined || weekPlanId === undefined || servings === undefined) {
+          if (
+            target === undefined ||
+            target.kind !== 'slot' ||
+            weekPlanId === undefined ||
+            servings === undefined
+          ) {
             add(mealId)
           } else {
             plan({
@@ -287,6 +310,11 @@ const Board = ({
       {leftoverFailed && (
         <Text style={styles.error} testID="leftover-error">
           {t('leftover.failed')}
+        </Text>
+      )}
+      {moveFailed && (
+        <Text style={styles.error} testID="move-error">
+          {t('plan.moveFailed')}
         </Text>
       )}
       {unplanFailed && (
@@ -327,6 +355,7 @@ const Board = ({
                   setUnplanning(cookEventById(id))
                 }}
                 onAddMeal={openPickerFor}
+                onDropped={onDropped}
               />
             ))}
           </View>
@@ -335,6 +364,7 @@ const Board = ({
           <>
             {errors}
             {overlays}
+            <DragLayer />
           </>
         }
       />
@@ -439,6 +469,7 @@ const Board = ({
                   setUnplanning(cookEventById(id))
                 }}
                 onAddMeal={openPickerFor}
+                onDropped={onDropped}
               />
             </View>
           ))}
@@ -450,6 +481,8 @@ const Board = ({
       {shelf('shelf')}
 
       {overlays}
+
+      <DragLayer />
     </View>
   )
 }

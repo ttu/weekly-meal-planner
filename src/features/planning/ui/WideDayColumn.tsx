@@ -6,7 +6,9 @@ import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { formatColumnHeading } from '../domain/format-day'
 import type { BoardCard, CookEventId } from '../domain/types'
 import type { BoardDay } from '../domain/board'
+import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
+import type { DragPayload, DropTarget } from './DragContext'
 
 /**
  * One day of the wide board: a narrow column where seven must fit across, so
@@ -93,6 +95,7 @@ type Props = {
   readonly recentlyChanged?: boolean | undefined
   readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
+  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
 export const WideDayColumn = ({
@@ -103,6 +106,7 @@ export const WideDayColumn = ({
   recentlyChanged = false,
   onSelect,
   onAddMeal,
+  onDropped,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
@@ -153,16 +157,20 @@ export const WideDayColumn = ({
                 </View>
               ) : (
                 <AnimatedCard key={cardKey(card)}>
-                  <Pressable
-                    style={styles.card}
-                    onPress={() => onSelect?.(card.cookEvent.id)}
-                    accessibilityRole="button"
+                  {/* Carry it to another day or Slot, or back onto the Backlog
+                      to take it off the week. Tapping still opens unplan. */}
+                  <DraggableCard
+                    payload={{ kind: 'cook-event', cookEvent: card.cookEvent }}
+                    onDropped={onDropped}
+                    onTap={() => onSelect?.(card.cookEvent.id)}
                     accessibilityLabel={card.cookEvent.mealName}
-                    testID="meal-card-planned"
+                    testID={`planned-${card.cookEvent.id}`}
                   >
-                    <Text style={styles.cardName}>{card.cookEvent.mealName}</Text>
-                    <Text style={styles.cardCount}>{String(card.cookEvent.servingsCooked)}</Text>
-                  </Pressable>
+                    <View style={styles.card} testID="meal-card-planned">
+                      <Text style={styles.cardName}>{card.cookEvent.mealName}</Text>
+                      <Text style={styles.cardCount}>{String(card.cookEvent.servingsCooked)}</Text>
+                    </View>
+                  </DraggableCard>
                 </AnimatedCard>
               ),
             )}

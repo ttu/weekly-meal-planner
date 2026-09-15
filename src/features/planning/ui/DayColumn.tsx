@@ -6,7 +6,9 @@ import { formatWeekday } from '../domain/format-day'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { LeftoverCard, MealCard } from '@/features/meals'
 import type { BoardCard, CookEventId } from '../domain/types'
+import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
+import type { DragPayload, DropTarget } from './DragContext'
 import type { BoardDay } from '../domain/board'
 
 const styles = StyleSheet.create({
@@ -55,9 +57,10 @@ type CardProps = {
   readonly card: BoardCard
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
-const Card = ({ card, onAddLeftover, onUnplan }: CardProps): React.JSX.Element => {
+const Card = ({ card, onAddLeftover, onUnplan, onDropped }: CardProps): React.JSX.Element => {
   const { t } = useTranslation()
 
   if (card.kind === 'leftover') {
@@ -68,13 +71,22 @@ const Card = ({ card, onAddLeftover, onUnplan }: CardProps): React.JSX.Element =
 
   return (
     <View>
-      <MealCard
-        variant="planned"
-        name={cookEvent.mealName}
-        servingsCooked={cookEvent.servingsCooked}
-        addedBy={cookEvent.addedByName}
-        addedByColour={cookEvent.addedByColour}
-      />
+      {/* A planned Meal is as portable as one in the Backlog: carry it to
+          another day, another Slot, or back onto the Backlog to drop it. */}
+      <DraggableCard
+        payload={{ kind: 'cook-event', cookEvent }}
+        onDropped={onDropped}
+        accessibilityLabel={cookEvent.mealName}
+        testID={`planned-${cookEvent.id}`}
+      >
+        <MealCard
+          variant="planned"
+          name={cookEvent.mealName}
+          servingsCooked={cookEvent.servingsCooked}
+          addedBy={cookEvent.addedByName}
+          addedByColour={cookEvent.addedByColour}
+        />
+      </DraggableCard>
       <View style={styles.actions}>
         <Pressable
           onPress={() => onAddLeftover?.(cookEvent.id)}
@@ -110,6 +122,7 @@ type Props = {
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
+  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
 export const DayColumn = ({
@@ -120,6 +133,7 @@ export const DayColumn = ({
   onAddLeftover,
   onUnplan,
   onAddMeal,
+  onDropped,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
@@ -151,7 +165,12 @@ export const DayColumn = ({
             ) : (
               slot.cards.map((card) => (
                 <AnimatedCard key={cardKey(card)}>
-                  <Card card={card} onAddLeftover={onAddLeftover} onUnplan={onUnplan} />
+                  <Card
+                    card={card}
+                    onAddLeftover={onAddLeftover}
+                    onUnplan={onUnplan}
+                    onDropped={onDropped}
+                  />
                 </AnimatedCard>
               ))
             )}

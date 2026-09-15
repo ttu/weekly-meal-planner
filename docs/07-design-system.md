@@ -112,6 +112,31 @@ rather than in a row of siblings.
 
 ## Drag and drop
 
-Implemented in both layouts. A Backlog card is tappable and draggable at every
-width (`Gesture.Exclusive(pan, tap)`); dragging is the accelerator and tapping
-always works, which the design always required as the phone path.
+Every card is tappable and draggable at every width
+(`Gesture.Exclusive(pan, tap)`). Dragging is the accelerator; tapping always
+works, which the design always required as the phone path, and is the path a
+screen reader takes.
+
+What can be carried, and where it lands:
+
+| Card       | Dropped on a Slot | Dropped on the Backlog |
+| ---------- | ----------------- | ---------------------- |
+| Backlog    | planned there     | nothing                |
+| Cook Event | moved there       | taken off the week     |
+
+Each outcome is the same mutation the tap path uses. Dragging is a faster way
+to say the same thing, never a second way of saying it.
+
+**The card in your hand is drawn by `DragLayer`, at the root of the board.**
+This is not a detail. Translating the card itself made it vanish the moment it
+left the Backlog: a horizontally scrolling shelf clips its children, so does a
+day column, and no `zIndex` changes that. The source card stays put and fades
+to 35%; the layer draws a copy under the pointer, and the grab offset is
+measured at drag start so the card does not jump into your hand.
+
+Position lives in Reanimated shared values and moves on the UI thread. Which
+target is under the pointer is ordinary React state — it changes a handful of
+times per drag, not every frame.
+
+Drop targets measure themselves **at drag start**, never at mount: a pane
+scrolls, and bounds captured at mount drop the card on the wrong day.

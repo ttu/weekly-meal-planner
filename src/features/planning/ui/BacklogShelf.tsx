@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
-import { DraggableBacklogCard } from './DraggableBacklogCard'
-import type { DropTarget } from './DragContext'
+import { MealCard } from '@/features/meals'
+import { DraggableCard } from './DraggableCard'
+import { isSameTarget, useDrag, type DragPayload, type DropTarget } from './DragContext'
 import type { BacklogItem, BacklogItemId } from '../domain/types'
 
 /**
@@ -12,6 +14,10 @@ import type { BacklogItem, BacklogItemId } from '../domain/types'
  * On a wide screen the same component becomes the middle pane — a vertical
  * column between the library and the board, which is the direction the whole
  * layout moves in.
+ *
+ * It is also a drop target. Dragging a planned Meal back here is how it leaves
+ * the week without being forgotten: it returns to the Backlog rather than being
+ * deleted, which is what "we're not cooking that on Tuesday after all" means.
  */
 export type BacklogLayout = 'shelf' | 'pane'
 
@@ -25,7 +31,8 @@ const styles = StyleSheet.create({
     gap: 11,
     boxShadow: tokens.shadow.shelf,
   },
-  pane: { paddingTop: tokens.space.md, gap: 11 },
+  pane: { paddingTop: tokens.space.md, gap: 11, minHeight: '100%' },
+  hovered: { backgroundColor: 'rgba(192, 90, 56, 0.06)' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -55,10 +62,22 @@ const styles = StyleSheet.create({
   cardWrap: { position: 'relative' },
   /** Removal sits on the card as a corner affordance rather than a row of its
    *  own: a shelf card is 168px wide and cannot spare a line. */
-  remove: { position: 'absolute', top: 2, right: 4, padding: 6 },
+  remove: { position: 'absolute', top: 2, right: 4, padding: 6, zIndex: 1 },
   removeText: { ...tokens.type.meta, color: tokens.color.textGhost },
   empty: { paddingHorizontal: tokens.space.md },
   emptyText: { ...tokens.type.body, color: tokens.color.textSupport },
+  /** Shown only while a planned card is in the air, so the way back is
+   *  visible at the moment it is wanted. */
+  dropHere: {
+    marginHorizontal: tokens.space.md,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: tokens.color.action,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 13,
+  },
+  dropHereText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.action },
 })
 
 type Props = {
@@ -69,7 +88,7 @@ type Props = {
   readonly onRemove?: (id: BacklogItemId) => void
   /** Dragging is the accelerator; tapping always works and does the same thing
    *  through the plan sheet. */
-  readonly onDropOnBoard?: ((item: BacklogItem, target: DropTarget) => void) | undefined
+  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
 export const BacklogShelf = ({
@@ -78,18 +97,31 @@ export const BacklogShelf = ({
   onAdd,
   onPlan,
   onRemove,
-  onDropOnBoard,
+  onDropped,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
+  const { dragging, hovered, registerTarget } = useDrag()
+  const ref = useRef<View>(null)
   const isShelf = layout === 'shelf'
+  const isHovered = isSameTarget(hovered, { kind: 'backlog' })
+  const canReceive = dragging?.kind === 'cook-event'
+
+  useEffect(() => {
+    const target = { kind: 'backlog' } as const
+
+    registerTarget(target, (report) => {
+      ref.current?.measureInWindow((x, y, width, height) => {
+        report({ x, y, width, height })
+      })
+    })
+
+    return () => {
+      registerTarget(target, undefined)
+    }
+  }, [registerTarget])
 
   const cards = items.map((backlogItem) => (
     <View key={backlogItem.id} style={[styles.cardWrap, isShelf && styles.shelfCard]}>
-      <DraggableBacklogCard
-        item={backlogItem}
-        onDropped={onDropOnBoard}
-        onTap={(dragged) => onPlan?.(dragged.id)}
-      />
       <Pressable
         style={styles.remove}
         onPress={() => onRemove?.(backlogItem.id)}
@@ -99,11 +131,29 @@ export const BacklogShelf = ({
       >
         <Text style={styles.removeText}>×</Text>
       </Pressable>
+      <DraggableCard
+        payload={{ kind: 'backlog', item: backlogItem }}
+        onDropped={onDropped}
+        onTap={() => onPlan?.(backlogItem.id)}
+        accessibilityLabel={backlogItem.mealName}
+        testID={`backlog-item-${backlogItem.id}`}
+      >
+        <MealCard
+          variant="backlog"
+          name={backlogItem.mealName}
+          addedBy={backlogItem.addedByName}
+          addedByColour={backlogItem.addedByColour}
+        />
+      </DraggableCard>
     </View>
   ))
 
   return (
-    <View style={isShelf ? styles.shelf : styles.pane} testID="backlog-shelf">
+    <View
+      ref={ref}
+      style={[isShelf ? styles.shelf : styles.pane, isHovered && styles.hovered]}
+      testID="backlog-shelf"
+    >
       <View style={styles.header}>
         <View style={styles.headingRow}>
           {isShelf && <View style={styles.grip} />}
@@ -127,6 +177,12 @@ export const BacklogShelf = ({
           </Pressable>
         )}
       </View>
+
+      {canReceive && (
+        <View style={styles.dropHere} testID="backlog-drop-hint">
+          <Text style={styles.dropHereText}>{t('backlog.dropToRemove')}</Text>
+        </View>
+      )}
 
       {items.length === 0 ? (
         <View style={styles.empty} testID="backlog-empty">

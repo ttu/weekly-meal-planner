@@ -58,7 +58,8 @@
     "count": "Toivelista",
     "empty": "Kukaan ei ole vielä lisännyt mitään.",
     "add": "Lisää",
-    "addShort": "+ Lisää"
+    "addShort": "+ Lisää",
+    "dropToRemove": "Pudota tähän poistaaksesi viikosta"
   },
   "picker": {
     "title": "Lisää ateria",
@@ -81,7 +82,8 @@
     "cancel": "Peruuta",
     "failed": "Aterian suunnittelu epäonnistui. Yritä uudelleen.",
     "willJoin_one": "{{slot}} sisältää jo {{count}} aterian. Sinun tulee sen rinnalle.",
-    "willJoin_other": "{{slot}} sisältää jo {{count}} ateriaa. Sinun tulee niiden rinnalle."
+    "willJoin_other": "{{slot}} sisältää jo {{count}} ateriaa. Sinun tulee niiden rinnalle.",
+    "moveFailed": "Aterian siirto epäonnistui. Yritä uudelleen."
   },
   "weekday": {
     "1": "Ma",

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import type { SlotKey } from '@/features/household'
-import { useDrag } from './DragContext'
+import { isSameTarget, useDrag } from './DragContext'
 
 /**
  * A Slot that can receive a dragged card. It reports its own position to the
@@ -24,21 +24,23 @@ const styles = StyleSheet.create({
 })
 
 export const DropSlot = ({ date, slotKey, style, children }: Props): React.JSX.Element => {
-  const { hovered, registerSlot } = useDrag()
+  const { hovered, registerTarget } = useDrag()
   const ref = useRef<View>(null)
-  const isHovered = hovered?.date === date && hovered.slotKey === slotKey
+  const isHovered = isSameTarget(hovered, { kind: 'slot', date, slotKey })
 
   useEffect(() => {
-    registerSlot({ date, slotKey }, (report) => {
+    const target = { kind: 'slot', date, slotKey } as const
+
+    registerTarget(target, (report) => {
       ref.current?.measureInWindow((x, y, width, height) => {
         report({ x, y, width, height })
       })
     })
 
     return () => {
-      registerSlot({ date, slotKey }, undefined)
+      registerTarget(target, undefined)
     }
-  }, [date, slotKey, registerSlot])
+  }, [date, slotKey, registerTarget])
 
   return (
     <View

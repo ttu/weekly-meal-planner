@@ -44,6 +44,7 @@ export const Easing = {
 }
 
 export const useSharedValue = (initial: unknown): { value: unknown } => ({ value: initial })
+export const makeMutable = (initial: unknown): { value: unknown } => ({ value: initial })
 export const useAnimatedStyle = (factory: () => unknown): unknown => factory()
 export const withTiming = (value: unknown): unknown => value
 export const withSpring = (value: unknown): unknown => value

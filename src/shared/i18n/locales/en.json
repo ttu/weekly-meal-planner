@@ -58,7 +58,8 @@
     "count": "Backlog",
     "empty": "Nobody has added anything yet.",
     "add": "Add",
-    "addShort": "+ Add"
+    "addShort": "+ Add",
+    "dropToRemove": "Drop here to take it off the week"
   },
   "picker": {
     "title": "Add a Meal",
@@ -81,7 +82,8 @@
     "cancel": "Cancel",
     "failed": "Could not plan that Meal. Try again.",
     "willJoin_one": "{{slot}} already has {{count}} Meal. Yours will join it.",
-    "willJoin_other": "{{slot}} already has {{count}} Meals. Yours will join them."
+    "willJoin_other": "{{slot}} already has {{count}} Meals. Yours will join them.",
+    "moveFailed": "Could not move that Meal. Try again."
   },
   "weekday": {
     "1": "Mon",
