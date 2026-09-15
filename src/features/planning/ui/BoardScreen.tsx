@@ -24,6 +24,7 @@ import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
 import { DragProvider, type DragPayload, type DropTarget } from './DragContext'
 import { DragLayer } from './DragLayer'
+import { useEdgeAutoScroll } from './useEdgeAutoScroll'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
@@ -93,6 +94,8 @@ const Board = ({
   const {
     addLeftoverFor,
     move,
+    moveLeftoverTo,
+    removeLeftoverCard,
     unplan,
     removeFromBacklog,
     leftoverFailed,
@@ -103,6 +106,7 @@ const Board = ({
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
+  const autoScroll = useEdgeAutoScroll(scroll)
   const dayOffsets = useRef(new Map<string, number>())
 
   const onShare = (): void => {
@@ -148,6 +152,9 @@ const Board = ({
         return
       case 'move':
         move(action)
+        return
+      case 'move-leftover':
+        moveLeftoverTo(action)
         return
       case 'unplan':
         unplan(action.cookEventId)
@@ -355,6 +362,7 @@ const Board = ({
                   setUnplanning(cookEventById(id))
                 }}
                 onAddMeal={openPickerFor}
+                onRemoveLeftover={removeLeftoverCard}
                 onDropped={onDropped}
               />
             ))}
@@ -373,108 +381,116 @@ const Board = ({
 
   return (
     <View style={styles.screen} testID="board-screen">
-      <ScrollView
-        ref={scroll}
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
-      >
-        <View style={styles.links}>
-          <Pressable
-            onPress={onOpenLibrary}
-            accessibilityRole="button"
-            accessibilityLabel={t('meal.library')}
-            testID="open-library"
-          >
-            <Text style={styles.link}>{t('meal.library')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={onShare}
-            accessibilityRole="button"
-            accessibilityLabel={t('board.share')}
-            testID="share-board"
-          >
-            <Text style={styles.link}>{shared ? t('board.shareCopied') : t('board.share')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              void signOut(session.client)
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('auth.signOut')}
-            testID="sign-out"
-          >
-            <Text style={styles.link}>{t('auth.signOut')}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.titleRow}>
-          <View>
-            <Text style={styles.title}>{t('board.thisWeek')}</Text>
-            <Text style={styles.week}>{weekRange}</Text>
-          </View>
+      {/* The wrapper is what the auto-scroll measures: it needs the viewport's
+          position on screen to know when the card is near an edge. */}
+      <View ref={autoScroll.viewportRef} style={styles.scroll} collapsable={false}>
+        <ScrollView
+          ref={scroll}
+          style={styles.scroll}
+          scrollEventThrottle={16}
+          onScroll={autoScroll.onScroll}
+          onContentSizeChange={autoScroll.onContentSizeChange}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+        >
           <View style={styles.links}>
-            {present.length > 0 && (
-              <View style={styles.presence} testID="presence">
-                {present.map((member, index) => (
-                  <View key={member.userId} style={index > 0 && styles.overlap}>
-                    <Avatar
-                      name={member.displayName}
-                      colour={member.colour}
-                      size="large"
-                      ringColour={tokens.color.surface}
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
             <Pressable
-              style={styles.shopping}
-              onPress={onOpenShopping}
+              onPress={onOpenLibrary}
               accessibilityRole="button"
-              accessibilityLabel={t('shopping.title')}
-              testID="open-shopping"
+              accessibilityLabel={t('meal.library')}
+              testID="open-library"
             >
-              <Text style={styles.shoppingText}>{t('shopping.title')}</Text>
+              <Text style={styles.link}>{t('meal.library')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onShare}
+              accessibilityRole="button"
+              accessibilityLabel={t('board.share')}
+              testID="share-board"
+            >
+              <Text style={styles.link}>{shared ? t('board.shareCopied') : t('board.share')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                void signOut(session.client)
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.signOut')}
+              testID="sign-out"
+            >
+              <Text style={styles.link}>{t('auth.signOut')}</Text>
             </Pressable>
           </View>
-        </View>
 
-        <WeekStrip
-          dates={board.map((day) => day.date)}
-          today={today}
-          locale={locale}
-          plannedDates={plannedDates}
-          onSelect={(date) => {
-            scroll.current?.scrollTo({ y: dayOffsets.current.get(date) ?? 0, animated: true })
-          }}
-        />
-
-        <View style={styles.days} testID="board">
-          {board.map((day) => (
-            <View
-              key={day.date}
-              onLayout={(event) => {
-                dayOffsets.current.set(day.date, event.nativeEvent.layout.y)
-              }}
-            >
-              <DayColumn
-                day={day}
-                isToday={day.date === today}
-                locale={locale}
-                recentlyChanged={changedDays.has(day.date)}
-                onAddLeftover={(id) => {
-                  setLeftoverFor(cookEventById(id))
-                }}
-                onUnplan={(id) => {
-                  setUnplanning(cookEventById(id))
-                }}
-                onAddMeal={openPickerFor}
-                onDropped={onDropped}
-              />
+          <View style={styles.titleRow}>
+            <View>
+              <Text style={styles.title}>{t('board.thisWeek')}</Text>
+              <Text style={styles.week}>{weekRange}</Text>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+            <View style={styles.links}>
+              {present.length > 0 && (
+                <View style={styles.presence} testID="presence">
+                  {present.map((member, index) => (
+                    <View key={member.userId} style={index > 0 && styles.overlap}>
+                      <Avatar
+                        name={member.displayName}
+                        colour={member.colour}
+                        size="large"
+                        ringColour={tokens.color.surface}
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Pressable
+                style={styles.shopping}
+                onPress={onOpenShopping}
+                accessibilityRole="button"
+                accessibilityLabel={t('shopping.title')}
+                testID="open-shopping"
+              >
+                <Text style={styles.shoppingText}>{t('shopping.title')}</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <WeekStrip
+            dates={board.map((day) => day.date)}
+            today={today}
+            locale={locale}
+            plannedDates={plannedDates}
+            onSelect={(date) => {
+              scroll.current?.scrollTo({ y: dayOffsets.current.get(date) ?? 0, animated: true })
+            }}
+          />
+
+          <View style={styles.days} testID="board">
+            {board.map((day) => (
+              <View
+                key={day.date}
+                onLayout={(event) => {
+                  dayOffsets.current.set(day.date, event.nativeEvent.layout.y)
+                }}
+              >
+                <DayColumn
+                  day={day}
+                  isToday={day.date === today}
+                  locale={locale}
+                  recentlyChanged={changedDays.has(day.date)}
+                  onAddLeftover={(id) => {
+                    setLeftoverFor(cookEventById(id))
+                  }}
+                  onUnplan={(id) => {
+                    setUnplanning(cookEventById(id))
+                  }}
+                  onAddMeal={openPickerFor}
+                  onRemoveLeftover={removeLeftoverCard}
+                  onDropped={onDropped}
+                />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
 
       {errors}
 

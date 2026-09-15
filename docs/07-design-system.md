@@ -140,3 +140,12 @@ times per drag, not every frame.
 
 Drop targets measure themselves **at drag start**, never at mount: a pane
 scrolls, and bounds captured at mount drop the card on the wrong day.
+
+### The board scrolls under the card
+
+Hold a card near the top or bottom of the phone board and the week scrolls to
+meet it, easing off with the distance from the edge. The pan gesture owns the
+pointer, so there is no second finger to scroll with — without this a card can
+only ever be dropped on a day that was already on screen when the drag began.
+Every drop target is re-measured on each tick, because scrolling moves all of
+them.

@@ -1,12 +1,13 @@
 import type { SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/shared/types/ids'
-import type { BacklogItem, CookEvent, CookEventId } from './types'
+import type { BacklogItem, CookEvent, CookEventId, Leftover, LeftoverId } from './types'
 
 /** What is being carried. A Backlog card and a planned card are both cards you
  *  can pick up, and the board should not care which one is in the air. */
 export type DragPayload =
   | { readonly kind: 'backlog'; readonly item: BacklogItem }
   | { readonly kind: 'cook-event'; readonly cookEvent: CookEvent }
+  | { readonly kind: 'leftover'; readonly leftover: Leftover }
 
 /** Where it can land: a Slot on the board, or the Backlog — dropping a planned
  *  Meal back on the Backlog is how it leaves the week. */
@@ -34,15 +35,38 @@ export type DropAction =
       readonly date: string
       readonly slotKey: SlotKey
     }
+  | {
+      readonly kind: 'move-leftover'
+      readonly leftoverId: LeftoverId
+      readonly date: string
+      readonly slotKey: SlotKey
+    }
   | { readonly kind: 'unplan'; readonly cookEventId: CookEventId }
   /** Let go somewhere that means nothing: put it back and change no data. */
   | { readonly kind: 'none' }
 
 export const resolveDrop = (payload: DragPayload, target: DropTarget): DropAction => {
   if (target.kind === 'backlog') {
+    // A Cook Event goes back to the Backlog, where it can be planned again. A
+    // Leftover cannot: it is not a Meal anyone wants this week, it is a second
+    // sitting of one already cooked, and there is nothing to put there. Use the
+    // card's own remove instead.
     return payload.kind === 'cook-event'
       ? { kind: 'unplan', cookEventId: payload.cookEvent.id }
       : { kind: 'none' }
+  }
+
+  if (payload.kind === 'leftover') {
+    const { leftover } = payload
+    if (leftover.date === target.date && leftover.slotKey === target.slotKey) {
+      return { kind: 'none' }
+    }
+    return {
+      kind: 'move-leftover',
+      leftoverId: leftover.id,
+      date: target.date,
+      slotKey: target.slotKey,
+    }
   }
 
   if (payload.kind === 'cook-event') {

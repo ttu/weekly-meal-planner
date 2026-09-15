@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { tokens } from '@/shared/theme/tokens'
-import { MealCard } from '@/features/meals'
+import { LeftoverCard, MealCard } from '@/features/meals'
 import { useDrag } from './DragContext'
 
 const styles = StyleSheet.create({
@@ -42,14 +42,15 @@ export const DragLayer = (): React.JSX.Element | null => {
 
   return (
     <Animated.View style={[styles.layer, style]} testID="drag-layer">
-      {dragging.kind === 'backlog' ? (
+      {dragging.kind === 'backlog' && (
         <MealCard
           variant="backlog"
           name={dragging.item.mealName}
           addedBy={dragging.item.addedByName}
           addedByColour={dragging.item.addedByColour}
         />
-      ) : (
+      )}
+      {dragging.kind === 'cook-event' && (
         <MealCard
           variant="planned"
           name={dragging.cookEvent.mealName}
@@ -57,6 +58,9 @@ export const DragLayer = (): React.JSX.Element | null => {
           addedBy={dragging.cookEvent.addedByName}
           addedByColour={dragging.cookEvent.addedByColour}
         />
+      )}
+      {dragging.kind === 'leftover' && (
+        <LeftoverCard compact parentMealName={dragging.leftover.parentMealName} />
       )}
     </Animated.View>
   )

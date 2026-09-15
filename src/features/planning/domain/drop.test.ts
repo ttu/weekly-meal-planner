@@ -1,6 +1,6 @@
 import { brand } from '@/shared/types/brand'
 import { resolveDrop, type DropTarget } from './drop'
-import type { BacklogItem, CookEvent } from './types'
+import type { BacklogItem, CookEvent, Leftover } from './types'
 
 const slot = (date: string, slotKey: string): DropTarget => ({
   kind: 'slot',
@@ -26,6 +26,14 @@ const cookEvent: CookEvent = {
   servingsCooked: brand<number, 'Servings'>(6),
   addedByName: 'Aino',
   addedByColour: '#5F7355',
+}
+
+const leftover: Leftover = {
+  id: brand<string, 'LeftoverId'>('l1'),
+  cookEventId: brand<string, 'CookEventId'>('c1'),
+  parentMealName: 'Chili con carne',
+  date: '2026-09-15',
+  slotKey: brand<string, 'SlotKey'>('lunch'),
 }
 
 describe('resolveDrop', () => {
@@ -70,6 +78,33 @@ describe('resolveDrop', () => {
   // It is already there. Nothing to say, and certainly nothing to write.
   it('does nothing when a Backlog Item is dropped back on the Backlog', () => {
     const action = resolveDrop({ kind: 'backlog', item: backlogItem }, { kind: 'backlog' })
+
+    expect(action).toEqual({ kind: 'none' })
+  })
+
+  // "We'll finish it on Friday instead" is the commonest edit there is.
+  it('moves a Leftover dropped on another Slot', () => {
+    const action = resolveDrop({ kind: 'leftover', leftover }, slot('2026-09-18', 'dinner'))
+
+    expect(action).toEqual({
+      kind: 'move-leftover',
+      leftoverId: 'l1',
+      date: '2026-09-18',
+      slotKey: 'dinner',
+    })
+  })
+
+  it('does nothing when a Leftover is dropped back where it was', () => {
+    const action = resolveDrop({ kind: 'leftover', leftover }, slot('2026-09-15', 'lunch'))
+
+    expect(action).toEqual({ kind: 'none' })
+  })
+
+  // A Leftover is not a Meal anyone wants this week, it is a second sitting of
+  // one already cooked. There is nothing to put on the Backlog, so the card's
+  // own remove is the way off the board.
+  it('does nothing when a Leftover is dropped on the Backlog', () => {
+    const action = resolveDrop({ kind: 'leftover', leftover }, { kind: 'backlog' })
 
     expect(action).toEqual({ kind: 'none' })
   })

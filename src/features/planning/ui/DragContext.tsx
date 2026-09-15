@@ -34,6 +34,9 @@ type DragValue = {
   /** Targets register how to measure themselves, not where they are: a pane
    *  scrolls, and bounds captured at mount are wrong by the time anyone drags. */
   readonly registerTarget: (target: DropTarget, measure: Measure | undefined) => void
+  /** Take the measurements again. The board scrolls under the card while it is
+   *  being carried, and every bound moves with it. */
+  readonly remeasure: () => void
 }
 
 /** Real shared values, not stubs: the inert context is handed to components
@@ -55,6 +58,7 @@ const INERT: DragValue = {
   moveTo: () => undefined,
   end: () => undefined,
   registerTarget: () => undefined,
+  remeasure: () => undefined,
 }
 
 const DragContext = createContext<DragValue>(INERT)
@@ -95,6 +99,14 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
     targets.current.set(key(target), { target, measure })
   }, [])
 
+  const remeasure = useCallback(() => {
+    for (const [id, entry] of targets.current) {
+      entry.measure((measured) => {
+        bounds.current.set(id, { target: entry.target, bounds: measured })
+      })
+    }
+  }, [])
+
   const begin = useCallback(
     (payload: DragPayload, from: Bounds) => {
       grabX.value = pointerX.value - from.x
@@ -106,13 +118,9 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
       hoveredRef.current = undefined
 
       bounds.current.clear()
-      for (const [id, entry] of targets.current) {
-        entry.measure((measured) => {
-          bounds.current.set(id, { target: entry.target, bounds: measured })
-        })
-      }
+      remeasure()
     },
-    [cardWidth, grabX, grabY, pointerX, pointerY],
+    [cardWidth, grabX, grabY, pointerX, pointerY, remeasure],
   )
 
   const moveTo = useCallback((x: number, y: number) => {
@@ -155,6 +163,7 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
       moveTo,
       end,
       registerTarget,
+      remeasure,
     }),
     [
       dragging,
@@ -168,6 +177,7 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
       moveTo,
       end,
       registerTarget,
+      remeasure,
     ],
   )
 

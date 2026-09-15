@@ -5,9 +5,11 @@ import { useSession, type SlotKey } from '@/features/household'
 import { currentWeekStart } from '../domain/week'
 import { addLeftover } from '../application/add-leftover'
 import { moveCookEvent } from '../application/move-cook-event'
+import { moveLeftover } from '../application/move-leftover'
+import { removeLeftover } from '../application/remove-leftover'
 import { unplanMeal } from '../application/unplan-meal'
 import { removeBacklogItem } from '../application/remove-backlog-item'
-import type { BacklogItemId, CookEventId } from '../domain/types'
+import type { BacklogItemId, CookEventId, LeftoverId } from '../domain/types'
 
 export type LeftoverRequest = {
   readonly cookEventId: CookEventId
@@ -21,9 +23,17 @@ export type MoveRequest = {
   readonly slotKey: SlotKey
 }
 
+export type MoveLeftoverRequest = {
+  readonly leftoverId: LeftoverId
+  readonly date: string
+  readonly slotKey: SlotKey
+}
+
 export type PlanningActions = {
   readonly addLeftoverFor: (request: LeftoverRequest) => void
   readonly move: (request: MoveRequest) => void
+  readonly moveLeftoverTo: (request: MoveLeftoverRequest) => void
+  readonly removeLeftoverCard: (id: LeftoverId) => void
   readonly unplan: (cookEventId: CookEventId) => void
   readonly removeFromBacklog: (id: BacklogItemId) => void
   readonly leftoverFailed: boolean
@@ -62,6 +72,23 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
     onSettled: invalidate,
   })
 
+  const moveLeftoverMutation = useMutation({
+    mutationFn: async (request: MoveLeftoverRequest) => {
+      const result = await moveLeftover(client, request)
+      if (isErr(result)) throw new Error(result.error)
+      return result.value
+    },
+    onSettled: invalidate,
+  })
+
+  const removeLeftoverMutation = useMutation({
+    mutationFn: async (id: LeftoverId) => {
+      const result = await removeLeftover(client, id)
+      if (isErr(result)) throw new Error(result.error)
+    },
+    onSettled: invalidate,
+  })
+
   const unplanMutation = useMutation({
     mutationFn: async (cookEventId: CookEventId) => {
       const result = await unplanMeal(client, cookEventId)
@@ -86,13 +113,20 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
     move: (request) => {
       moveMutation.mutate(request)
     },
+    moveLeftoverTo: (request) => {
+      moveLeftoverMutation.mutate(request)
+    },
+    removeLeftoverCard: (id) => {
+      removeLeftoverMutation.mutate(id)
+    },
     unplan: (cookEventId) => {
       unplanMutation.mutate(cookEventId)
     },
     removeFromBacklog: (id) => {
       removeMutation.mutate(id)
     },
-    leftoverFailed: leftoverMutation.isError,
+    leftoverFailed:
+      leftoverMutation.isError || moveLeftoverMutation.isError || removeLeftoverMutation.isError,
     moveFailed: moveMutation.isError,
     unplanFailed: unplanMutation.isError,
   }

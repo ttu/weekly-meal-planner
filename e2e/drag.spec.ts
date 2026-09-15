@@ -78,17 +78,102 @@ test.describe('cards can be carried around the board', () => {
     ).toHaveCount(0)
   })
 
+  // At phone width, because "Add leftovers" lives on the phone day column —
+  // the wide column has no way to create one yet.
+  test('a Leftover can be carried to another Slot, and removed with its ×', async () => {
+    const wednesday = days[2]
+    const friday = days[4]
+    if (wednesday === undefined || friday === undefined) throw new Error('No week')
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.reload()
+    await expect(page.getByTestId('board-screen')).toBeVisible()
+
+    // Give Wednesday's Meal a second sitting on Friday lunch.
+    await page
+      .locator(`[data-testid="day-${wednesday}"] [data-testid^="add-leftover-"]`)
+      .first()
+      .click()
+    await expect(page.getByTestId('plan-sheet')).toBeVisible()
+    await page.getByTestId(`plan-day-${friday}`).click()
+    await page.getByTestId('plan-slot-lunch').click()
+    await page.getByTestId('plan-submit').click()
+    await expect(page.getByTestId('plan-sheet')).toBeHidden()
+
+    // Not a `leftover-` prefix: that also matches the × beside the card.
+    const onFriday = page.locator(
+      `[data-testid="day-${friday}"] [data-testid="meal-card-leftover"]`,
+    )
+    await expect(onFriday).toHaveCount(1)
+    await onFriday.first().scrollIntoViewIfNeeded()
+
+    // Carry it from lunch to dinner on the same day.
+    const dinner = page.locator(`[data-testid="day-${friday}"] [data-testid="slot-dinner"]`)
+    await dragOnto(page, onFriday.first(), dinner)
+
+    await expect(dinner.locator('[data-testid="meal-card-leftover"]')).toBeVisible()
+
+    // And take it off the board with the × beside it.
+    await page
+      .locator(`[data-testid="day-${friday}"] [data-testid^="remove-leftover-"]`)
+      .first()
+      .click()
+    await expect(
+      page.locator(`[data-testid="day-${friday}"] [data-testid="meal-card-leftover"]`),
+    ).toHaveCount(0)
+  })
+
+  // The pan gesture owns the pointer, so there is no second finger to scroll
+  // with: without this, a card can only ever be dropped on a day that was
+  // already on screen when the drag began.
+  test('holding a card at the edge scrolls the board under it', async () => {
+    await addToBacklog(page, 'Tacos')
+    const card = page.locator('[data-testid^="backlog-item-"]').first()
+    await expect(card).toBeVisible()
+
+    const scrollTop = (): Promise<number> =>
+      page.evaluate(() =>
+        Math.max(...[...document.querySelectorAll('*')].map((node) => node.scrollTop)),
+      )
+
+    const before = await scrollTop()
+    const box = await card.boundingBox()
+    const shelf = await page.getByTestId('backlog-shelf').boundingBox()
+    if (box === null || shelf === null) throw new Error('Nothing to drag')
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 20)
+
+    // Hold just above the shelf — the bottom edge of the board — and let the
+    // week come to us.
+    await page.mouse.move(box.x + box.width / 2, shelf.y - 40)
+    await page.waitForTimeout(900)
+    const during = await scrollTop()
+    await page.mouse.up()
+
+    expect(during).toBeGreaterThan(before)
+
+    await page.setViewportSize({ width: 1400, height: 900 })
+    await page.reload()
+    await expect(page.getByTestId('wide-board-layout')).toBeVisible()
+  })
+
   test('dropping a planned Meal on the Backlog takes it off the week', async () => {
     const wednesday = days[2]
     if (wednesday === undefined) throw new Error('No week')
 
-    const card = page.locator(`[data-testid="day-${wednesday}"] [data-testid^="planned-"]`).first()
+    const planned = page.locator(
+      `[data-testid="day-${wednesday}"] [data-testid="meal-card-planned"]`,
+    )
+    await expect(planned).toHaveCount(1)
+    const inBacklog = page.locator('[data-testid^="backlog-item-"]')
+    const before = await inBacklog.count()
 
+    const card = page.locator(`[data-testid="day-${wednesday}"] [data-testid^="planned-"]`).first()
     await dragOnto(page, card, page.getByTestId('backlog-shelf'))
 
-    await expect(
-      page.locator(`[data-testid="day-${wednesday}"] [data-testid="meal-card-planned"]`),
-    ).toHaveCount(0)
-    await expect(page.locator('[data-testid^="backlog-item-"]')).toHaveCount(1)
+    await expect(planned).toHaveCount(0)
+    await expect(inBacklog).toHaveCount(before + 1)
   })
 })

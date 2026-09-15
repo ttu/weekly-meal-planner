@@ -4,7 +4,8 @@ import { useTranslation, type Locale } from '@/shared/i18n'
 import type { SlotKey } from '@/features/household'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { formatColumnHeading } from '../domain/format-day'
-import type { BoardCard, CookEventId } from '../domain/types'
+import { LeftoverCard } from '@/features/meals'
+import type { BoardCard, CookEventId, LeftoverId } from '../domain/types'
 import type { BoardDay } from '../domain/board'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
@@ -77,6 +78,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   leftoverText: { ...tokens.type.meta, color: tokens.color.textMuted },
+  removeLeftover: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  removeLeftoverText: { ...tokens.type.labelTiny, fontSize: 12, color: tokens.color.textGhost },
   leftoverWord: {
     fontFamily: tokens.type.dayHeading.fontFamily,
     fontStyle: 'italic',
@@ -95,6 +104,7 @@ type Props = {
   readonly recentlyChanged?: boolean | undefined
   readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
+  readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
@@ -106,6 +116,7 @@ export const WideDayColumn = ({
   recentlyChanged = false,
   onSelect,
   onAddMeal,
+  onRemoveLeftover,
   onDropped,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
@@ -149,11 +160,30 @@ export const WideDayColumn = ({
 
             {slot.cards.map((card) =>
               card.kind === 'leftover' ? (
-                <View key={cardKey(card)} style={styles.leftover} testID="meal-card-leftover">
-                  <Text style={styles.leftoverText} numberOfLines={2}>
-                    {t('leftover.parentPrefix', { meal: card.leftover.parentMealName })}
-                    <Text style={styles.leftoverWord}>{t('leftover.word')}</Text>
-                  </Text>
+                <View key={cardKey(card)}>
+                  <DraggableCard
+                    payload={{ kind: 'leftover', leftover: card.leftover }}
+                    onDropped={onDropped}
+                    accessibilityLabel={t('leftover.suffix', {
+                      meal: card.leftover.parentMealName,
+                    })}
+                    testID={`leftover-${card.leftover.id}`}
+                  >
+                    <LeftoverCard compact parentMealName={card.leftover.parentMealName} />
+                  </DraggableCard>
+                  {onRemoveLeftover !== undefined && (
+                    <Pressable
+                      style={styles.removeLeftover}
+                      onPress={() => {
+                        onRemoveLeftover(card.leftover.id)
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('leftover.remove')}
+                      testID={`remove-leftover-${card.leftover.id}`}
+                    >
+                      <Text style={styles.removeLeftoverText}>×</Text>
+                    </Pressable>
+                  )}
                 </View>
               ) : (
                 <AnimatedCard key={cardKey(card)}>

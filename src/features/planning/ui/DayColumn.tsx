@@ -5,7 +5,7 @@ import type { SlotKey } from '@/features/household'
 import { formatWeekday } from '../domain/format-day'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { LeftoverCard, MealCard } from '@/features/meals'
-import type { BoardCard, CookEventId } from '../domain/types'
+import type { BoardCard, CookEventId, LeftoverId } from '../domain/types'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
 import type { DragPayload, DropTarget } from './DragContext'
@@ -50,6 +50,14 @@ const styles = StyleSheet.create({
   },
   emptyText: { ...tokens.type.mealNameSmall, fontWeight: '400', color: tokens.color.textGhost },
   actions: { flexDirection: 'row', gap: tokens.space.md, paddingLeft: 2 },
+  removeLeftover: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  removeLeftoverText: { ...tokens.type.meta, color: tokens.color.textGhost },
   action: { ...tokens.type.meta, color: tokens.color.textSupport },
 })
 
@@ -57,14 +65,50 @@ type CardProps = {
   readonly card: BoardCard
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
-const Card = ({ card, onAddLeftover, onUnplan, onDropped }: CardProps): React.JSX.Element => {
+const Card = ({
+  card,
+  onAddLeftover,
+  onUnplan,
+  onRemoveLeftover,
+  onDropped,
+}: CardProps): React.JSX.Element => {
   const { t } = useTranslation()
 
   if (card.kind === 'leftover') {
-    return <LeftoverCard parentMealName={card.leftover.parentMealName} />
+    const { leftover } = card
+
+    // A Leftover moves like any other card: "we'll finish it on Friday" is the
+    // commonest edit there is. The × is a sibling of the draggable, not a child
+    // of it — a button inside a button is invalid on web and swallows the tap.
+    return (
+      <View>
+        <DraggableCard
+          payload={{ kind: 'leftover', leftover }}
+          onDropped={onDropped}
+          accessibilityLabel={t('leftover.suffix', { meal: leftover.parentMealName })}
+          testID={`leftover-${leftover.id}`}
+        >
+          <LeftoverCard parentMealName={leftover.parentMealName} />
+        </DraggableCard>
+        {onRemoveLeftover !== undefined && (
+          <Pressable
+            style={styles.removeLeftover}
+            onPress={() => {
+              onRemoveLeftover(leftover.id)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('leftover.remove')}
+            testID={`remove-leftover-${leftover.id}`}
+          >
+            <Text style={styles.removeLeftoverText}>×</Text>
+          </Pressable>
+        )}
+      </View>
+    )
   }
 
   const { cookEvent } = card
@@ -122,6 +166,7 @@ type Props = {
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
+  readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
@@ -133,6 +178,7 @@ export const DayColumn = ({
   onAddLeftover,
   onUnplan,
   onAddMeal,
+  onRemoveLeftover,
   onDropped,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
@@ -169,6 +215,7 @@ export const DayColumn = ({
                     card={card}
                     onAddLeftover={onAddLeftover}
                     onUnplan={onUnplan}
+                    onRemoveLeftover={onRemoveLeftover}
                     onDropped={onDropped}
                   />
                 </AnimatedCard>

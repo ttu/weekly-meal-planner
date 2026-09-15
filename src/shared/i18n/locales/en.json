@@ -43,7 +43,8 @@
     "submit": "Add to {{day}}",
     "failed": "Could not add leftovers. Try again.",
     "parentPrefix": "{{meal}} — ",
-    "word": "leftovers"
+    "word": "leftovers",
+    "remove": "Remove these leftovers"
   },
   "auth": {
     "title": "Sign in",
