@@ -16,7 +16,13 @@ application code uses tokens only, and inline styles are a lint error.
 | `muted`          | `#6B6459` | supporting text                            |
 | `card`           | `#FFFFFF` | raised surfaces — planned cards            |
 | `tint`           | `#EFE8DA` | inset surfaces — leftovers, cupboard check |
-| `rule`           | `#DBD2C1` | hairlines, dividers                        |
+| `rule`           | `#DBD2C1` | section hairlines                          |
+| `cardBorder`     | `#E2D9C9` | the edge of a card — warmer than a rule    |
+| `cardDivider`    | `#EFE8DA` | a hairline between rows inside one card    |
+| `dashed`         | `#D3C9B6` | dashed edges: empty Slot, add-an-item      |
+| `paneGround`     | `#FBF8F1` | the library pane and the board's foot rail |
+| `support`        | `#8A8172` | labels and card metadata                   |
+| `ghost`          | `#A79C88` | placeholders, Slot labels, chip initials   |
 | `terracotta`     | `#C05A38` | **the only action colour**                 |
 | `terracottaDeep` | `#9C4529` | pressed state                              |
 | `sage`           | `#5F7355` | today, confirmations, presence             |
@@ -30,11 +36,21 @@ destroys that, and is worth a review comment every time.
 
 | Token         | Family / size                   | Use                            |
 | ------------- | ------------------------------- | ------------------------------ |
-| `display`     | Instrument Serif                | week and day headers           |
-| `mealName`    | Instrument Sans 600, 17–24px    | meal names                     |
+| `display`     | Instrument Serif 34             | week title                     |
+| `dayHeading`  | Instrument Serif 22             | a day, and a pane title        |
+| `sheetTitle`  | Instrument Serif 28             | the plan sheet                 |
+| `mealName*`   | Instrument Sans 600, 14–18px    | meal names, four sizes         |
 | `body`        | Instrument Sans 400, ≥15px      | supporting copy, never smaller |
+| `support`     | Instrument Sans 400, 14px       | the second line of a card      |
+| `meta`        | Instrument Sans 400, 13px       | provenance, hints              |
 | `shoppingRow` | Instrument Sans 400, 19px       | shopping list rows             |
 | `label`       | 12px, .12em tracking, uppercase | section labels                 |
+| `labelSmall`  | 11px, .1em, uppercase           | a wide-board column head       |
+| `labelTiny`   | 10px, .1em, uppercase           | a Slot label inside a column   |
+
+Four meal-name sizes rather than one, because the same card appears at four
+widths: 18px planned on a phone, 17px in the library, 16px in the Backlog, and
+14px inside a wide column where seven must fit across.
 
 ## Card variants
 
@@ -63,16 +79,39 @@ the likely failure, and it is the token carrying the most meaning.
 Tokens must therefore be defined as semantic names from day one — `surfaceRaised`,
 not `white` — so a dark theme is a value swap rather than a refactor.
 
-## Implemented
+## The two layouts
 
-The three-pane wide layout is in `WideBoardLayout`, at the 1024px breakpoint
-from the design. Library 320px, Backlog 260px, Board taking the rest.
+The breakpoint is 1024px and the difference is arrangement, not components.
 
-One React Native Web trap worth recording: **a width must sit on a plain `View`,
-not on the `ScrollView` inside it.** A `ScrollView` sizes itself to its content
-on web, which first made the Board — the pane that matters most — the narrowest
-of the three.
+**Wide** (`WideBoardLayout`): a header bar, then three panes — Meal library 284,
+Backlog 250, board taking the rest — and a footer rail carrying the hint. The
+board itself is **seven day columns side by side**, each divided into Slot bands
+by a dashed line, so the week is one object rather than a list to scroll. Today
+carries a 5%-sage ground and a sage column head.
 
-Drag-and-drop between panes is not implemented. Tap-to-plan works identically in
-both layouts, which the design always required as the phone path; drag was only
-ever the wide-screen accelerator.
+**Phone**: the title block, the week strip, then the days stacked. A day is a
+serif weekday and one row per Slot: a 56px labelled gutter on the left and the
+cards on the right. An empty Slot is one dashed line, not a hole. The Backlog is
+docked to the bottom on white, above the board and visible at every scroll
+position.
+
+Two React Native Web traps worth recording:
+
+- **A width must sit on a plain `View`, not on the `ScrollView` inside it.** A
+  `ScrollView` sizes itself to its content on web, which first made the board —
+  the pane that matters most — the narrowest of the three.
+- The wide board's seven columns must **not** be inside a `ScrollView` at all,
+  or they size to their content and the week stops filling the pane.
+
+## Selection is a fill, not an outline
+
+On the plan sheet, the chosen day and Slot are solid terracotta with white text.
+An outline was tried first and read as "focused" rather than "chosen": people
+tapped straight past it. Outline selection survives only where a chip sits alone
+rather than in a row of siblings.
+
+## Drag and drop
+
+Implemented in both layouts. A Backlog card is tappable and draggable at every
+width (`Gesture.Exclusive(pan, tap)`); dragging is the accelerator and tapping
+always works, which the design always required as the phone path.

@@ -10,7 +10,14 @@ const cookEventRow = z.object({
   date: z.string(),
   slot_key: z.string(),
   servings_cooked: z.number().int(),
+  added_by: z.uuid().nullable(),
   meal: z.object({ name: z.string() }),
+})
+
+const memberRow = z.object({
+  user_id: z.uuid(),
+  display_name: z.string(),
+  colour: z.string(),
 })
 
 const leftoverRow = z.object({
@@ -45,7 +52,7 @@ export const loadWeek = async (
 
   const { data: cookEventData } = await client
     .from('cook_event')
-    .select('id,meal_id,date,slot_key,servings_cooked,meal(name)')
+    .select('id,meal_id,date,slot_key,servings_cooked,added_by,meal(name)')
     .eq('week_plan_id', planId)
 
   const { data: leftoverData } = await client
@@ -53,9 +60,19 @@ export const loadWeek = async (
     .select('id,cook_event_id,date,slot_key,cook_event!inner(week_plan_id,meal(name))')
     .eq('cook_event.week_plan_id', planId)
 
+  // `added_by` is a user id, not a foreign key to household_member — a Member
+  // can leave while the Meal they planned stays — so the Member is looked up
+  // separately and joined in memory, with a blank for one who has since left.
+  const { data: memberData } = await client
+    .from('household_member')
+    .select('user_id,display_name,colour')
+
   const cookEvents = z.array(cookEventRow).safeParse(cookEventData ?? [])
   const leftovers = z.array(leftoverRow).safeParse(leftoverData ?? [])
-  if (!cookEvents.success || !leftovers.success) return err('invalid-row')
+  const members = z.array(memberRow).safeParse(memberData ?? [])
+  if (!cookEvents.success || !leftovers.success || !members.success) return err('invalid-row')
+
+  const byUserId = new Map(members.data.map((m) => [m.user_id, m]))
 
   return ok({
     weekPlanId: planId,
@@ -66,6 +83,8 @@ export const loadWeek = async (
       date: r.date,
       slotKey: brand<string, 'SlotKey'>(r.slot_key),
       servingsCooked: brand<number, 'Servings'>(r.servings_cooked),
+      addedByName: (r.added_by === null ? undefined : byUserId.get(r.added_by))?.display_name ?? '',
+      addedByColour: (r.added_by === null ? undefined : byUserId.get(r.added_by))?.colour ?? '',
     })),
     leftovers: leftovers.data.map((r) => ({
       id: brand<string, 'LeftoverId'>(r.id),

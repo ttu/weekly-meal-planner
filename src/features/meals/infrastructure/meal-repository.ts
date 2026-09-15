@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { brand } from '@/shared/types/brand'
 import { ok, err, type Result } from '@/shared/types/result'
+import type { Locale } from '@/shared/i18n'
 import type { AppSupabaseClient } from '@/features/household'
 import type { IngredientId, Meal, MealId, Quantity } from '../domain/types'
 
@@ -15,12 +16,19 @@ const rowSchema = z.object({
 
 export type LoadMealsError = 'invalid-row'
 
+/**
+ * Every Meal the Household can see: its own, plus the Catalogue in its own
+ * Locale. A Catalogue Meal exists once per Locale, so without the filter the
+ * library lists each of them twice — in Finnish and in English.
+ */
 export const loadMeals = async (
   client: AppSupabaseClient,
+  locale: Locale,
 ): Promise<Result<readonly Meal[], LoadMealsError>> => {
   const { data } = await client
     .from('meal')
     .select('id,household_id,name,servings,photo_url,meal_ingredient(count)')
+    .or(`locale.is.null,locale.eq.${locale}`)
 
   const rows = z.array(rowSchema).safeParse(data ?? [])
   if (!rows.success) return err('invalid-row')

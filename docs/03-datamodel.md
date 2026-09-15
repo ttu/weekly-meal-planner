@@ -6,22 +6,22 @@ infrastructure edge.
 
 ## Tables
 
-| Table               | Key columns                                                                                                   | Notes                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `household`         | `id`, `name`, `slots jsonb`, `locale`                                                                         | `slots` is an ordered `[{key,label}]`; `locale` is `fi` or `en`                  |
-| `household_member`  | `household_id`, `user_id`, `role`, `display_name`, `avatar_url`, `colour`                                     | display name and colour are load-bearing in the UI                               |
-| `ingredient`        | `id`, `household_id?`, `slug`, `category`, `dimension`, `base_unit`                                           | identity is the locale-independent `slug`; `household_id NULL` = global taxonomy |
-| `ingredient_name`   | `ingredient_id`, `locale`, `name`                                                                             | one row per locale; global ingredients carry `fi` and `en`                       |
-| `meal`              | `id`, `household_id?`, `name`, `description`, `servings`, `source_url?`, `photo_url?`, `copied_from_meal_id?` | `household_id NULL` = catalogue meal                                             |
-| `meal_ingredient`   | `meal_id`, `ingredient_id`, `quantity`, `unit`, `optional`                                                    | may be empty for a name-only meal                                                |
-| `week_plan`         | `id`, `household_id`, `week_start`                                                                            | ISO week Monday                                                                  |
-| `backlog_item`      | `id`, `week_plan_id`, `meal_id`, `added_by`                                                                   | no date                                                                          |
-| `cook_event`        | `id`, `week_plan_id`, `meal_id`, `date`, `slot_key`, `servings_cooked`, `from_backlog_item_id?`               | the only ingredient contributor                                                  |
-| `leftover`          | `id`, `cook_event_id`, `date`, `slot_key`                                                                     | `ON DELETE CASCADE` from the cook event                                          |
-| `household_staple`  | `household_id`, `ingredient_id`, `running_low`, `marked_low_at?`                                              | presence means "we normally have this"                                           |
-| `shopping_check`    | `week_plan_id`, `ingredient_id`, `checked_at`                                                                 | ticked in the shop                                                               |
-| `shopping_override` | `week_plan_id`, `ingredient_id`, `quantity`, `unit`, `reason?`                                                | manual quantity                                                                  |
-| `shopping_extra`    | `id`, `week_plan_id`, `label`, `checked_at?`                                                                  | belongs to no meal                                                               |
+| Table               | Key columns                                                                                                              | Notes                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `household`         | `id`, `name`, `slots jsonb`, `locale`                                                                                    | `slots` is an ordered `[{key,label}]`; `locale` is `fi` or `en`                  |
+| `household_member`  | `household_id`, `user_id`, `role`, `display_name`, `avatar_url`, `colour`                                                | display name and colour are load-bearing in the UI                               |
+| `ingredient`        | `id`, `household_id?`, `slug`, `category`, `dimension`, `base_unit`                                                      | identity is the locale-independent `slug`; `household_id NULL` = global taxonomy |
+| `ingredient_name`   | `ingredient_id`, `locale`, `name`                                                                                        | one row per locale; global ingredients carry `fi` and `en`                       |
+| `meal`              | `id`, `household_id?`, `locale?`, `name`, `description`, `servings`, `source_url?`, `photo_url?`, `copied_from_meal_id?` | `household_id NULL` = catalogue meal, and then `locale` is set                   |
+| `meal_ingredient`   | `meal_id`, `ingredient_id`, `quantity`, `unit`, `optional`                                                               | may be empty for a name-only meal                                                |
+| `week_plan`         | `id`, `household_id`, `week_start`                                                                                       | ISO week Monday                                                                  |
+| `backlog_item`      | `id`, `week_plan_id`, `meal_id`, `added_by`                                                                              | no date                                                                          |
+| `cook_event`        | `id`, `week_plan_id`, `meal_id`, `date`, `slot_key`, `servings_cooked`, `added_by`, `from_backlog_item_id?`              | the only ingredient contributor                                                  |
+| `leftover`          | `id`, `cook_event_id`, `date`, `slot_key`                                                                                | `ON DELETE CASCADE` from the cook event                                          |
+| `household_staple`  | `household_id`, `ingredient_id`, `running_low`, `marked_low_at?`                                                         | presence means "we normally have this"                                           |
+| `shopping_check`    | `week_plan_id`, `ingredient_id`, `checked_at`                                                                            | ticked in the shop                                                               |
+| `shopping_override` | `week_plan_id`, `ingredient_id`, `quantity`, `unit`, `reason?`                                                           | manual quantity                                                                  |
+| `shopping_extra`    | `id`, `week_plan_id`, `label`, `checked_at?`                                                                             | belongs to no meal                                                               |
 
 The Shopping List itself has no table. It is derived on every render; storing it
 would mean it going stale exactly when Thursday's dinner changes.
@@ -43,9 +43,12 @@ family called it that.
 
 Meals are different and deliberately simpler. Catalogue meals carry per-locale
 names and descriptions **in the reference data files**, not in the database:
-the sync script writes one `meal` row per locale-neutral catalogue entry with
-the name resolved for each supported locale at copy time. A **Household Meal has
-a single name**, in whatever language the family typed. A family's own meal is
+the sync script writes one `meal` row per locale, with that locale's name, and
+stamps `meal.locale` on it. The Household reads the Catalogue filtered to its
+own Locale — without that column nothing recorded which language a row was in,
+and the library listed every Catalogue Meal twice, once in each. A **Household
+Meal has a single name**, in whatever language the family typed, and its
+`locale` is NULL because it is never filtered. A family's own meal is
 theirs and they name it once; forcing them to supply two names would be exactly
 the kind of friction this app is supposed to avoid.
 

@@ -2,7 +2,7 @@
   "board": {
     "thisWeek": "This week",
     "today": "Today",
-    "addMeal": "Add a meal",
+    "addMeal": "+ Add a meal",
     "startTitle": "Start a board",
     "startBody": "No account needed. Pick a name for the board, a name for yourself, and a password the family will use to join.",
     "boardName": "Board name",
@@ -22,7 +22,10 @@
     "share": "Share this board",
     "shareCopied": "Link copied",
     "shareBody": "Send the link and tell them the password separately.",
-    "anonymousWarning": "This device is the only key to your seat on this board. Clearing browser data loses it."
+    "anonymousWarning": "This device is the only key to your seat on this board. Clearing browser data loses it.",
+    "backlogHeading": "This week's backlog",
+    "dropHint": "Drag a Meal anywhere, or tap it to plan it.",
+    "newMeal": "+ New meal"
   },
   "slot": {
     "lunch": "Lunch",
@@ -38,7 +41,9 @@
     "title": "Leftovers from {{meal}}",
     "sameSlot": "That is the same sitting as the Meal itself.",
     "submit": "Add to {{day}}",
-    "failed": "Could not add leftovers. Try again."
+    "failed": "Could not add leftovers. Try again.",
+    "parentPrefix": "{{meal}} — ",
+    "word": "leftovers"
   },
   "auth": {
     "title": "Sign in",
@@ -52,7 +57,8 @@
   "backlog": {
     "count": "Backlog",
     "empty": "Nobody has added anything yet.",
-    "add": "Add"
+    "add": "Add",
+    "addShort": "+ Add"
   },
   "picker": {
     "title": "Add a Meal",
@@ -62,10 +68,11 @@
     "noResults": "No Meals match that.",
     "cancel": "Cancel",
     "addFailed": "Could not add that Meal. Try again.",
-    "catalogueHint": "Copy to your library to edit"
+    "catalogueHint": "Copy to your library to edit",
+    "oursCount": "Ours · {{count}}"
   },
   "plan": {
-    "title": "Plan \"{{meal}}\"",
+    "title": "Plan “{{meal}}”",
     "addedBy": "Added by {{name}} · serves {{servings}}",
     "day": "Day",
     "slot": "Slot",
@@ -119,7 +126,9 @@
     "edit": "Edit Meal",
     "copy": "Copy to your Meals",
     "copied": "Copied to your Meals.",
-    "catalogueReadOnly": "Catalogue Meals cannot be edited. Copy it first."
+    "catalogueReadOnly": "Catalogue Meals cannot be edited. Copy it first.",
+    "servesCount": "Serves {{count}}",
+    "libraryPane": "Meal library"
   },
   "ingredient": {
     "add": "Add an Ingredient",
@@ -151,7 +160,10 @@
     "copyPrompt": "Copy as agent prompt",
     "copied": "Copied",
     "share": "Share",
-    "promptIntro": "Order groceries for the week:"
+    "promptIntro": "Order groceries for the week:",
+    "summaryMeals_one": "{{count}} to buy · {{meals}} meal",
+    "summaryMeals_other": "{{count}} to buy · {{meals}} meals",
+    "listTitle": "Shopping list"
   },
   "presence": {
     "editing": "{{name}} is here too",

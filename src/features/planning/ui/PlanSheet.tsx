@@ -3,66 +3,96 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
-import { useTranslation } from '@/shared/i18n'
+import { useTranslation, type Locale } from '@/shared/i18n'
 import type { Slot, SlotKey } from '@/features/household'
 import type { Servings } from '@/features/meals'
 import { describePlacement } from '../domain/placement'
+import { formatWeekday } from '../domain/format-day'
 import type { BoardDay } from '../domain/board'
 
+/**
+ * A bottom sheet over the board, not a screen that replaces it: the week you
+ * are planning into stays visible behind the choice, which is the whole reason
+ * the canvas puts it here rather than on a page of its own.
+ */
 const styles = StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: tokens.color.surface, paddingHorizontal: tokens.space.md },
-  header: {
-    flexDirection: 'row',
+  backdrop: { flex: 1, backgroundColor: 'rgba(36, 33, 28, 0.34)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: tokens.color.surface,
+    borderTopLeftRadius: tokens.radius.sheet,
+    borderTopRightRadius: tokens.radius.sheet,
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    gap: 18,
+    maxHeight: '90%',
+  },
+  grip: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: tokens.color.dashed,
+    alignSelf: 'center',
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  title: { ...tokens.type.sheetTitle, color: tokens.color.textPrimary, flexShrink: 1 },
+  cancel: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
+  addedBy: { ...tokens.type.body, color: tokens.color.textSupport },
+  group: { gap: 9 },
+  label: { ...tokens.type.label, color: tokens.color.textSupport, textTransform: 'uppercase' },
+  /** Seven day chips in one row, so the week keeps its shape at a glance. */
+  dayRow: { flexDirection: 'row', gap: 6 },
+  slotRow: { flexDirection: 'row', gap: tokens.space.sm },
+  chip: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: tokens.space.xs,
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.color.cardBorder,
+    backgroundColor: tokens.color.surfaceRaised,
+    paddingVertical: 12,
   },
-  title: { ...tokens.type.display, color: tokens.color.textPrimary, flexShrink: 1 },
-  cancel: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
-  addedBy: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
-  label: {
-    ...tokens.type.label,
-    color: tokens.color.textMuted,
-    textTransform: 'uppercase',
-    marginBottom: tokens.space.xs,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: tokens.space.sm,
-    marginBottom: tokens.space.md,
-  },
+  slotChip: { paddingVertical: 14 },
+  /** Selection is a terracotta fill, not an outline: on a sheet of chips an
+   *  outline reads as "focused", and people tapped straight past it. */
+  chipSelected: { backgroundColor: tokens.color.action, borderColor: tokens.color.action },
   chipToday: { borderColor: tokens.color.affirm },
-  stepperRow: {
-    flexDirection: 'row',
+  chipText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.textPrimary },
+  slotChipText: { ...tokens.type.mealNameSmall, color: tokens.color.textPrimary },
+  chipTextSelected: { color: tokens.color.surfaceRaised },
+  note: { ...tokens.type.meta, color: tokens.color.textSupport },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  stepper: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.color.cardBorder,
+    backgroundColor: tokens.color.surfaceRaised,
     alignItems: 'center',
-    gap: tokens.space.md,
-    marginBottom: tokens.space.md,
+    justifyContent: 'center',
+  },
+  stepperSign: {
+    fontFamily: tokens.type.body.fontFamily,
+    fontSize: 22,
+    color: tokens.color.textPrimary,
   },
   stepperValue: {
-    ...tokens.type.display,
+    fontFamily: tokens.type.mealName.fontFamily,
+    fontSize: 24,
+    fontWeight: '600',
     color: tokens.color.textPrimary,
-    minWidth: 48,
+    minWidth: 28,
     textAlign: 'center',
-  },
-  notice: {
-    ...tokens.type.body,
-    color: tokens.color.textMuted,
-    backgroundColor: tokens.color.surfaceInset,
-    borderRadius: 8,
-    padding: tokens.space.md,
-    marginBottom: tokens.space.md,
   },
   submit: {
     backgroundColor: tokens.color.action,
-    borderRadius: 8,
-    minHeight: 54,
+    borderRadius: tokens.radius.card,
+    paddingVertical: 17,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: tokens.space.lg,
   },
-  submitText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
+  submitPressed: { backgroundColor: tokens.color.actionPressed },
+  submitText: { ...tokens.type.mealNameLarge, color: tokens.color.surfaceRaised },
 })
 
 export type PlanChoice = {
@@ -87,6 +117,7 @@ type Props = {
   readonly board: readonly BoardDay[]
   readonly slots: readonly Slot[]
   readonly today: string
+  readonly locale: Locale
   readonly onSubmit: (choice: PlanChoice) => void
   readonly onDismiss: () => void
 }
@@ -107,6 +138,7 @@ export const PlanSheet = ({
   board,
   slots,
   today,
+  locale,
   onSubmit,
   onDismiss,
 }: Props): React.JSX.Element => {
@@ -128,139 +160,165 @@ export const PlanSheet = ({
   const slotLabel = slots.find((s) => s.key === slotKey)?.labelKey ?? ''
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
-      <ScrollView
-        style={styles.sheet}
-        contentContainerStyle={{ paddingTop: insets.top + tokens.space.md }}
-        testID="plan-sheet"
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>
-            {forLeftover
-              ? t('leftover.title', { meal: mealName })
-              : t('plan.title', { meal: mealName })}
-          </Text>
-          <Pressable
-            onPress={onDismiss}
-            accessibilityRole="button"
-            accessibilityLabel={t('plan.cancel')}
-            testID="plan-cancel"
-          >
-            <Text style={styles.cancel}>{t('plan.cancel')}</Text>
-          </Pressable>
-        </View>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
+      <View style={styles.backdrop}>
+        <Pressable
+          style={{ flex: 1 }}
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel={t('plan.cancel')}
+        />
+        <ScrollView
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
+          testID="plan-sheet"
+        >
+          <View style={styles.grip} />
 
-        {!forLeftover && addedByName !== undefined && (
-          <Text style={styles.addedBy}>
-            {t('plan.addedBy', { name: addedByName, servings: defaultServings })}
-          </Text>
-        )}
-
-        <Text style={styles.label}>{t('plan.day')}</Text>
-        <View style={styles.chips}>
-          {board.map((day) => (
+          <View style={styles.headerRow}>
+            <View style={{ flexShrink: 1, gap: 4 }}>
+              <Text style={styles.title}>
+                {forLeftover
+                  ? t('leftover.title', { meal: mealName })
+                  : t('plan.title', { meal: mealName })}
+              </Text>
+              {!forLeftover && addedByName !== undefined && addedByName !== '' && (
+                <Text style={styles.addedBy}>
+                  {t('plan.addedBy', { name: addedByName, servings: defaultServings })}
+                </Text>
+              )}
+            </View>
             <Pressable
-              key={day.date}
-              style={[
-                formStyles.chip,
-                day.date === today && styles.chipToday,
-                day.date === date && formStyles.chipSelected,
-              ]}
-              onPress={() => {
-                setDate(day.date)
-              }}
+              onPress={onDismiss}
               accessibilityRole="button"
-              accessibilityState={{ selected: day.date === date }}
-              accessibilityLabel={day.date}
-              testID={`plan-day-${day.date}`}
+              accessibilityLabel={t('plan.cancel')}
+              testID="plan-cancel"
             >
-              <Text style={formStyles.chipText}>{t(weekdayKey(day.date))}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.label}>{t('plan.slot')}</Text>
-        <View style={styles.chips}>
-          {slots.map((slot) => (
-            <Pressable
-              key={slot.key}
-              style={[formStyles.chip, slot.key === slotKey && formStyles.chipSelected]}
-              onPress={() => {
-                setSlotKey(slot.key)
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: slot.key === slotKey }}
-              accessibilityLabel={t(slot.labelKey)}
-              testID={`plan-slot-${slot.key}`}
-            >
-              <Text style={formStyles.chipText}>{t(slot.labelKey)}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {!forLeftover && <Text style={styles.label}>{t('plan.cookingFor')}</Text>}
-        {!forLeftover && (
-          <View style={styles.stepperRow}>
-            <Pressable
-              style={formStyles.chip}
-              onPress={() => {
-                setServings((n) => Math.max(1, n - 1))
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('plan.cookingFor')}
-              testID="plan-servings-down"
-            >
-              <Text style={formStyles.chipText}>−</Text>
-            </Pressable>
-            <Text style={styles.stepperValue} testID="plan-servings">
-              {String(servings)}
-            </Text>
-            <Pressable
-              style={formStyles.chip}
-              onPress={() => {
-                setServings((n) => Math.min(50, n + 1))
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('plan.cookingFor')}
-              testID="plan-servings-up"
-            >
-              <Text style={formStyles.chipText}>+</Text>
+              <Text style={styles.cancel}>{t('plan.cancel')}</Text>
             </Pressable>
           </View>
-        )}
 
-        {/* Placing a Leftover on its parent's own sitting is pointless but not
-            forbidden: warn, never refuse. */}
-        {forLeftover && date === parentDate && slotKey === parentSlotKey && (
-          <Text style={styles.notice} testID="leftover-same-slot">
-            {t('leftover.sameSlot')}
-          </Text>
-        )}
+          <View style={styles.group}>
+            <Text style={styles.label}>{t('plan.day')}</Text>
+            <View style={styles.dayRow}>
+              {board.map((day) => (
+                <Pressable
+                  key={day.date}
+                  style={[
+                    styles.chip,
+                    day.date === today && styles.chipToday,
+                    day.date === date && styles.chipSelected,
+                  ]}
+                  onPress={() => {
+                    setDate(day.date)
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: day.date === date }}
+                  accessibilityLabel={day.date}
+                  testID={`plan-day-${day.date}`}
+                >
+                  <Text style={[styles.chipText, day.date === date && styles.chipTextSelected]}>
+                    {t(weekdayKey(day.date))}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
-        {/* The app never refuses an edit; it says what will happen instead. */}
-        {placement.willJoinExisting && (
-          <Text style={styles.notice} testID="plan-will-join">
-            {t('plan.willJoin', {
-              slot: t(slotLabel),
-              count: placement.existingCount,
-            })}
-          </Text>
-        )}
+          <View style={styles.group}>
+            <Text style={styles.label}>{t('plan.slot')}</Text>
+            <View style={styles.slotRow}>
+              {slots.map((slot) => (
+                <Pressable
+                  key={slot.key}
+                  style={[
+                    styles.chip,
+                    styles.slotChip,
+                    slot.key === slotKey && styles.chipSelected,
+                  ]}
+                  onPress={() => {
+                    setSlotKey(slot.key)
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: slot.key === slotKey }}
+                  accessibilityLabel={t(slot.labelKey)}
+                  testID={`plan-slot-${slot.key}`}
+                >
+                  <Text
+                    style={[styles.slotChipText, slot.key === slotKey && styles.chipTextSelected]}
+                  >
+                    {t(slot.labelKey)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-        <Pressable
-          style={styles.submit}
-          disabled={slotKey === undefined}
-          onPress={() => {
-            if (slotKey === undefined) return
-            onSubmit({ date, slotKey, servingsCooked: brand<number, 'Servings'>(servings) })
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('plan.submit', { day: t(weekdayKey(date)) })}
-          testID="plan-submit"
-        >
-          <Text style={styles.submitText}>{t('plan.submit', { day: t(weekdayKey(date)) })}</Text>
-        </Pressable>
-      </ScrollView>
+            {/* The app never refuses an edit; it says what will happen instead. */}
+            {placement.willJoinExisting && (
+              <Text style={styles.note} testID="plan-will-join">
+                {t('plan.willJoin', { slot: t(slotLabel), count: placement.existingCount })}
+              </Text>
+            )}
+
+            {/* Placing a Leftover on its parent's own sitting is pointless but
+                not forbidden: warn, never refuse. */}
+            {forLeftover && date === parentDate && slotKey === parentSlotKey && (
+              <Text style={styles.note} testID="leftover-same-slot">
+                {t('leftover.sameSlot')}
+              </Text>
+            )}
+          </View>
+
+          {!forLeftover && (
+            <View style={styles.group}>
+              <Text style={styles.label}>{t('plan.cookingFor')}</Text>
+              <View style={styles.stepperRow}>
+                <Pressable
+                  style={styles.stepper}
+                  onPress={() => {
+                    setServings((n) => Math.max(1, n - 1))
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('plan.cookingFor')}
+                  testID="plan-servings-down"
+                >
+                  <Text style={styles.stepperSign}>−</Text>
+                </Pressable>
+                <Text style={styles.stepperValue} testID="plan-servings">
+                  {String(servings)}
+                </Text>
+                <Pressable
+                  style={styles.stepper}
+                  onPress={() => {
+                    setServings((n) => Math.min(50, n + 1))
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('plan.cookingFor')}
+                  testID="plan-servings-up"
+                >
+                  <Text style={styles.stepperSign}>+</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          <Pressable
+            style={({ pressed }) => [styles.submit, pressed && styles.submitPressed]}
+            disabled={slotKey === undefined}
+            onPress={() => {
+              if (slotKey === undefined) return
+              onSubmit({ date, slotKey, servingsCooked: brand<number, 'Servings'>(servings) })
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('plan.submit', { day: formatWeekday(date, locale) })}
+            testID="plan-submit"
+          >
+            <Text style={styles.submitText}>
+              {t('plan.submit', { day: formatWeekday(date, locale) })}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </View>
     </Modal>
   )
 }

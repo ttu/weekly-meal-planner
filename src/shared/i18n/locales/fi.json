@@ -2,7 +2,7 @@
   "board": {
     "thisWeek": "Tämä viikko",
     "today": "Tänään",
-    "addMeal": "Lisää ateria",
+    "addMeal": "+ Lisää ateria",
     "startTitle": "Aloita taulu",
     "startBody": "Tiliä ei tarvita. Valitse taululle nimi, itsellesi nimi ja salasana, jolla perhe liittyy.",
     "boardName": "Taulun nimi",
@@ -22,7 +22,10 @@
     "share": "Jaa tämä taulu",
     "shareCopied": "Linkki kopioitu",
     "shareBody": "Lähetä linkki ja kerro salasana erikseen.",
-    "anonymousWarning": "Tämä laite on ainoa avaimesi tälle taululle. Selaimen tietojen tyhjennys hukkaa sen."
+    "anonymousWarning": "Tämä laite on ainoa avaimesi tälle taululle. Selaimen tietojen tyhjennys hukkaa sen.",
+    "backlogHeading": "Tämän viikon jono",
+    "dropHint": "Raahaa ateria mihin tahansa tai napauta suunnitellaksesi.",
+    "newMeal": "+ Uusi ateria"
   },
   "slot": {
     "lunch": "Lounas",
@@ -38,7 +41,9 @@
     "title": "Tähteet ateriasta {{meal}}",
     "sameSlot": "Se on sama ateriahetki kuin ruoka itse.",
     "submit": "Lisää {{day}}",
-    "failed": "Tähteiden lisääminen epäonnistui. Yritä uudelleen."
+    "failed": "Tähteiden lisääminen epäonnistui. Yritä uudelleen.",
+    "parentPrefix": "{{meal}} — ",
+    "word": "tähteet"
   },
   "auth": {
     "title": "Kirjaudu sisään",
@@ -52,7 +57,8 @@
   "backlog": {
     "count": "Toivelista",
     "empty": "Kukaan ei ole vielä lisännyt mitään.",
-    "add": "Lisää"
+    "add": "Lisää",
+    "addShort": "+ Lisää"
   },
   "picker": {
     "title": "Lisää ateria",
@@ -62,10 +68,11 @@
     "noResults": "Yksikään ateria ei vastaa hakua.",
     "cancel": "Peruuta",
     "addFailed": "Aterian lisääminen epäonnistui. Yritä uudelleen.",
-    "catalogueHint": "Kopioi omiin aterioihin muokataksesi"
+    "catalogueHint": "Kopioi omiin aterioihin muokataksesi",
+    "oursCount": "Omat · {{count}}"
   },
   "plan": {
-    "title": "Suunnittele \"{{meal}}\"",
+    "title": "Suunnittele “{{meal}}”",
     "addedBy": "Lisännyt {{name}} · {{servings}} annosta",
     "day": "Päivä",
     "slot": "Ateria",
@@ -119,7 +126,9 @@
     "edit": "Muokkaa ateriaa",
     "copy": "Kopioi omiin aterioihin",
     "copied": "Kopioitu omiin aterioihin.",
-    "catalogueReadOnly": "Luettelon aterioita ei voi muokata. Kopioi se ensin."
+    "catalogueReadOnly": "Luettelon aterioita ei voi muokata. Kopioi se ensin.",
+    "servesCount": "{{count}} annosta",
+    "libraryPane": "Ateriakirjasto"
   },
   "ingredient": {
     "add": "Lisää raaka-aine",
@@ -151,7 +160,10 @@
     "copyPrompt": "Kopioi agentin kehotteeksi",
     "copied": "Kopioitu",
     "share": "Jaa",
-    "promptIntro": "Tilaa viikon ruokaostokset:"
+    "promptIntro": "Tilaa viikon ruokaostokset:",
+    "summaryMeals_one": "{{count}} ostettavaa · {{meals}} ateria",
+    "summaryMeals_other": "{{count}} ostettavaa · {{meals}} ateriaa",
+    "listTitle": "Ostoslista"
   },
   "presence": {
     "editing": "{{name}} on myös täällä",

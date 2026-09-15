@@ -64,7 +64,7 @@ const sync = async (): Promise<void> => {
     for (const locale of ['fi', 'en'] as const) {
       const { data, error } = await admin
         .from('meal')
-        .insert({ household_id: null, name: meal.names[locale], servings: meal.servings })
+        .insert({ household_id: null, locale, name: meal.names[locale], servings: meal.servings })
         .select('id')
         .single()
       if (error !== null) throw new Error(`Meal ${meal.names.en}: ${error.message}`)

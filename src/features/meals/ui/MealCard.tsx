@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
+import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
 import { cardStyles } from './card-styles'
 import type { Servings } from '../domain/types'
@@ -17,63 +18,139 @@ type Props = {
   readonly variant: MealCardVariant
   readonly photoUrl?: string | undefined
   readonly addedBy?: string | undefined
+  readonly addedByColour?: string | undefined
   readonly servingsCooked?: Servings | undefined
   readonly detail?: string | undefined
+  /** A catalogue row is marked as one, and says it must be copied to be edited. */
+  readonly isCatalogue?: boolean | undefined
+  /** The wide board's library pane is 284px wide and needs the tighter row. */
+  readonly compact?: boolean | undefined
 }
 
 const styles = StyleSheet.create({
-  library: { borderBottomWidth: 1, borderBottomColor: tokens.color.rule },
+  library: { backgroundColor: tokens.color.surface },
+  /** In the pane a Household Meal sits on white and a Catalogue Meal on paper,
+   *  so "ours" and "borrowed" are separable before the badge is read. */
+  libraryCompact: { backgroundColor: tokens.color.surfaceRaised },
+  libraryCompactCatalogue: { backgroundColor: tokens.color.surface },
+  /** Amber means wanted-but-unplanned, and is recognisable across the room. */
   backlog: {
     backgroundColor: tokens.color.surfaceRaised,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     borderLeftColor: tokens.color.backlog,
+    boxShadow: '0 1px 2px rgba(36, 33, 28, 0.05)',
   },
-  // boxShadow, not the shadow* props: those are deprecated in React Native 0.86
-  // and warn on every render under react-native-web.
   planned: {
     backgroundColor: tokens.color.surfaceRaised,
-    boxShadow: '0 2px 6px rgba(36, 33, 28, 0.06)',
+    paddingVertical: 15,
+    boxShadow: tokens.shadow.card,
   },
+  /** The planned card reads name-then-servings on the left, face on the right. */
+  plannedRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  badge: {
+    ...tokens.type.labelTiny,
+    color: tokens.color.textMuted,
+    textTransform: 'uppercase',
+    borderWidth: 1,
+    borderColor: tokens.color.dashed,
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' },
+  addedBy: { flexDirection: 'row', alignItems: 'center', gap: 7 },
 })
+
+type ChipProps = { name: string; photoUrl?: string | undefined; compact: boolean }
+
+const Chip = ({ name, photoUrl, compact }: ChipProps) =>
+  photoUrl === undefined ? (
+    <View style={[cardStyles.chip, compact && cardStyles.chipSmall]}>
+      <Text
+        style={[cardStyles.initial, compact && cardStyles.initialSmall]}
+        testID="meal-card-initial"
+      >
+        {name.slice(0, 1).toUpperCase()}
+      </Text>
+    </View>
+  ) : (
+    <Image
+      source={{ uri: photoUrl }}
+      style={[cardStyles.chipImage, compact && cardStyles.chipSmall]}
+      accessibilityIgnoresInvertColors
+    />
+  )
 
 export const MealCard = ({
   name,
   variant,
   photoUrl,
   addedBy,
+  addedByColour,
   servingsCooked,
   detail,
+  isCatalogue = false,
+  compact = false,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
-  return (
-    <View style={[cardStyles.base, styles[variant]]} testID={`meal-card-${variant}`}>
-      <View style={cardStyles.row}>
-        {photoUrl === undefined ? (
-          <Text style={cardStyles.initial} testID="meal-card-initial">
-            {name.slice(0, 1).toUpperCase()}
-          </Text>
-        ) : (
-          <Image
-            source={{ uri: photoUrl }}
-            style={cardStyles.chip}
-            accessibilityIgnoresInvertColors
-          />
-        )}
-        <Text style={cardStyles.name} numberOfLines={2}>
-          {name}
-        </Text>
+  if (variant === 'planned') {
+    return (
+      <View style={[cardStyles.base, styles.planned]} testID="meal-card-planned">
+        <View style={styles.plannedRow}>
+          <View style={cardStyles.text}>
+            <Text style={cardStyles.nameLarge}>{name}</Text>
+            {servingsCooked !== undefined && (
+              <Text style={cardStyles.support} testID="meal-card-servings-cooked">
+                {t('cookEvent.cookingCount', { count: servingsCooked })}
+              </Text>
+            )}
+          </View>
+          {addedBy !== undefined && addedBy !== '' && (
+            <Avatar name={addedBy} colour={addedByColour ?? ''} />
+          )}
+        </View>
       </View>
+    )
+  }
 
-      {detail !== undefined && <Text style={cardStyles.support}>{detail}</Text>}
+  if (variant === 'backlog') {
+    return (
+      <View style={[cardStyles.base, styles.backlog]} testID="meal-card-backlog">
+        <Text style={cardStyles.name}>{name}</Text>
+        {addedBy !== undefined && addedBy !== '' && (
+          <View style={styles.addedBy}>
+            <Avatar name={addedBy} colour={addedByColour ?? ''} size="small" />
+            <Text style={cardStyles.meta}>{addedBy}</Text>
+          </View>
+        )}
+      </View>
+    )
+  }
 
-      {addedBy !== undefined && <Text style={cardStyles.support}>{addedBy}</Text>}
-
-      {servingsCooked !== undefined && (
-        <Text style={cardStyles.support} testID="meal-card-servings-cooked">
-          {t('cookEvent.cookingCount', { count: servingsCooked })}
-        </Text>
-      )}
+  return (
+    <View
+      style={[
+        cardStyles.base,
+        styles.library,
+        compact && cardStyles.baseCompact,
+        compact && (isCatalogue ? styles.libraryCompactCatalogue : styles.libraryCompact),
+      ]}
+      testID="meal-card-library"
+    >
+      <View style={[cardStyles.row, compact && cardStyles.rowCompact]}>
+        <Chip name={name} photoUrl={photoUrl} compact={compact} />
+        <View style={cardStyles.text}>
+          <View style={styles.nameRow}>
+            <Text style={compact ? cardStyles.nameCompact : cardStyles.name}>{name}</Text>
+            {isCatalogue && <Text style={styles.badge}>{t('picker.catalogue')}</Text>}
+          </View>
+          {detail !== undefined && (
+            <Text style={compact ? cardStyles.metaCompact : cardStyles.meta}>{detail}</Text>
+          )}
+        </View>
+      </View>
     </View>
   )
 }

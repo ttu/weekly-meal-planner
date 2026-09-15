@@ -55,8 +55,22 @@ export const weekDates = async (page: Page): Promise<string[]> => {
   return ids.map((id) => id.replace('day-', '')).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
 }
 
-/** Adds a Meal to the Backlog through the picker, by visible name. */
+/**
+ * Adds a Meal to the Backlog by visible name.
+ *
+ * Two routes, because the design gives the two widths two: a wide board drags
+ * or taps from the Meal library pane, a phone opens the picker from the shelf.
+ */
 export const addToBacklog = async (page: Page, mealName: string): Promise<void> => {
+  const libraryPane = page.getByTestId('pane-library')
+
+  if (await libraryPane.isVisible()) {
+    await libraryPane.getByTestId('library-search').fill(mealName)
+    await libraryPane.locator('[data-testid^="library-meal-"]').first().click()
+    await libraryPane.getByTestId('library-search').fill('')
+    return
+  }
+
   await page.getByTestId('backlog-add').click()
   await expect(page.getByTestId('meal-picker')).toBeVisible()
   await page.getByTestId('picker-search').fill(mealName)

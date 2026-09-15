@@ -49,6 +49,24 @@ export const withTiming = (value: unknown): unknown => value
 export const withSpring = (value: unknown): unknown => value
 export const runOnJS = (fn: unknown): unknown => fn
 
+/**
+ * react-native-gesture-handler reaches into Reanimated's internals for these.
+ * A GestureDetector in the tree fails to render without them, which is how a
+ * Backlog card — draggable at every width — reaches every component test.
+ */
+export const useEvent = (): unknown => ({})
+export const useHandler = (): {
+  context: Record<string, unknown>
+  doDependenciesDiffer: boolean
+} => ({
+  context: {},
+  doDependenciesDiffer: false,
+})
+export const useAnimatedRef = (): { current: null } => ({ current: null })
+export const measure = (): null => null
+export const isSharedValue = (): boolean => false
+export const setGestureState = (): void => undefined
+
 const Animated = {
   View: passthrough,
   Text: passthrough,

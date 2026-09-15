@@ -1,34 +1,46 @@
-import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native'
+import { ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
+import { useTranslation } from '@/shared/i18n'
 
 /**
+ * Three panes, one gesture direction: library → backlog → board, left to right.
+ * The panes are the same components the phone layout uses; only the arrangement
+ * differs, so a change to a card is a change in both.
+ *
  * The width must sit on a plain View, not the ScrollView: on web a ScrollView
  * sizes itself to its content, which made the board — the pane that matters
  * most — the narrowest of the three.
  */
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: tokens.color.surface },
-  header: {
-    paddingHorizontal: tokens.space.md,
-    paddingVertical: tokens.space.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.rule,
-  },
-  panes: { flex: 1, flexDirection: 'row' },
+  panes: { flex: 1, flexDirection: 'row', minHeight: 0 },
   libraryPane: {
-    width: 320,
+    width: 284,
     borderRightWidth: 1,
-    borderRightColor: tokens.color.rule,
-    backgroundColor: tokens.color.surface,
+    borderRightColor: tokens.color.cardBorder,
+    backgroundColor: tokens.color.surfacePane,
   },
   backlogPane: {
-    width: 260,
+    width: 250,
     borderRightWidth: 1,
-    borderRightColor: tokens.color.rule,
-    backgroundColor: tokens.color.surfaceSunken,
+    borderRightColor: tokens.color.cardBorder,
+    backgroundColor: tokens.color.surface,
   },
   boardPane: { flex: 1, minWidth: 320, backgroundColor: tokens.color.surface },
   scroll: { flex: 1 },
+  /** Seven columns, sized by the pane rather than by their contents. */
+  grid: { flex: 1, flexDirection: 'row', minHeight: 0 },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.space.md,
+    borderTopWidth: 1,
+    borderTopColor: tokens.color.cardBorder,
+    backgroundColor: tokens.color.surfacePane,
+    paddingVertical: 10,
+    paddingHorizontal: tokens.space.md,
+  },
+  hint: { ...tokens.type.meta, color: tokens.color.textSupport, flexShrink: 1 },
 })
 
 type Props = {
@@ -37,16 +49,13 @@ type Props = {
   readonly header: React.ReactNode
   readonly library: React.ReactNode
   readonly backlog: React.ReactNode
+  /** The seven day columns. Laid out as a row here, not scrolled: the week is
+   *  the unit of the wide board and must be visible at once. */
   readonly board: React.ReactNode
   readonly overlays?: React.ReactNode
   readonly style?: ViewStyle | undefined
 }
 
-/**
- * Three panes, one gesture direction: library → backlog → board, left to right.
- * The panes are the same components the phone layout uses; only the arrangement
- * differs, so a change to a card is a change in both.
- */
 export const WideBoardLayout = ({
   header,
   library,
@@ -54,20 +63,27 @@ export const WideBoardLayout = ({
   board,
   overlays,
   style,
-}: Props): React.JSX.Element => (
-  <View style={[styles.page, style]} testID="wide-board-layout">
-    <View style={styles.header}>{header}</View>
-    <View style={styles.panes}>
-      <View style={styles.libraryPane} testID="pane-library">
-        <ScrollView style={styles.scroll}>{library}</ScrollView>
+}: Props): React.JSX.Element => {
+  const { t } = useTranslation()
+
+  return (
+    <View style={[styles.page, style]} testID="wide-board-layout">
+      {header}
+      <View style={styles.panes}>
+        <View style={styles.libraryPane} testID="pane-library">
+          {library}
+        </View>
+        <View style={styles.backlogPane} testID="pane-backlog">
+          <ScrollView style={styles.scroll}>{backlog}</ScrollView>
+        </View>
+        <View style={styles.boardPane} testID="pane-board">
+          <View style={styles.grid}>{board}</View>
+          <View style={styles.footer}>
+            <Text style={styles.hint}>{t('board.dropHint')}</Text>
+          </View>
+        </View>
       </View>
-      <View style={styles.backlogPane} testID="pane-backlog">
-        <ScrollView style={styles.scroll}>{backlog}</ScrollView>
-      </View>
-      <View style={styles.boardPane} testID="pane-board">
-        <ScrollView style={styles.scroll}>{board}</ScrollView>
-      </View>
+      {overlays}
     </View>
-    {overlays}
-  </View>
-)
+  )
+}

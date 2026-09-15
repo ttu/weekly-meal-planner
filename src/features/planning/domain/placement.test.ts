@@ -16,6 +16,8 @@ const cookEvent = (id: string, date: string, slotKey: string): CookEvent => ({
   date,
   slotKey: slotKey as SlotKey,
   servingsCooked: 6 as Servings,
+  addedByName: 'Aino',
+  addedByColour: '#5F7355',
 })
 
 const weekStart = '2026-09-07' as WeekStart

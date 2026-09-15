@@ -8,10 +8,10 @@ export const useHouseholdMeals = (): { meals: readonly Meal[]; isLoading: boolea
   const { client, household } = useSession()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['meals', household?.id],
+    queryKey: ['meals', household?.id, household?.locale],
     enabled: household !== undefined,
     queryFn: async () => {
-      const result = await loadMeals(client)
+      const result = await loadMeals(client, household?.locale ?? 'en')
       return isErr(result) ? [] : result.value
     },
   })

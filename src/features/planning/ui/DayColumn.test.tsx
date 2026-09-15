@@ -35,6 +35,8 @@ const twoDinners: BoardDay = {
           date: '2026-08-25',
           slotKey: 'dinner' as SlotKey,
           servingsCooked: 4 as Servings,
+          addedByName: 'Aino',
+          addedByColour: '#5F7355',
         },
       })),
     },
@@ -90,7 +92,7 @@ describe('DayColumn', () => {
   // The heading is a named weekday, not the ISO date it is keyed by.
   it('names the weekday', async () => {
     const view = await render(<DayColumn day={emptyDay} isToday={false} locale="en" />)
-    expect(view.getByText('Monday 24 Aug')).toBeTruthy()
+    expect(view.getByText('Monday')).toBeTruthy()
   })
 
   it('marks today', async () => {

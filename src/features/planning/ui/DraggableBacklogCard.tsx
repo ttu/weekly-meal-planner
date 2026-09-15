@@ -1,4 +1,4 @@
-import { Platform, StyleSheet } from 'react-native'
+import { Platform } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 // The gesture runs on the UI thread; these hop back to JS, where the drag state
@@ -9,13 +9,9 @@ import { MealCard } from '@/features/meals'
 import { useDrag, type DropTarget } from './DragContext'
 import type { BacklogItem } from '../domain/types'
 
-const styles = StyleSheet.create({
-  card: { width: 200 },
-})
-
 type Props = {
   readonly item: BacklogItem
-  readonly onDropped: (item: BacklogItem, target: DropTarget) => void
+  readonly onDropped?: ((item: BacklogItem, target: DropTarget) => void) | undefined
   readonly onTap: (item: BacklogItem) => void
 }
 
@@ -43,7 +39,7 @@ export const DraggableBacklogCard = ({ item, onDropped, onTap }: Props): React.J
 
   const onEnd = (): void => {
     const target = end()
-    if (target !== undefined) onDropped(item, target)
+    if (target !== undefined) onDropped?.(item, target)
     settle()
   }
 
@@ -85,12 +81,17 @@ export const DraggableBacklogCard = ({ item, onDropped, onTap }: Props): React.J
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View
-        style={[styles.card, animatedStyle]}
+        style={animatedStyle}
         accessibilityRole="button"
         accessibilityLabel={item.mealName}
         testID={`backlog-item-${item.id}`}
       >
-        <MealCard variant="backlog" name={item.mealName} addedBy={item.addedByName} />
+        <MealCard
+          variant="backlog"
+          name={item.mealName}
+          addedBy={item.addedByName}
+          addedByColour={item.addedByColour}
+        />
       </Animated.View>
     </GestureDetector>
   )

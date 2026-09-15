@@ -340,6 +340,7 @@ export type Database = {
           description: string | null
           household_id: string | null
           id: string
+          locale: string | null
           name: string
           photo_url: string | null
           servings: number
@@ -351,6 +352,7 @@ export type Database = {
           description?: string | null
           household_id?: string | null
           id?: string
+          locale?: string | null
           name: string
           photo_url?: string | null
           servings?: number
@@ -362,6 +364,7 @@ export type Database = {
           description?: string | null
           household_id?: string | null
           id?: string
+          locale?: string | null
           name?: string
           photo_url?: string | null
           servings?: number

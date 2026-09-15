@@ -16,9 +16,24 @@ export const tokens = {
     surfaceSunken: '#EDE6D9',
     surfaceRaised: '#FFFFFF',
     surfaceInset: '#EFE8DA',
+    /** The library pane and the board's footer rail: paper, a shade lighter. */
+    surfacePane: '#FBF8F1',
     textPrimary: '#24211C',
     textMuted: '#6B6459',
+    /** Labels and supporting metadata. Lighter than textMuted on purpose: the
+     *  canvas uses two greys, and collapsing them flattens every card. */
+    textSupport: '#8A8172',
+    /** Placeholders, slot labels, the initial in an empty photo chip. */
+    textGhost: '#A79C88',
+    /** Section rules between blocks of content. */
     rule: '#DBD2C1',
+    /** The edge of a card. Warmer and lighter than a section rule. */
+    cardBorder: '#E2D9C9',
+    /** A hairline inside a card, between its rows. */
+    cardDivider: '#EFE8DA',
+    /** Dashed edges: an empty Slot, a Leftover, the add-an-item row. */
+    dashed: '#D3C9B6',
+    dashedInset: '#CFC3AC',
     action: '#C05A38',
     actionPressed: '#9C4529',
     affirm: '#5F7355',
@@ -31,10 +46,37 @@ export const tokens = {
    * both are read at arm's length.
    */
   type: {
-    display: { fontFamily: FONT.serif, fontSize: 34, lineHeight: 38, letterSpacing: -0.5 },
-    dayHeading: { fontFamily: FONT.serif, fontSize: 24, lineHeight: 28 },
-    mealName: { fontFamily: FONT.sans, fontSize: 17, fontWeight: '600' as const, lineHeight: 22 },
+    display: { fontFamily: FONT.serif, fontSize: 34, lineHeight: 36, letterSpacing: -0.5 },
+    /** A day on the phone board, and a pane title. */
+    dayHeading: { fontFamily: FONT.serif, fontSize: 22, lineHeight: 26 },
+    sheetTitle: { fontFamily: FONT.serif, fontSize: 28, lineHeight: 32 },
+    /** A planned Meal on the phone board: the largest thing on the card. */
+    mealNameLarge: {
+      fontFamily: FONT.sans,
+      fontSize: 18,
+      fontWeight: '600' as const,
+      lineHeight: 23,
+    },
+    mealName: { fontFamily: FONT.sans, fontSize: 17, fontWeight: '600' as const, lineHeight: 21 },
+    /** A Backlog card, and a row in the library pane. */
+    mealNameSmall: {
+      fontFamily: FONT.sans,
+      fontSize: 16,
+      fontWeight: '600' as const,
+      lineHeight: 20,
+    },
+    /** A card inside a wide-screen day column, where seven must fit across. */
+    mealNameTight: {
+      fontFamily: FONT.sans,
+      fontSize: 14,
+      fontWeight: '600' as const,
+      lineHeight: 18,
+    },
     body: { fontFamily: FONT.sans, fontSize: 15, fontWeight: '400' as const, lineHeight: 21 },
+    /** "Cooking 6", "Added by Dad" — the second line of a card. */
+    support: { fontFamily: FONT.sans, fontSize: 14, fontWeight: '400' as const, lineHeight: 19 },
+    /** Provenance, hints, the count under a tight card. */
+    meta: { fontFamily: FONT.sans, fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
     shoppingRow: {
       fontFamily: FONT.sans,
       fontSize: 19,
@@ -47,12 +89,38 @@ export const tokens = {
       fontWeight: '600' as const,
       letterSpacing: 1.4,
     },
+    /** A day heading in a wide column, and a section label inside a pane. */
+    labelSmall: {
+      fontFamily: FONT.sans,
+      fontSize: 11,
+      fontWeight: '700' as const,
+      letterSpacing: 1.1,
+    },
+    /** The Slot label inside a wide column: present, never competing. */
+    labelTiny: {
+      fontFamily: FONT.sans,
+      fontSize: 10,
+      fontWeight: '600' as const,
+      letterSpacing: 1,
+    },
   },
   space: { xs: 4, sm: 8, md: 16, lg: 24, xl: 40 },
+  radius: { sm: 8, md: 10, card: 14, pill: 20, sheet: 26 },
+  /**
+   * Elevation says what kind of object this is: a planned Meal is raised off
+   * the paper, a Backlog card barely, a dragged card clearly.
+   */
+  shadow: {
+    card: '0 2px 6px rgba(36, 33, 28, 0.06)',
+    subtle: '0 1px 3px rgba(36, 33, 28, 0.06)',
+    lifted: '0 6px 16px rgba(36, 33, 28, 0.14)',
+    shelf: '0 -6px 20px rgba(36, 33, 28, 0.06)',
+  },
 } as const
 
 /**
- * Member avatar colours. Deliberately excludes `backlog` amber, which means
- * "wanted but unplanned" and must not be diluted by appearing on a person.
+ * Member avatar colours, in the canvas's own order. Deliberately excludes
+ * `backlog` amber, which means "wanted but unplanned" and must not be diluted
+ * by appearing on a person.
  */
-export const memberColours = ['#5F7355', '#C05A38', '#4A6670', '#7A5C74'] as const
+export const memberColours = ['#5F7355', '#C05A38', '#8A8172', '#4A6670'] as const

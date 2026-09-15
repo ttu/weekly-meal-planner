@@ -33,20 +33,24 @@ const meals = [
 describe('MealLibraryScreen', () => {
   it('lists Household Meals and Catalogue Meals under their headings', async () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={meals} />)
-    expect(view.getByText('Ours')).toBeTruthy()
-    expect(view.getByText('Catalogue')).toBeTruthy()
+    expect(view.getByText('Ours · 2')).toBeTruthy()
+    expect(view.getAllByText('Catalogue').length).toBeGreaterThan(0)
     expect(view.getByText('Shakshuka')).toBeTruthy()
   })
 
-  // "Tacos · no Ingredients yet" is the signal a Member needs before planning it.
-  it('says when a Meal has no Ingredients yet', async () => {
+  // Servings, not an Ingredient count: the library row answers "will this feed
+  // us tonight", which is the question being asked while choosing.
+  it('says how many a Meal serves', async () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={meals} />)
-    expect(view.getByText('No Ingredients yet')).toBeTruthy()
+    expect(view.getAllByText('Serves 4').length).toBe(2)
+    expect(view.getByText('Serves 2')).toBeTruthy()
   })
 
-  it('counts Ingredients when there are some', async () => {
+  // A Catalogue Meal is marked as one: it cannot be edited until it is copied,
+  // and finding that out after opening the editor is too late.
+  it('marks a Catalogue Meal as one', async () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={meals} />)
-    expect(view.getByText('5 Ingredients')).toBeTruthy()
+    expect(view.getAllByText('Catalogue').length).toBe(2)
   })
 
   it('filters by search, ignoring diacritics', async () => {
