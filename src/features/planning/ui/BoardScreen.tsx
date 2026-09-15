@@ -102,7 +102,6 @@ const Board = ({
     moveFailed,
     unplanFailed,
   } = usePlanningActions(clock)
-  const [leftoverFor, setLeftoverFor] = useState<CookEvent | undefined>(undefined)
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
@@ -125,6 +124,20 @@ const Board = ({
       .find((cookEvent) => cookEvent.id === id)
 
   const today = clock.now().toISOString().slice(0, 10)
+
+  /**
+   * A second sitting lands on the same day and Slot as the Meal it came from,
+   * directly beneath it, and is dragged wherever it belongs from there.
+   *
+   * It used to ask which day and Slot first. That put a sheet between "we'll
+   * have this again" and seeing it on the board, and the answer was almost
+   * always "somewhere I can point at", which is what dragging is for.
+   */
+  const addSecondSitting = (cookEventId: CookEventId): void => {
+    const cookEvent = cookEventById(cookEventId)
+    if (cookEvent === undefined) return
+    addLeftoverFor({ cookEventId, date: cookEvent.date, slotKey: cookEvent.slotKey })
+  }
   const weekRange = formatWeekRange(
     board.map((day) => day.date),
     locale,
@@ -218,32 +231,6 @@ const Board = ({
           }}
           onDismiss={() => {
             setPlanning(undefined)
-          }}
-        />
-      )}
-
-      {leftoverFor !== undefined && (
-        <PlanSheet
-          visible
-          forLeftover
-          mealName={leftoverFor.mealName}
-          defaultServings={leftoverFor.servingsCooked}
-          parentDate={leftoverFor.date}
-          parentSlotKey={leftoverFor.slotKey}
-          board={board}
-          slots={household?.slots ?? []}
-          today={today}
-          locale={locale}
-          onSubmit={(choice) => {
-            addLeftoverFor({
-              cookEventId: leftoverFor.id,
-              date: choice.date,
-              slotKey: choice.slotKey,
-            })
-            setLeftoverFor(undefined)
-          }}
-          onDismiss={() => {
-            setLeftoverFor(undefined)
           }}
         />
       )}
@@ -476,9 +463,7 @@ const Board = ({
                   isToday={day.date === today}
                   locale={locale}
                   recentlyChanged={changedDays.has(day.date)}
-                  onAddLeftover={(id) => {
-                    setLeftoverFor(cookEventById(id))
-                  }}
+                  onAddLeftover={addSecondSitting}
                   onUnplan={(id) => {
                     setUnplanning(cookEventById(id))
                   }}

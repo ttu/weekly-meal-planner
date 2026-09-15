@@ -3,7 +3,16 @@ import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView, View } from '
 import { useDrag } from './DragContext'
 
 /** How close to an edge the card has to be before the board starts moving. */
-const EDGE = 96
+const EDGE = 80
+/**
+ * How long it has to stay there first.
+ *
+ * Without the wait, dropping onto the last row you can see scrolls the board
+ * out from under you mid-gesture and the card lands a day late. Passing through
+ * the zone on the way to a target takes a moment; asking for more of the week
+ * means holding still.
+ */
+const DWELL_MS = 200
 /** Pixels per tick at the very edge. Below that it eases off with the distance,
  *  so the board creeps when you are near the boundary and runs when you are on
  *  it — the same feel as dragging a selection past the edge of a text field. */
@@ -34,6 +43,7 @@ export const useEdgeAutoScroll = (scroll: RefObject<ScrollView | null>): EdgeAut
   const offset = useRef(0)
   const contentHeight = useRef(0)
   const viewport = useRef({ y: 0, height: 0 })
+  const enteredAt = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     if (dragging === undefined) return undefined
@@ -41,6 +51,8 @@ export const useEdgeAutoScroll = (scroll: RefObject<ScrollView | null>): EdgeAut
     viewportRef.current?.measureInWindow((_x, y, _width, height) => {
       viewport.current = { y, height }
     })
+
+    enteredAt.current = undefined
 
     const tick = setInterval(() => {
       const { y: top, height } = viewport.current
@@ -57,7 +69,14 @@ export const useEdgeAutoScroll = (scroll: RefObject<ScrollView | null>): EdgeAut
             ? MAX_SPEED * Math.min(1, (EDGE - fromBottom) / EDGE)
             : 0
 
-      if (speed === 0) return
+      if (speed === 0) {
+        enteredAt.current = undefined
+        return
+      }
+
+      const now = Date.now()
+      enteredAt.current ??= now
+      if (now - enteredAt.current < DWELL_MS) return
 
       const furthest = Math.max(0, contentHeight.current - height)
       const next = Math.min(furthest, Math.max(0, offset.current + speed))
@@ -70,6 +89,7 @@ export const useEdgeAutoScroll = (scroll: RefObject<ScrollView | null>): EdgeAut
 
     return () => {
       clearInterval(tick)
+      enteredAt.current = undefined
     }
   }, [dragging, pointer, remeasure, scroll])
 

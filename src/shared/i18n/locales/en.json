@@ -38,8 +38,6 @@
   "leftover": {
     "suffix": "{{meal}} — leftovers",
     "add": "Add leftovers",
-    "title": "Leftovers from {{meal}}",
-    "sameSlot": "That is the same sitting as the Meal itself.",
     "submit": "Add to {{day}}",
     "failed": "Could not add leftovers. Try again.",
     "parentPrefix": "{{meal}} — ",

@@ -38,8 +38,6 @@
   "leftover": {
     "suffix": "{{meal}} — tähteet",
     "add": "Lisää tähteet",
-    "title": "Tähteet ateriasta {{meal}}",
-    "sameSlot": "Se on sama ateriahetki kuin ruoka itse.",
     "submit": "Lisää {{day}}",
     "failed": "Tähteiden lisääminen epäonnistui. Yritä uudelleen.",
     "parentPrefix": "{{meal}} — ",

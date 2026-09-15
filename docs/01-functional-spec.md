@@ -60,33 +60,33 @@ This glossary is the single source of naming. Every term here appears verbatim
 tests and commit scopes. If code needs a concept that is not here, add it here
 first.
 
-| Term                | Meaning                                                                                                 | Not called                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **Household**       | The group sharing one board. One per account in v1.                                                     | family, group, team                         |
-| **Member**          | A person in a household, with a display name and colour.                                                | user (reserve `user` for the auth identity) |
-| **Slot**            | A named division of a day — lunch, dinner. Configured per household.                                    | meal time, period                           |
-| **Week Plan**       | One household's plan for one ISO week.                                                                  | week, schedule                              |
-| **Meal**            | A named dish with servings and ingredients.                                                             | recipe, dish                                |
-| **Catalogue Meal**  | A meal in the shared public library (`household_id IS NULL`).                                           | template, public recipe                     |
-| **Household Meal**  | A meal owned by one household, possibly copied from a Catalogue Meal.                                   | custom meal, own recipe                     |
-| **Backlog Item**    | A meal wanted this week, not yet dated. Carries who added it.                                           | wish, idea, draft                           |
-| **Cook Event**      | A meal placed on a day and slot, with servings cooked. The only thing that contributes ingredients.     | plan entry, scheduled meal                  |
-| **Leftover**        | A card on a later slot referencing a Cook Event. Contributes no ingredients.                            | leftover entry, repeat                      |
-| **Servings**        | How many the meal recipe yields.                                                                        | portions, yield                             |
-| **Servings Cooked** | How many are actually being made at a Cook Event. Surfaced as "Cooking N".                              | batch size, quantity                        |
-| **Ingredient**      | A canonical shopping-list-able thing, with a category and a dimension.                                  | item, product                               |
-| **Dimension**       | Mass, volume or count. Quantities convert only within one.                                              | unit type                                   |
-| **Staple**          | An ingredient the household normally has in. Kept off the Buy list.                                     | pantry item, household ingredient           |
-| **Running Low**     | A staple flagged as needing replacement; promotes it to Buy.                                            | out of stock, empty                         |
-| **Shopping List**   | The derived output for a Week Plan. Never stored.                                                       | groceries, basket                           |
-| **Buy Line**        | One aggregated row on the Shopping List.                                                                | list item                                   |
-| **Cupboard Check**  | The Shopping List section listing this week's Staples.                                                  | pantry check                                |
-| **Extra**           | A manually added Shopping List item belonging to no Meal.                                               | custom item                                 |
-| **Override**        | A manually set quantity on a Buy Line, with an optional reason.                                         | manual quantity                             |
-| **Provenance**      | The per-Meal breakdown behind a Buy Line's quantity.                                                    | source, breakdown                           |
-| **Agent Prompt**    | The copyable text handing the Shopping List to a browser AI agent. Generated in the household's Locale. | export, share text                          |
-| **Locale**          | `fi` or `en`. Set per Household.                                                                        | language, i18n                              |
-| **Slug**            | An Ingredient's stable, locale-independent identity.                                                    | key, code                                   |
+| Term                | Meaning                                                                                                                  | Not called                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| **Household**       | The group sharing one board. One per account in v1.                                                                      | family, group, team                         |
+| **Member**          | A person in a household, with a display name and colour.                                                                 | user (reserve `user` for the auth identity) |
+| **Slot**            | A named division of a day — lunch, dinner. Configured per household.                                                     | meal time, period                           |
+| **Week Plan**       | One household's plan for one ISO week.                                                                                   | week, schedule                              |
+| **Meal**            | A named dish with servings and ingredients.                                                                              | recipe, dish                                |
+| **Catalogue Meal**  | A meal in the shared public library (`household_id IS NULL`).                                                            | template, public recipe                     |
+| **Household Meal**  | A meal owned by one household, possibly copied from a Catalogue Meal.                                                    | custom meal, own recipe                     |
+| **Backlog Item**    | A meal wanted this week, not yet dated. Carries who added it.                                                            | wish, idea, draft                           |
+| **Cook Event**      | A meal placed on a day and slot, with servings cooked. The only thing that contributes ingredients.                      | plan entry, scheduled meal                  |
+| **Leftover**        | A card on another slot referencing a Cook Event. Contributes no ingredients. Born beside its parent, dragged from there. | leftover entry, repeat                      |
+| **Servings**        | How many the meal recipe yields.                                                                                         | portions, yield                             |
+| **Servings Cooked** | How many are actually being made at a Cook Event. Surfaced as "Cooking N".                                               | batch size, quantity                        |
+| **Ingredient**      | A canonical shopping-list-able thing, with a category and a dimension.                                                   | item, product                               |
+| **Dimension**       | Mass, volume or count. Quantities convert only within one.                                                               | unit type                                   |
+| **Staple**          | An ingredient the household normally has in. Kept off the Buy list.                                                      | pantry item, household ingredient           |
+| **Running Low**     | A staple flagged as needing replacement; promotes it to Buy.                                                             | out of stock, empty                         |
+| **Shopping List**   | The derived output for a Week Plan. Never stored.                                                                        | groceries, basket                           |
+| **Buy Line**        | One aggregated row on the Shopping List.                                                                                 | list item                                   |
+| **Cupboard Check**  | The Shopping List section listing this week's Staples.                                                                   | pantry check                                |
+| **Extra**           | A manually added Shopping List item belonging to no Meal.                                                                | custom item                                 |
+| **Override**        | A manually set quantity on a Buy Line, with an optional reason.                                                          | manual quantity                             |
+| **Provenance**      | The per-Meal breakdown behind a Buy Line's quantity.                                                                     | source, breakdown                           |
+| **Agent Prompt**    | The copyable text handing the Shopping List to a browser AI agent. Generated in the household's Locale.                  | export, share text                          |
+| **Locale**          | `fi` or `en`. Set per Household.                                                                                         | language, i18n                              |
+| **Slug**            | An Ingredient's stable, locale-independent identity.                                                                     | key, code                                   |
 
 Two renames applied when this glossary was adopted: `plan_entry` became
 **Cook Event** and `leftover_entry` became **Leftover**, because the UI, the

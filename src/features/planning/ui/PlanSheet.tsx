@@ -106,14 +106,6 @@ type Props = {
   readonly mealName: string
   readonly addedByName?: string
   readonly defaultServings: Servings
-  /**
-   * Leftovers reuse the same day and Slot choice, without servings — a Leftover
-   * borrows its servings from its Cook Event (ADR 0004). One component rather
-   * than two near-identical choosers.
-   */
-  readonly forLeftover?: boolean
-  readonly parentSlotKey?: SlotKey
-  readonly parentDate?: string
   readonly board: readonly BoardDay[]
   readonly slots: readonly Slot[]
   readonly today: string
@@ -132,9 +124,6 @@ export const PlanSheet = ({
   mealName,
   addedByName,
   defaultServings,
-  forLeftover = false,
-  parentSlotKey,
-  parentDate,
   board,
   slots,
   today,
@@ -177,12 +166,8 @@ export const PlanSheet = ({
 
           <View style={styles.headerRow}>
             <View style={{ flexShrink: 1, gap: 4 }}>
-              <Text style={styles.title}>
-                {forLeftover
-                  ? t('leftover.title', { meal: mealName })
-                  : t('plan.title', { meal: mealName })}
-              </Text>
-              {!forLeftover && addedByName !== undefined && addedByName !== '' && (
+              <Text style={styles.title}>{t('plan.title', { meal: mealName })}</Text>
+              {addedByName !== undefined && addedByName !== '' && (
                 <Text style={styles.addedBy}>
                   {t('plan.addedBy', { name: addedByName, servings: defaultServings })}
                 </Text>
@@ -259,48 +244,38 @@ export const PlanSheet = ({
                 {t('plan.willJoin', { slot: t(slotLabel), count: placement.existingCount })}
               </Text>
             )}
-
-            {/* Placing a Leftover on its parent's own sitting is pointless but
-                not forbidden: warn, never refuse. */}
-            {forLeftover && date === parentDate && slotKey === parentSlotKey && (
-              <Text style={styles.note} testID="leftover-same-slot">
-                {t('leftover.sameSlot')}
-              </Text>
-            )}
           </View>
 
-          {!forLeftover && (
-            <View style={styles.group}>
-              <Text style={styles.label}>{t('plan.cookingFor')}</Text>
-              <View style={styles.stepperRow}>
-                <Pressable
-                  style={styles.stepper}
-                  onPress={() => {
-                    setServings((n) => Math.max(1, n - 1))
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('plan.cookingFor')}
-                  testID="plan-servings-down"
-                >
-                  <Text style={styles.stepperSign}>−</Text>
-                </Pressable>
-                <Text style={styles.stepperValue} testID="plan-servings">
-                  {String(servings)}
-                </Text>
-                <Pressable
-                  style={styles.stepper}
-                  onPress={() => {
-                    setServings((n) => Math.min(50, n + 1))
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('plan.cookingFor')}
-                  testID="plan-servings-up"
-                >
-                  <Text style={styles.stepperSign}>+</Text>
-                </Pressable>
-              </View>
+          <View style={styles.group}>
+            <Text style={styles.label}>{t('plan.cookingFor')}</Text>
+            <View style={styles.stepperRow}>
+              <Pressable
+                style={styles.stepper}
+                onPress={() => {
+                  setServings((n) => Math.max(1, n - 1))
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('plan.cookingFor')}
+                testID="plan-servings-down"
+              >
+                <Text style={styles.stepperSign}>−</Text>
+              </Pressable>
+              <Text style={styles.stepperValue} testID="plan-servings">
+                {String(servings)}
+              </Text>
+              <Pressable
+                style={styles.stepper}
+                onPress={() => {
+                  setServings((n) => Math.min(50, n + 1))
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('plan.cookingFor')}
+                testID="plan-servings-up"
+              >
+                <Text style={styles.stepperSign}>+</Text>
+              </Pressable>
             </View>
-          )}
+          </View>
 
           <Pressable
             style={({ pressed }) => [styles.submit, pressed && styles.submitPressed]}

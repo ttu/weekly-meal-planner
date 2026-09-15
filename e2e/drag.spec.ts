@@ -82,44 +82,40 @@ test.describe('cards can be carried around the board', () => {
   // the wide column has no way to create one yet.
   test('a Leftover can be carried to another Slot, and removed with its ×', async () => {
     const wednesday = days[2]
-    const friday = days[4]
-    if (wednesday === undefined || friday === undefined) throw new Error('No week')
+    if (wednesday === undefined) throw new Error('No week')
 
     await page.setViewportSize({ width: 390, height: 844 })
     await page.reload()
     await expect(page.getByTestId('board-screen')).toBeVisible()
 
-    // Give Wednesday's Meal a second sitting on Friday lunch.
+    // "Add leftovers" asks nothing: the second sitting appears under the Meal
+    // it came from, on the same day and Slot.
     await page
       .locator(`[data-testid="day-${wednesday}"] [data-testid^="add-leftover-"]`)
       .first()
       .click()
-    await expect(page.getByTestId('plan-sheet')).toBeVisible()
-    await page.getByTestId(`plan-day-${friday}`).click()
-    await page.getByTestId('plan-slot-lunch').click()
-    await page.getByTestId('plan-submit').click()
-    await expect(page.getByTestId('plan-sheet')).toBeHidden()
 
     // Not a `leftover-` prefix: that also matches the × beside the card.
-    const onFriday = page.locator(
-      `[data-testid="day-${friday}"] [data-testid="meal-card-leftover"]`,
+    const beside = page.locator(
+      `[data-testid="day-${wednesday}"] [data-testid="slot-lunch"] [data-testid="meal-card-leftover"]`,
     )
-    await expect(onFriday).toHaveCount(1)
-    await onFriday.first().scrollIntoViewIfNeeded()
+    await expect(beside).toHaveCount(1)
+    await beside.first().scrollIntoViewIfNeeded()
 
-    // Carry it from lunch to dinner on the same day.
-    const dinner = page.locator(`[data-testid="day-${friday}"] [data-testid="slot-dinner"]`)
-    await dragOnto(page, onFriday.first(), dinner)
+    // Then it is dragged where it belongs.
+    const dinner = page.locator(`[data-testid="day-${wednesday}"] [data-testid="slot-dinner"]`)
+    await dragOnto(page, beside.first(), dinner)
 
     await expect(dinner.locator('[data-testid="meal-card-leftover"]')).toBeVisible()
+    await expect(beside).toHaveCount(0)
 
-    // And take it off the board with the × beside it.
+    // And the × beside it takes it off the board.
     await page
-      .locator(`[data-testid="day-${friday}"] [data-testid^="remove-leftover-"]`)
+      .locator(`[data-testid="day-${wednesday}"] [data-testid^="remove-leftover-"]`)
       .first()
       .click()
     await expect(
-      page.locator(`[data-testid="day-${friday}"] [data-testid="meal-card-leftover"]`),
+      page.locator(`[data-testid="day-${wednesday}"] [data-testid="meal-card-leftover"]`),
     ).toHaveCount(0)
   })
 
