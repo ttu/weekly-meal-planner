@@ -114,6 +114,43 @@ test.describe('a family plans a week', () => {
     await expect(lines).toHaveCount(before)
   })
 
+  test('a Buy Line says which Meals asked for it', async () => {
+    // A Buy Line is keyed by Ingredient id, which is a uuid — the slug is
+    // identity in the data, not in the DOM.
+    const onion = page.locator('[data-testid^="buy-"]').filter({ hasText: /^onion/ })
+    await expect(onion).toHaveCount(1)
+    const id = (await onion.getAttribute('data-testid'))?.replace('buy-', '')
+    if (id === undefined) throw new Error('No onion Buy Line')
+
+    await page.getByTestId(`why-${id}`).click()
+    const why = page.getByTestId(`provenance-${id}`)
+    await expect(why).toBeVisible()
+    await expect(why.getByText('Chili con carne')).toBeVisible()
+
+    await page.getByTestId(`why-${id}`).click()
+    await expect(why).toBeHidden()
+  })
+
+  test('an Extra can be added to the list by hand', async () => {
+    await page.getByTestId('extra-input').fill('Bin bags')
+    await page.getByTestId('extra-add').click()
+
+    const extra = page.locator('[data-testid^="extra-"]').filter({ hasText: 'Bin bags' })
+    await expect(extra).toHaveCount(1)
+
+    await extra.click()
+    await expect(extra).toHaveCount(1)
+  })
+
+  test('the whole list leaves as one prompt for an agent', async () => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+    await page.getByTestId('copy-prompt').click()
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText())
+    expect(clipboard).toContain('onion')
+    expect(clipboard.length).toBeGreaterThan(40)
+  })
+
   test('the Meal library lists the Catalogue', async () => {
     await page.goto('/meals')
     await expect(page.getByTestId('meal-library-screen')).toBeVisible()

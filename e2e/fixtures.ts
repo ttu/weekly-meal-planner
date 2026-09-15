@@ -42,6 +42,26 @@ export const resetDatabase = (): void => {
   )
 }
 
+/** The token in a board's share link, read straight from the database rather
+ *  than off the clipboard — the clipboard needs browser permissions and tells
+ *  us nothing extra. */
+export const shareTokenFor = (boardName: string): string =>
+  execFileSync(
+    'docker',
+    [
+      'exec',
+      DB_CONTAINER,
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      'postgres',
+      '-Atc',
+      `select share_token from household where name = '${boardName}'`,
+    ],
+    { encoding: 'utf8' },
+  ).trim()
+
 /**
  * One page shared across a spec's tests.
  *

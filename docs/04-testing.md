@@ -65,11 +65,30 @@ with tests written to kill a mutant.
 ## E2E — critical flows only
 
 Playwright against the web build (`pnpm run test:e2e`), in `e2e/`. Maestro on a
-device build covers the same flow when a native change warrants it. One flow is
-mandatory:
+device build covers the same flow when a native change warrants it.
 
-start a board → add a Meal to the Backlog → plan it on a day → drag a second one
-onto a Slot → see both on the Shopping List → copy the agent prompt.
+Four specs, one story each:
+
+| Spec                   | The story                                                            |
+| ---------------------- | -------------------------------------------------------------------- |
+| `board.spec.ts`        | Start a board, fill a week, read the Shopping List, copy the prompt  |
+| `drag.spec.ts`         | Carry cards — Backlog, planned, Leftover — and take them off again   |
+| `meals.spec.ts`        | Write a Household Meal, copy a Catalogue one, delete, reach the list |
+| `sharing.spec.ts`      | A second Member joins by link and password, and sees the same week   |
+| `translations.spec.ts` | No screen shows a raw key                                            |
+
+### Known gaps
+
+Honest ones, not aspirational:
+
+- **Email sign-in** (`/sign-in`) is untested. Anonymous boards are the main path
+  (ADR 0010) and email is the secondary one.
+- **Staples and the cupboard check** are untested because they have no UI to
+  test: nothing in the app marks an Ingredient as a Staple, so the "Check the
+  cupboard" section can never appear. The derivation is covered by unit tests.
+- **Realtime and presence** are verified with two real clients and airplane
+  mode, as below.
+- **Adding a Leftover above 1024px** — the wide day column has no such action.
 
 Selectors are `data-testid` only, or `getByRole`/`aria-label` for interactive
 controls. Never CSS classes, text content or structural position — the copy is

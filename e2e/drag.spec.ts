@@ -119,6 +119,34 @@ test.describe('cards can be carried around the board', () => {
     ).toHaveCount(0)
   })
 
+  // The drag path and the tap path must agree: dragging is a faster way to say
+  // the same thing, never a second way of saying it.
+  test('the × on a card takes the Meal off the day, after asking', async () => {
+    const wednesday = days[2]
+    if (wednesday === undefined) throw new Error('No week')
+
+    const planned = page.locator(
+      `[data-testid="day-${wednesday}"] [data-testid="meal-card-planned"]`,
+    )
+    await expect(planned).toHaveCount(1)
+    const inBacklog = page.locator('[data-testid^="backlog-item-"]')
+    const before = await inBacklog.count()
+
+    await page.locator(`[data-testid="day-${wednesday}"] [data-testid="card-unplan"]`).click()
+    await expect(page.getByTestId('confirm-sheet')).toBeVisible()
+
+    // Backing out changes nothing.
+    await page.getByTestId('confirm-no').click()
+    await expect(page.getByTestId('confirm-sheet')).toBeHidden()
+    await expect(planned).toHaveCount(1)
+
+    await page.locator(`[data-testid="day-${wednesday}"] [data-testid="card-unplan"]`).click()
+    await page.getByTestId('confirm-yes').click()
+
+    await expect(planned).toHaveCount(0)
+    await expect(inBacklog).toHaveCount(before + 1)
+  })
+
   // The pan gesture owns the pointer, so there is no second finger to scroll
   // with: without this, a card can only ever be dropped on a day that was
   // already on screen when the drag began.
@@ -156,17 +184,24 @@ test.describe('cards can be carried around the board', () => {
   })
 
   test('dropping a planned Meal on the Backlog takes it off the week', async () => {
-    const wednesday = days[2]
-    if (wednesday === undefined) throw new Error('No week')
+    const sunday = days[6]
+    if (sunday === undefined) throw new Error('No week')
 
-    const planned = page.locator(
-      `[data-testid="day-${wednesday}"] [data-testid="meal-card-planned"]`,
-    )
+    // Plan one of its own rather than reusing a card an earlier test left: the
+    // board is shared state, and this assertion is about one Meal's round trip.
+    await page.locator('[data-testid^="backlog-item-"]').first().click()
+    await expect(page.getByTestId('plan-sheet')).toBeVisible()
+    await page.getByTestId(`plan-day-${sunday}`).click()
+    await page.getByTestId('plan-slot-dinner').click()
+    await page.getByTestId('plan-submit').click()
+    await expect(page.getByTestId('plan-sheet')).toBeHidden()
+
+    const planned = page.locator(`[data-testid="day-${sunday}"] [data-testid="meal-card-planned"]`)
     await expect(planned).toHaveCount(1)
     const inBacklog = page.locator('[data-testid^="backlog-item-"]')
     const before = await inBacklog.count()
 
-    const card = page.locator(`[data-testid="day-${wednesday}"] [data-testid^="planned-"]`).first()
+    const card = page.locator(`[data-testid="day-${sunday}"] [data-testid^="planned-"]`).first()
     await dragOnto(page, card, page.getByTestId('backlog-shelf'))
 
     await expect(planned).toHaveCount(0)
