@@ -18,6 +18,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface },
   pane: { flex: 1, backgroundColor: tokens.color.surfacePane },
   head: { paddingHorizontal: tokens.space.md, paddingBottom: 12, gap: 11 },
+  headScreen: { width: '100%', maxWidth: tokens.layout.readable, alignSelf: 'center' },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...tokens.type.display, color: tokens.color.textPrimary, flexShrink: 1 },
   paneTitle: { ...tokens.type.label, color: tokens.color.textSupport, textTransform: 'uppercase' },
@@ -34,7 +35,13 @@ const styles = StyleSheet.create({
   },
   searchScreen: { minHeight: 54, paddingHorizontal: tokens.space.md },
   list: { paddingHorizontal: 12, paddingBottom: tokens.space.md, gap: 7 },
-  listScreen: { paddingHorizontal: tokens.space.md, gap: tokens.space.sm },
+  listScreen: {
+    paddingHorizontal: tokens.space.md,
+    gap: tokens.space.sm,
+    width: '100%',
+    maxWidth: tokens.layout.readable,
+    alignSelf: 'center',
+  },
   section: {
     ...tokens.type.labelSmall,
     color: tokens.color.textGhost,
@@ -110,7 +117,7 @@ export const MealLibraryScreen = ({
       ]}
       testID="meal-library-screen"
     >
-      <View style={styles.head}>
+      <View style={[styles.head, !isPane && styles.headScreen]}>
         {isPane ? (
           <Text style={styles.paneTitle}>{t('meal.libraryPane')}</Text>
         ) : (

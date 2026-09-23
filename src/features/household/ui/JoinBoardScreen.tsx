@@ -28,7 +28,7 @@ export const JoinBoardScreen = ({ isPending, error, onJoin }: Props): React.JSX.
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={{ paddingTop: insets.top + tokens.space.xl }}
+      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
       testID="join-board-screen"
     >
       <Text style={formStyles.title}>{t('board.joinTitle')}</Text>

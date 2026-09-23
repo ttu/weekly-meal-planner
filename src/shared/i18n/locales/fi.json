@@ -15,7 +15,7 @@
     "shortPassword": "Taulun salasanassa on oltava vähintään 6 merkkiä.",
     "createFailed": "Taulun luonti epäonnistui. Yritä uudelleen.",
     "joinTitle": "Liity tauluun",
-    "joinBody": "Anna taulun salasana liittyäksesi.",
+    "joinBody": "Anna nimesi ja taulun salasana.",
     "join": "Liity",
     "joinRejected": "Linkki ja salasana eivät vastaa mitään taulua.",
     "joinRateLimited": "Liian monta yritystä. Odota muutama minuutti.",
@@ -164,7 +164,8 @@
     "promptIntro": "Tilaa viikon ruokaostokset:",
     "summaryMeals_one": "{{count}} ostettavaa · {{meals}} ateria",
     "summaryMeals_other": "{{count}} ostettavaa · {{meals}} ateriaa",
-    "listTitle": "Ostoslista"
+    "listTitle": "Ostoslista",
+    "addExtraAction": "Lisää"
   },
   "presence": {
     "editing": "{{name}} on myös täällä",

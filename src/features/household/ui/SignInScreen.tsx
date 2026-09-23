@@ -44,51 +44,50 @@ export const SignInScreen = ({ client }: Props): React.JSX.Element => {
   }
 
   return (
-    <View
-      style={[formStyles.screen, { paddingTop: insets.top + tokens.space.xl }]}
-      testID="sign-in-screen"
-    >
-      <Text style={formStyles.title}>{t('auth.title')}</Text>
+    <View style={formStyles.screen} testID="sign-in-screen">
+      <View style={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}>
+        <Text style={[formStyles.title, { marginBottom: tokens.space.lg }]}>{t('auth.title')}</Text>
 
-      <Text style={formStyles.label}>{t('auth.email')}</Text>
-      <TextInput
-        style={formStyles.field}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        accessibilityLabel={t('auth.email')}
-        testID="sign-in-email"
-      />
+        <Text style={formStyles.label}>{t('auth.email')}</Text>
+        <TextInput
+          style={formStyles.field}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          accessibilityLabel={t('auth.email')}
+          testID="sign-in-email"
+        />
 
-      <Text style={formStyles.label}>{t('auth.password')}</Text>
-      <TextInput
-        style={formStyles.field}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoComplete="current-password"
-        accessibilityLabel={t('auth.password')}
-        testID="sign-in-password"
-      />
+        <Text style={formStyles.label}>{t('auth.password')}</Text>
+        <TextInput
+          style={formStyles.field}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoComplete="current-password"
+          accessibilityLabel={t('auth.password')}
+          testID="sign-in-password"
+        />
 
-      {error !== undefined && (
-        <Text style={formStyles.error} testID="sign-in-error">
-          {t(errorKey(error))}
-        </Text>
-      )}
+        {error !== undefined && (
+          <Text style={formStyles.error} testID="sign-in-error">
+            {t(errorKey(error))}
+          </Text>
+        )}
 
-      <Pressable
-        style={({ pressed }) => [styles.submit, pressed && styles.submitPressed]}
-        onPress={submit}
-        disabled={isPending}
-        accessibilityRole="button"
-        accessibilityLabel={t('auth.submit')}
-        testID="sign-in-submit"
-      >
-        <Text style={styles.submitText}>{t('auth.submit')}</Text>
-      </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.submit, pressed && styles.submitPressed]}
+          onPress={submit}
+          disabled={isPending}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth.submit')}
+          testID="sign-in-submit"
+        >
+          <Text style={styles.submitText}>{t('auth.submit')}</Text>
+        </Pressable>
+      </View>
     </View>
   )
 }

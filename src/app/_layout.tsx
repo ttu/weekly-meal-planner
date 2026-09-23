@@ -59,7 +59,10 @@ export default function RootLayout(): React.JSX.Element {
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    // The ground the whole app sits on. Screens that cap their own width —
+    // the forms, the Shopping List — would otherwise show the browser's
+    // default grey either side of their column.
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.color.surface }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           {fontsLoaded ? <AppSession client={client} /> : <Blank />}

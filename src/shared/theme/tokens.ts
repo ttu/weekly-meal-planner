@@ -105,6 +105,13 @@ export const tokens = {
     },
   },
   space: { xs: 4, sm: 8, md: 16, lg: 24, xl: 40 },
+  /**
+   * The widest a column of text is allowed to get. Without it the Shopping
+   * List stretched the full 1400px of a laptop and the name sat a screen's
+   * width from its quantity: the eye has to travel from one to the other for
+   * every line, and this is a list read while pushing a trolley.
+   */
+  layout: { readable: 720 },
   radius: { sm: 8, md: 10, card: 14, pill: 20, sheet: 26 },
   /**
    * Elevation says what kind of object this is: a planned Meal is raised off

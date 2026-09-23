@@ -36,7 +36,7 @@ export const StartBoardScreen = ({
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={{ paddingTop: insets.top + tokens.space.xl }}
+      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
       testID="start-board-screen"
     >
       <Text style={formStyles.title}>{t('board.startTitle')}</Text>

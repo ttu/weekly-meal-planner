@@ -51,6 +51,15 @@ const styles = StyleSheet.create({
     color: tokens.color.textGhost,
     textTransform: 'uppercase',
   },
+  empty: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: tokens.color.dashed,
+    borderRadius: tokens.radius.md,
+    paddingVertical: tokens.space.sm,
+    paddingHorizontal: tokens.space.sm,
+  },
+  emptyText: { ...tokens.type.mealNameTight, fontWeight: '400', color: tokens.color.textGhost },
   card: {
     backgroundColor: tokens.color.surfaceRaised,
     borderWidth: 1,
@@ -150,13 +159,24 @@ export const WideDayColumn = ({
             slotKey={slot.slotKey}
             style={[styles.slot, index < day.slots.length - 1 && styles.slotDivided]}
           >
-            <Pressable
-              onPress={() => onAddMeal?.(day.date, slot.slotKey)}
-              accessibilityRole="button"
-              accessibilityLabel={t('board.addMeal')}
-            >
-              <Text style={styles.slotLabel}>{t(slot.labelKey)}</Text>
-            </Pressable>
+            <Text style={styles.slotLabel}>{t(slot.labelKey)}</Text>
+
+            {/* A brand-new board is seven blank columns. Without this the only
+                way in is to know the Slot label is tappable, which nobody
+                does. It is the same dashed invitation the phone Slot has. */}
+            {slot.cards.length === 0 && (
+              <Pressable
+                style={styles.empty}
+                onPress={() => onAddMeal?.(day.date, slot.slotKey)}
+                accessibilityRole="button"
+                accessibilityLabel={t('board.addMeal')}
+                testID="slot-empty"
+              >
+                <Text style={styles.emptyText} numberOfLines={1}>
+                  {t('board.addMeal')}
+                </Text>
+              </Pressable>
+            )}
 
             {slot.cards.map((card) =>
               card.kind === 'leftover' ? (
@@ -197,7 +217,12 @@ export const WideDayColumn = ({
                     testID={`planned-${card.cookEvent.id}`}
                   >
                     <View style={styles.card} testID="meal-card-planned">
-                      <Text style={styles.cardName}>{card.cookEvent.mealName}</Text>
+                      {/* Clamped rather than broken: a narrow column splits
+                          "perunamuusi" into "perunamuu si", and a Finnish
+                          compound is exactly the case this column will meet. */}
+                      <Text style={styles.cardName} numberOfLines={3}>
+                        {card.cookEvent.mealName}
+                      </Text>
                       <Text style={styles.cardCount}>{String(card.cookEvent.servingsCooked)}</Text>
                     </View>
                   </DraggableCard>

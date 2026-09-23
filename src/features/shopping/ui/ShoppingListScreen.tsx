@@ -18,7 +18,14 @@ import type { BuyLine, ExtraId, ShoppingList } from '../domain/types'
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: tokens.color.surface },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: tokens.space.lg, gap: 20 },
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: tokens.space.lg,
+    gap: 20,
+    width: '100%',
+    maxWidth: tokens.layout.readable,
+    alignSelf: 'center',
+  },
   head: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -138,12 +145,17 @@ const styles = StyleSheet.create({
   /** The action bar is pinned: the prompt is copied at the door of the shop,
    *  not after scrolling back up past forty rows. */
   bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
     borderTopWidth: 1,
     borderTopColor: tokens.color.cardBorder,
     backgroundColor: tokens.color.surfaceRaised,
+    alignItems: 'center',
+  },
+  barInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    width: '100%',
+    maxWidth: tokens.layout.readable,
     paddingHorizontal: 20,
     paddingTop: 14,
   },
@@ -155,6 +167,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   copyPressed: { backgroundColor: tokens.color.actionPressed },
+  /** An empty list has no prompt to hand anyone. */
+  copyDisabled: { opacity: 0.4 },
   copyText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
   empty: { ...tokens.type.body, color: tokens.color.textSupport },
 })
@@ -397,25 +411,32 @@ export const ShoppingListScreen = ({
                 accessibilityLabel={t('shopping.addExtra')}
                 testID="extra-add"
               >
-                <Text style={styles.noteAction}>{t('shopping.addExtra')}</Text>
+                <Text style={styles.noteAction}>{t('shopping.addExtraAction')}</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      <View style={[styles.bar, { paddingBottom: insets.bottom + tokens.space.lg }]}>
-        <Pressable
-          style={({ pressed }) => [styles.copy, pressed && styles.copyPressed]}
-          onPress={onCopyPrompt}
-          accessibilityRole="button"
-          accessibilityLabel={t('shopping.copyPrompt')}
-          testID="copy-prompt"
-        >
-          <Text style={styles.copyText}>
-            {justCopied ? t('shopping.copied') : t('shopping.copyPrompt')}
-          </Text>
-        </Pressable>
+      <View style={styles.bar}>
+        <View style={[styles.barInner, { paddingBottom: insets.bottom + tokens.space.lg }]}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.copy,
+              pressed && styles.copyPressed,
+              isEmpty && styles.copyDisabled,
+            ]}
+            disabled={isEmpty}
+            onPress={onCopyPrompt}
+            accessibilityRole="button"
+            accessibilityLabel={t('shopping.copyPrompt')}
+            testID="copy-prompt"
+          >
+            <Text style={styles.copyText}>
+              {justCopied ? t('shopping.copied') : t('shopping.copyPrompt')}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   )

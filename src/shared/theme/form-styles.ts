@@ -11,6 +11,15 @@ import { tokens } from './tokens'
  */
 export const formStyles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface, paddingHorizontal: tokens.space.md },
+  /**
+   * Goes on the contentContainerStyle, never on the screen itself: capping the
+   * screen shrinks the paper with it and leaves the browser's grey either
+   * side. The surface fills the viewport; only the reading column is capped.
+   *
+   * On a laptop these forms ran the full 1400px, which put a 40-character name
+   * field across the whole desk.
+   */
+  content: { width: '100%', maxWidth: tokens.layout.readable, alignSelf: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

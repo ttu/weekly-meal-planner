@@ -123,7 +123,7 @@ export const MealEditorScreen = ({
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={{ paddingTop: insets.top + tokens.space.md }}
+      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.md }]}
       testID="meal-editor-screen"
     >
       <View style={formStyles.header}>

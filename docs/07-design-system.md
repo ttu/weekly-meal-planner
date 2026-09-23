@@ -63,6 +63,17 @@ the difference before the text does:
 - **Leftover** — inset, tinted, dashed, no shadow, no servings, visible stub to
   its parent
 
+## A readable measure on a desk
+
+`tokens.layout.readable` (720) caps every screen that is a column of text: the
+Shopping List, the Meal library, and the forms. Without it the Shopping List
+ran the full 1400px of a laptop and an Ingredient's name sat a screen's width
+from its quantity — for every line, on a list read while pushing a trolley.
+
+**Cap the content container, never the screen.** The screen carries the paper
+colour; capping it shrinks the paper too and leaves the browser's grey either
+side of the column. `formStyles.content` goes on `contentContainerStyle`.
+
 ## Ergonomics that are requirements
 
 Shopping list rows: 19px text, 28px checkboxes, 54px minimum row height, whole
@@ -88,6 +99,10 @@ Backlog 250, board taking the rest — and a footer rail carrying the hint. The
 board itself is **seven day columns side by side**, each divided into Slot bands
 by a dashed line, so the week is one object rather than a list to scroll. Today
 carries a 5%-sage ground and a sage column head.
+
+Every empty Slot invites a tap in both layouts — a new board is otherwise seven
+blank columns with nothing to click, since the Slot label being tappable is not
+something anyone can see.
 
 **Phone**: the title block, the week strip, then the days stacked. A day is a
 serif weekday and one row per Slot: a 56px labelled gutter on the left and the
