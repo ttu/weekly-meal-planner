@@ -97,14 +97,30 @@ export const loadShoppingData = async (
       mealServings: brand<number, 'Servings'>(e.meal.servings),
       servingsCooked: brand<number, 'Servings'>(e.servings_cooked),
     })),
-    mealIngredients: parsedEvents.data.flatMap((e) =>
-      e.meal.meal_ingredient.map((mi) => ({
-        mealId: brand<string, 'MealId'>(e.meal_id),
-        ingredientId: brand<string, 'IngredientId'>(mi.ingredient_id),
-        quantity: brand<number, 'Quantity'>(mi.quantity),
-        unit: mi.unit,
-      })),
-    ),
+    // One row per Meal and Ingredient, however many times the Meal is planned.
+    //
+    // These arrive attached to Cook Events, so chili on Monday and again on
+    // Thursday delivered the recipe twice. The derivation then walks the Meal
+    // once per Cook Event and multiplies what it finds: two sittings asked for
+    // four times the kidney beans, three would have asked for nine.
+    mealIngredients: [
+      ...new Map(
+        parsedEvents.data.flatMap((e) =>
+          e.meal.meal_ingredient.map(
+            (mi) =>
+              [
+                `${e.meal_id}:${mi.ingredient_id}`,
+                {
+                  mealId: brand<string, 'MealId'>(e.meal_id),
+                  ingredientId: brand<string, 'IngredientId'>(mi.ingredient_id),
+                  quantity: brand<number, 'Quantity'>(mi.quantity),
+                  unit: mi.unit,
+                },
+              ] as const,
+          ),
+        ),
+      ).values(),
+    ],
     ingredients: ingredientResult.value.map((i) => ({
       id: i.id,
       name: i.name,

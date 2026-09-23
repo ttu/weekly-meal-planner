@@ -54,6 +54,25 @@ const base: DeriveInput = {
 }
 
 describe('deriveShoppingList', () => {
+  // Chili on Monday and again on Thursday is two sittings, not four. The
+  // Ingredient list belongs to the Meal; the Cook Events say how many times to
+  // count it, and nothing may multiply the two together.
+  it('counts a Meal planned twice twice, not four times', () => {
+    const list = deriveShoppingList({
+      plannedMeals: [chili(4), chili(4)],
+      mealIngredients: [mi('chili', 'onion', 2, 'pcs')],
+      ingredients: [onion],
+      staples: [],
+      overrides: [],
+      checkedIngredientIds: [],
+      extras: [],
+    })
+
+    expect(list.buy).toHaveLength(1)
+    expect(list.buy[0]!.amounts).toEqual([{ quantity: 4, unit: 'pcs' }])
+    expect(list.buy[0]!.contributions).toHaveLength(2)
+  })
+
   it('is empty when nothing is planned', () => {
     const list = deriveShoppingList(base)
     expect(list.buy).toHaveLength(0)
