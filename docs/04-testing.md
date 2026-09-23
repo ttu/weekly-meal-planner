@@ -88,7 +88,20 @@ Honest ones, not aspirational:
   cupboard" section can never appear. The derivation is covered by unit tests.
 - **Realtime and presence** are verified with two real clients and airplane
   mode, as below.
-- **Adding a Leftover above 1024px** — the wide day column has no such action.
+- **Adding a Leftover above 1024px** — the wide day column has no such action,
+  and neither has it an unplan button: a planned card there is tap-to-unplan
+  only.
+
+### Reconcile the Shopping List by hand, sometimes
+
+Two of the worst bugs found so far were arithmetic, and no assertion in the
+suite would have caught either: a Meal planned twice asked for four times its
+Ingredients, and the Catalogue was listed twice over. Both were found by
+planning a real week and adding the numbers up independently from
+`data/catalogue/meals.json`.
+
+A test can say "there is an onion line". Only the arithmetic says the line is
+right.
 
 Selectors are `data-testid` only, or `getByRole`/`aria-label` for interactive
 controls. Never CSS classes, text content or structural position — the copy is

@@ -66,10 +66,6 @@ test.describe('a second Member joins the board', () => {
   // Who wanted a Meal is half the reason a shared board beats a list on the
   // fridge, so a joiner arrives under their own name, not as "Member".
   test('a joiner is known by the name they gave', async () => {
-    await mum
-      .getByTestId('backlog-add')
-      .click()
-      .catch(() => undefined)
     const pane = mum.getByTestId('pane-library')
     await pane.getByTestId('library-search').fill('Tacos')
     await pane.locator('[data-testid^="library-meal-"]').first().click()
