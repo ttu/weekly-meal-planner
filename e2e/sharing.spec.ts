@@ -45,6 +45,7 @@ test.describe('a second Member joins the board', () => {
     await mum.goto(`/join/${token}`)
     await expect(mum.getByTestId('join-board-screen')).toBeVisible()
 
+    await mum.getByTestId('join-your-name').fill('Mum')
     await mum.getByTestId('join-password').fill('not-the-password')
     await mum.getByTestId('join-submit').click()
 
@@ -60,6 +61,20 @@ test.describe('a second Member joins the board', () => {
       mum.getByTestId('board-screen').or(mum.getByTestId('wide-board-layout')),
     ).toBeVisible()
     await expect(mum.getByText('Koivisto')).toBeVisible()
+  })
+
+  // Who wanted a Meal is half the reason a shared board beats a list on the
+  // fridge, so a joiner arrives under their own name, not as "Member".
+  test('a joiner is known by the name they gave', async () => {
+    await mum
+      .getByTestId('backlog-add')
+      .click()
+      .catch(() => undefined)
+    const pane = mum.getByTestId('pane-library')
+    await pane.getByTestId('library-search').fill('Tacos')
+    await pane.locator('[data-testid^="library-meal-"]').first().click()
+
+    await expect(mum.getByTestId('backlog-shelf').getByText('Mum')).toBeVisible()
   })
 
   test('both Members see the same week', async () => {
@@ -81,6 +96,7 @@ test.describe('a second Member joins the board', () => {
     await page.goto('/join/a-token-that-does-not-exist')
     await expect(page.getByTestId('join-board-screen')).toBeVisible()
 
+    await page.getByTestId('join-your-name').fill('Nobody')
     await page.getByTestId('join-password').fill(DEMO_PASSWORD)
     await page.getByTestId('join-submit').click()
 

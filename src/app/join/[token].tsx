@@ -20,10 +20,10 @@ export default function Join(): React.JSX.Element {
     <JoinBoardScreen
       isPending={isPending}
       error={error}
-      onJoin={(password) => {
+      onJoin={({ password, displayName }) => {
         setPending(true)
         setError(undefined)
-        void joinBoard(client, params.token, password).then((result) => {
+        void joinBoard(client, params.token, password, displayName).then((result) => {
           setPending(false)
           if (isErr(result)) {
             setError(result.error)

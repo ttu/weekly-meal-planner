@@ -53,11 +53,17 @@ export const createBoard = async (
  * The link is a bearer credential and the password is the second factor. The
  * server answers 'rejected' for a wrong link and a wrong password alike, so
  * this cannot be used to discover which links are real.
+ *
+ * The name is asked for here rather than assigned: a Backlog card says who
+ * wanted the Meal, and a board of people all called "Member" answers that
+ * question with "somebody". The colour is dealt by the server from the same
+ * palette, so no two Members of a household look alike.
  */
 export const joinBoard = async (
   client: AppSupabaseClient,
   shareToken: string,
   password: string,
+  displayName: string,
 ): Promise<Result<HouseholdId, JoinBoardError>> => {
   const { data: session } = await client.auth.getSession()
   if (session.session === null) {
@@ -68,6 +74,7 @@ export const joinBoard = async (
   const { data, error } = await client.rpc('join_board', {
     p_share_token: shareToken,
     p_password: password,
+    p_display_name: displayName,
   })
 
   const row = Array.isArray(data) ? data[0] : undefined

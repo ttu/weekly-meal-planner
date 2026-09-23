@@ -16,13 +16,14 @@ const errorKey = (error: JoinBoardError): string => {
 type Props = {
   readonly isPending: boolean
   readonly error?: JoinBoardError | undefined
-  readonly onJoin: (password: string) => void
+  readonly onJoin: (input: { password: string; displayName: string }) => void
 }
 
 export const JoinBoardScreen = ({ isPending, error, onJoin }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
 
   return (
     <ScrollView
@@ -34,6 +35,15 @@ export const JoinBoardScreen = ({ isPending, error, onJoin }: Props): React.JSX.
       <Text style={[formStyles.muted, { marginBottom: tokens.space.lg }]}>
         {t('board.joinBody')}
       </Text>
+
+      <Text style={formStyles.label}>{t('board.yourName')}</Text>
+      <TextInput
+        style={formStyles.field}
+        value={displayName}
+        onChangeText={setDisplayName}
+        accessibilityLabel={t('board.yourName')}
+        testID="join-your-name"
+      />
 
       <Text style={formStyles.label}>{t('board.password')}</Text>
       <TextInput
@@ -55,7 +65,7 @@ export const JoinBoardScreen = ({ isPending, error, onJoin }: Props): React.JSX.
         style={formStyles.primary}
         disabled={isPending}
         onPress={() => {
-          onJoin(password)
+          onJoin({ password, displayName })
         }}
         accessibilityRole="button"
         accessibilityLabel={t('board.join')}

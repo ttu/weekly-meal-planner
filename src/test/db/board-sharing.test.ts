@@ -71,8 +71,8 @@ describe('board sharing', () => {
     expect(await db.sql('select id from household')).toHaveLength(0)
   })
 
-  const join = async (t: string, password: string): Promise<string> => {
-    const [row] = (await db.sql('select * from join_board($1, $2)', [t, password])) as {
+  const join = async (t: string, password: string, name = 'Mum'): Promise<string> => {
+    const [row] = (await db.sql('select * from join_board($1, $2, $3)', [t, password, name])) as {
       out_status: string
     }[]
     return row!.out_status
@@ -84,6 +84,18 @@ describe('board sharing', () => {
     const rows = (await db.sql('select name from household')) as { name: string }[]
     expect(rows).toHaveLength(1)
     expect(rows[0]!.name).toBe('Koivisto')
+  })
+
+  // A Backlog card says who wanted the Meal. A board of people all called
+  // "Member", in one colour, answers that with "somebody".
+  it('takes the name the person joining gave, and deals them an unused colour', async () => {
+    await db.asOwner()
+    const members = (await db.sql(
+      'select display_name, colour from household_member order by role desc',
+    )) as { display_name: string; colour: string }[]
+
+    expect(members.map((m) => m.display_name)).toEqual(['Aino', 'Mum'])
+    expect(new Set(members.map((m) => m.colour)).size).toBe(2)
   })
 
   // The whole point of the password: a leaked link is not a leaked board.
