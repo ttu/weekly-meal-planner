@@ -12,6 +12,7 @@ const BASE_URL = `http://127.0.0.1:${String(PORT)}`
  * Run `pnpm exec supabase start` first; the suite resets the database itself.
  */
 export default defineConfig({
+  globalSetup: './e2e/global-setup.ts',
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,

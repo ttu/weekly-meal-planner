@@ -69,3 +69,19 @@ an EAS build in the pipeline and belongs with the deployment work.
 every route in Node, where `requestAnimationFrame` does not exist — Reanimated
 throws during the build. Prerendering buys nothing here in any case: every
 screen is behind authentication, so there is no public HTML worth generating.
+
+## Local ports
+
+The local API runs on **54421**, not Supabase's default 54321.
+
+A VS Code extension host binds `127.0.0.1:54321` on at least one machine here.
+Docker publishes on the IPv6 wildcard (`*:54321`), so the IPv4 loopback
+resolved to VS Code instead of Kong: every auth call answered `Cannot POST
+/auth/v1/signup`, the app said only "Could not create the board", and
+`supabase start`'s own health check failed against the same address and rolled
+the whole stack back. It looked like a Docker fault for hours.
+
+`e2e/global-setup.ts` now makes one request to `/auth/v1/health` before the
+suite runs and fails loudly if the answer is not GoTrue. Changing the port
+means changing three places together: `supabase/config.toml` `[api] port`,
+`.env`, and `.env.example`.

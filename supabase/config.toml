@@ -7,7 +7,14 @@ project_id = "weekly-meal-planner"
 [api]
 enabled = true
 # Port to use for the API URL.
-port = 54321
+#
+# 54421, not Supabase's default 54321. A VS Code extension host binds
+# 127.0.0.1:54321 on this machine, and because Docker publishes on the IPv6
+# wildcard the IPv4 loopback resolves to VS Code instead of Kong. Every auth
+# call then answered "Cannot POST /auth/v1/signup", and `supabase start` health
+# checks against the same address failed and rolled the whole stack back — for
+# hours, looking like a Docker fault.
+port = 54421
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
 schemas = ["public", "graphql_public"]
