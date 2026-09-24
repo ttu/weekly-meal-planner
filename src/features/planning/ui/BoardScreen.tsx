@@ -38,7 +38,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: tokens.space.sm,
   },
-  content: { paddingHorizontal: 20, paddingBottom: tokens.space.xl, gap: 18 },
+  /** Capped like every other column of text: between the phone and the 1024px
+   *  breakpoint sits the whole tablet range, and a stretched phone layout is
+   *  what a tablet got. */
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: tokens.space.xl,
+    gap: 18,
+    width: '100%',
+    maxWidth: tokens.layout.readable,
+    alignSelf: 'center',
+  },
   /** The phone's own chrome: quiet links, then the title block the canvas
    *  leads with. The one loud thing stays the Shopping List. */
   links: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, flexWrap: 'wrap' },

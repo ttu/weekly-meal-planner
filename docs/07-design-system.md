@@ -66,7 +66,9 @@ the difference before the text does:
 ## A readable measure on a desk
 
 `tokens.layout.readable` (720) caps every screen that is a column of text: the
-Shopping List, the Meal library, and the forms. Without it the Shopping List
+Shopping List, the Meal library, the forms, and the phone board itself —
+between a phone and the 1024px breakpoint sits the whole tablet range, and
+without the cap an iPad in portrait got a phone layout stretched to fill it. Without it the Shopping List
 ran the full 1400px of a laptop and an Ingredient's name sat a screen's width
 from its quantity — for every line, on a list read while pushing a trolley.
 

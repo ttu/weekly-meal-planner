@@ -39,6 +39,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: tokens.space.md,
   },
+  /** The shelf's paper spans the window; its contents line up with the board
+   *  column above them. */
+  measure: { width: '100%', maxWidth: tokens.layout.readable, alignSelf: 'center' },
   headingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   /** The grab handle: the shelf is a surface that can be pulled up. */
   grip: { width: 28, height: 4, borderRadius: 2, backgroundColor: tokens.color.cardBorder },
@@ -154,7 +157,7 @@ export const BacklogShelf = ({
       style={[isShelf ? styles.shelf : styles.pane, isHovered && styles.hovered]}
       testID="backlog-shelf"
     >
-      <View style={styles.header}>
+      <View style={[styles.header, isShelf && styles.measure]}>
         <View style={styles.headingRow}>
           {isShelf && <View style={styles.grip} />}
           <Text style={[styles.heading, !isShelf && styles.headingPane]}>
@@ -185,12 +188,12 @@ export const BacklogShelf = ({
       )}
 
       {items.length === 0 ? (
-        <View style={styles.empty} testID="backlog-empty">
+        <View style={[styles.empty, isShelf && styles.measure]} testID="backlog-empty">
           <Text style={styles.emptyText}>{t('backlog.empty')}</Text>
         </View>
       ) : isShelf ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.row}>{cards}</View>
+          <View style={[styles.row, styles.measure]}>{cards}</View>
         </ScrollView>
       ) : (
         <View style={styles.column}>{cards}</View>
