@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
+import { BackLink } from '@/shared/ui/BackLink'
 import type { IngredientId } from '@/shared/types/ids'
 import { countMealsBehind, groupBuyLines } from '../domain/group'
 import type { BuyLine, ExtraId, ShoppingList } from '../domain/types'
@@ -21,7 +22,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingBottom: tokens.space.lg,
-    gap: 20,
+    gap: 16,
     width: '100%',
     maxWidth: tokens.layout.readable,
     alignSelf: 'center',
@@ -184,6 +185,7 @@ type Props = {
   readonly onToggleExtra: (id: ExtraId, checked: boolean) => void
   readonly onCopyPrompt: () => void
   readonly justCopied: boolean
+  readonly onBack?: (() => void) | undefined
 }
 
 export const ShoppingListScreen = ({
@@ -194,6 +196,7 @@ export const ShoppingListScreen = ({
   onToggleExtra,
   onCopyPrompt,
   justCopied,
+  onBack,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
@@ -282,6 +285,8 @@ export const ShoppingListScreen = ({
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
       >
+        {onBack !== undefined && <BackLink onPress={onBack} />}
+
         <View style={styles.head}>
           <View>
             <Text style={styles.title}>{t('shopping.title')}</Text>

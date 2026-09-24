@@ -58,8 +58,11 @@ export const LeftoverCard = ({ parentMealName, compact = false }: Props): React.
     >
       {!compact && <View style={styles.stub} />}
       <View style={[styles.card, compact && styles.cardCompact]}>
+        {/* In a wide column the Leftover sits directly under the Meal it came
+            from, so the name is redundant — and repeating it truncated away
+            the one word that matters. */}
         <Text style={compact ? styles.textCompact : styles.text} numberOfLines={2}>
-          {t('leftover.parentPrefix', { meal: parentMealName })}
+          {compact ? '' : t('leftover.parentPrefix', { meal: parentMealName })}
           <Text style={compact ? styles.wordCompact : styles.word}>{t('leftover.word')}</Text>
         </Text>
       </View>

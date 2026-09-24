@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
+import { BackLink } from '@/shared/ui/BackLink'
 import { partitionMeals } from '../domain/partition'
 import { isCatalogueMeal, type Meal, type MealId } from '../domain/types'
 import { MealCard } from './MealCard'
@@ -70,6 +71,7 @@ type Props = {
   readonly layout?: LibraryLayout
   readonly onSelect?: ((id: MealId) => void) | undefined
   readonly onAdd?: (() => void) | undefined
+  readonly onBack?: (() => void) | undefined
 }
 
 export const MealLibraryScreen = ({
@@ -77,6 +79,7 @@ export const MealLibraryScreen = ({
   layout = 'screen',
   onSelect,
   onAdd,
+  onBack,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
@@ -117,6 +120,12 @@ export const MealLibraryScreen = ({
       ]}
       testID="meal-library-screen"
     >
+      {!isPane && onBack !== undefined && (
+        <View style={styles.headScreen}>
+          <BackLink onPress={onBack} />
+        </View>
+      )}
+
       <View style={[styles.head, !isPane && styles.headScreen]}>
         {isPane ? (
           <Text style={styles.paneTitle}>{t('meal.libraryPane')}</Text>

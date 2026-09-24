@@ -358,6 +358,7 @@ const Board = ({
                 onSelect={(id) => {
                   setUnplanning(cookEventById(id))
                 }}
+                onAddLeftover={addSecondSitting}
                 onAddMeal={openPickerFor}
                 onRemoveLeftover={removeLeftoverCard}
                 onDropped={onDropped}

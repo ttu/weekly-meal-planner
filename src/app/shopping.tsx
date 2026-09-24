@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from '@/shared/i18n'
+import { goBackTo } from '@/shared/navigation/go-back-to'
 import { ShoppingListScreen, buildAgentPrompt, useShoppingList } from '@/features/shopping'
 
 export default function Shopping(): React.JSX.Element {
@@ -16,6 +17,9 @@ export default function Shopping(): React.JSX.Element {
       onAddExtra={addItem}
       onToggleExtra={toggleExtra}
       justCopied={justCopied}
+      onBack={() => {
+        goBackTo('/')
+      }}
       onCopyPrompt={() => {
         void Clipboard.setStringAsync(buildAgentPrompt(list, t('shopping.promptIntro'))).then(
           () => {

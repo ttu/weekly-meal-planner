@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
 import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
+import { goBackTo } from '@/shared/navigation/go-back-to'
 
 export default function Meals(): React.JSX.Element {
   const { meals } = useHouseholdMeals()
@@ -12,6 +13,9 @@ export default function Meals(): React.JSX.Element {
       }}
       onSelect={(id) => {
         router.push(`/meals/${id}`)
+      }}
+      onBack={() => {
+        goBackTo('/')
       }}
     />
   )

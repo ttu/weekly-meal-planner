@@ -70,6 +70,25 @@ const styles = StyleSheet.create({
     boxShadow: tokens.shadow.subtle,
   },
   cardName: { ...tokens.type.mealNameTight, color: tokens.color.textPrimary },
+  cardFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+  },
+  cardActions: { flexDirection: 'row', gap: 2 },
+  cardAction: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardGlyph: {
+    fontFamily: tokens.type.body.fontFamily,
+    fontSize: 13,
+    color: tokens.color.textGhost,
+  },
   cardCount: {
     ...tokens.type.labelTiny,
     fontWeight: '400',
@@ -112,6 +131,7 @@ type Props = {
   readonly locale: Locale
   readonly recentlyChanged?: boolean | undefined
   readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
   readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
@@ -124,6 +144,7 @@ export const WideDayColumn = ({
   locale,
   recentlyChanged = false,
   onSelect,
+  onAddLeftover,
   onAddMeal,
   onRemoveLeftover,
   onDropped,
@@ -209,23 +230,52 @@ export const WideDayColumn = ({
                 <AnimatedCard key={cardKey(card)}>
                   {/* Carry it to another day or Slot, or back onto the Backlog
                       to take it off the week. Tapping still opens unplan. */}
-                  <DraggableCard
-                    payload={{ kind: 'cook-event', cookEvent: card.cookEvent }}
-                    onDropped={onDropped}
-                    onTap={() => onSelect?.(card.cookEvent.id)}
-                    accessibilityLabel={card.cookEvent.mealName}
-                    testID={`planned-${card.cookEvent.id}`}
-                  >
-                    <View style={styles.card} testID="meal-card-planned">
-                      {/* Clamped rather than broken: a narrow column splits
-                          "perunamuusi" into "perunamuu si", and a Finnish
-                          compound is exactly the case this column will meet. */}
-                      <Text style={styles.cardName} numberOfLines={3}>
-                        {card.cookEvent.mealName}
-                      </Text>
-                      <Text style={styles.cardCount}>{String(card.cookEvent.servingsCooked)}</Text>
-                    </View>
-                  </DraggableCard>
+                  <View>
+                    <DraggableCard
+                      payload={{ kind: 'cook-event', cookEvent: card.cookEvent }}
+                      onDropped={onDropped}
+                      accessibilityLabel={card.cookEvent.mealName}
+                      isTappable={false}
+                      testID={`planned-${card.cookEvent.id}`}
+                    >
+                      <View style={styles.card} testID="meal-card-planned">
+                        {/* Clamped rather than broken: a narrow column splits
+                            "perunamuusi" into "perunamuu si", and a Finnish
+                            compound is exactly the case this column will meet. */}
+                        <Text style={styles.cardName} numberOfLines={3}>
+                          {card.cookEvent.mealName}
+                        </Text>
+                        <View style={styles.cardFoot}>
+                          <Text style={styles.cardCount}>
+                            {String(card.cookEvent.servingsCooked)}
+                          </Text>
+                          {/* The same two actions the phone card carries, at
+                              the size a 100px column can hold. Without them a
+                              Leftover could not be made above 1024px at all. */}
+                          <View style={styles.cardActions}>
+                            <Pressable
+                              style={styles.cardAction}
+                              onPress={() => onAddLeftover?.(card.cookEvent.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={t('leftover.add')}
+                              testID="card-add-leftover"
+                            >
+                              <Text style={styles.cardGlyph}>↻</Text>
+                            </Pressable>
+                            <Pressable
+                              style={styles.cardAction}
+                              onPress={() => onSelect?.(card.cookEvent.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={t('unplan.action')}
+                              testID="card-unplan"
+                            >
+                              <Text style={styles.cardGlyph}>×</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      </View>
+                    </DraggableCard>
+                  </View>
                 </AnimatedCard>
               ),
             )}

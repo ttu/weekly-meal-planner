@@ -193,5 +193,8 @@
     "tin": "tin",
     "pack": "pack",
     "bunch": "bunch"
+  },
+  "nav": {
+    "back": "← Back to the board"
   }
 }
