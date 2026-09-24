@@ -27,17 +27,12 @@ import { DragLayer } from './DragLayer'
 import { useEdgeAutoScroll } from './useEdgeAutoScroll'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
+import { Notice } from '@/shared/ui/Notice'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.surface },
   scroll: { flex: 1 },
-  error: {
-    ...tokens.type.body,
-    color: tokens.color.action,
-    paddingHorizontal: 20,
-    paddingBottom: tokens.space.sm,
-  },
   /** Capped like every other column of text: between the phone and the 1024px
    *  breakpoint sits the whole tablet range, and a stretched phone layout is
    *  what a tablet got. */
@@ -301,31 +296,11 @@ const Board = ({
 
   const errors = (
     <>
-      {hasFailed && (
-        <Text style={styles.error} testID="backlog-add-error">
-          {t('picker.addFailed')}
-        </Text>
-      )}
-      {planFailed && (
-        <Text style={styles.error} testID="plan-error">
-          {t('plan.failed')}
-        </Text>
-      )}
-      {leftoverFailed && (
-        <Text style={styles.error} testID="leftover-error">
-          {t('leftover.failed')}
-        </Text>
-      )}
-      {moveFailed && (
-        <Text style={styles.error} testID="move-error">
-          {t('plan.moveFailed')}
-        </Text>
-      )}
-      {unplanFailed && (
-        <Text style={styles.error} testID="unplan-error">
-          {t('unplan.failed')}
-        </Text>
-      )}
+      {hasFailed && <Notice message={t('picker.addFailed')} testID="backlog-add-error" />}
+      {planFailed && <Notice message={t('plan.failed')} testID="plan-error" />}
+      {leftoverFailed && <Notice message={t('leftover.failed')} testID="leftover-error" />}
+      {moveFailed && <Notice message={t('plan.moveFailed')} testID="move-error" />}
+      {unplanFailed && <Notice message={t('unplan.failed')} testID="unplan-error" />}
     </>
   )
 

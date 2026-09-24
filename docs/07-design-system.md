@@ -76,6 +76,14 @@ from its quantity — for every line, on a list read while pushing a trolley.
 colour; capping it shrinks the paper too and leaves the browser's grey either
 side of the column. `formStyles.content` goes on `contentContainerStyle`.
 
+## Failures float
+
+`Notice` is absolutely positioned at the foot of the window, not laid out in
+the page flow. In the flow, on the wide board, these messages landed below the
+footer rail — off the bottom of the window, behind the dev badge — so a failed
+plan reported itself to nobody. A banner belongs to the window rather than the
+column, and cannot be pushed out of sight by whatever is above it.
+
 ## Ergonomics that are requirements
 
 Shopping list rows: 19px text, 28px checkboxes, 54px minimum row height, whole
