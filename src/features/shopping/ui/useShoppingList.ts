@@ -8,6 +8,8 @@ import { loadShoppingData } from '../infrastructure/shopping-repository'
 import { deriveShoppingList } from '../domain/derive'
 import {
   addExtra,
+  forgetStaple,
+  makeStaple,
   markRunningLow,
   setChecked,
   setExtraChecked,
@@ -23,6 +25,10 @@ export type ShoppingListView = {
   readonly outOf: (ingredientId: IngredientId) => void
   readonly addItem: (label: string) => void
   readonly toggleExtra: (id: ExtraId, checked: boolean) => void
+  /** "We always have this in" — moves a Buy Line into the Cupboard Check. */
+  readonly keepInCupboard: (id: IngredientId) => void
+  /** No longer kept in; it returns to the Buy list. */
+  readonly stopKeeping: (id: IngredientId) => void
 }
 
 export const useShoppingList = (clock: Clock = systemClock): ShoppingListView => {
@@ -64,6 +70,14 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     onSettled: invalidate,
   })
 
+  const stapleMutation = useMutation({
+    mutationFn: async ({ id, keep }: { id: IngredientId; keep: boolean }) => {
+      if (household === undefined) return
+      await (keep ? makeStaple : forgetStaple)(client, household.id, id)
+    },
+    onSettled: invalidate,
+  })
+
   const addMutation = useMutation({
     mutationFn: async (label: string) => {
       if (weekPlanId === undefined) return
@@ -87,6 +101,12 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     },
     outOf: (id) => {
       outOfMutation.mutate(id)
+    },
+    keepInCupboard: (id) => {
+      stapleMutation.mutate({ id, keep: true })
+    },
+    stopKeeping: (id) => {
+      stapleMutation.mutate({ id, keep: false })
     },
     addItem: (label) => {
       addMutation.mutate(label)

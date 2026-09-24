@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   provenanceRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  provenanceAction: { paddingTop: tokens.space.sm },
   provenanceText: { ...tokens.type.body, color: tokens.color.textMuted },
   cupboardLabel: { ...tokens.type.mealNameLarge, fontWeight: '400', color: '#5F584C', flex: 1 },
   outOf: {
@@ -181,6 +182,9 @@ type Props = {
   readonly list: ShoppingList
   readonly onToggle: (id: IngredientId, checked: boolean) => void
   readonly onOutOf: (id: IngredientId) => void
+  /** "We always have this in": the Ingredient joins the Cupboard Check. */
+  readonly onKeepInCupboard?: ((id: IngredientId) => void) | undefined
+  readonly onStopKeeping?: ((id: IngredientId) => void) | undefined
   readonly onAddExtra: (label: string) => void
   readonly onToggleExtra: (id: ExtraId, checked: boolean) => void
   readonly onCopyPrompt: () => void
@@ -192,6 +196,8 @@ export const ShoppingListScreen = ({
   list,
   onToggle,
   onOutOf,
+  onKeepInCupboard,
+  onStopKeeping,
   onAddExtra,
   onToggleExtra,
   onCopyPrompt,
@@ -274,6 +280,24 @@ export const ShoppingListScreen = ({
               </Text>
             </View>
           ))}
+
+          {onKeepInCupboard !== undefined && (
+            <Pressable
+              style={styles.provenanceAction}
+              onPress={() => {
+                // The row is about to leave the Buy list; leaving it marked as
+                // expanded means the next tap on its chevron collapses
+                // something that is no longer open.
+                setExpanded(undefined)
+                onKeepInCupboard(line.ingredientId)
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('shopping.keepInCupboard')}
+              testID={`keep-${line.ingredientId}`}
+            >
+              <Text style={styles.noteAction}>{t('shopping.keepInCupboard')}</Text>
+            </Pressable>
+          )}
         </View>
       )}
     </View>
@@ -346,6 +370,18 @@ export const ShoppingListScreen = ({
                   style={[styles.row, index < list.cupboard.length - 1 && styles.divided]}
                 >
                   <Text style={styles.cupboardLabel}>{line.name}</Text>
+                  {onStopKeeping !== undefined && (
+                    <Pressable
+                      onPress={() => {
+                        onStopKeeping(line.ingredientId)
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('shopping.stopKeeping')} ${line.name}`}
+                      testID={`stop-keeping-${line.ingredientId}`}
+                    >
+                      <Text style={styles.noteAction}>{t('shopping.stopKeeping')}</Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     style={styles.outOf}
                     onPress={() => {

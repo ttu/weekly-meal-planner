@@ -42,6 +42,41 @@ export const markRunningLow = async (
   return done(error)
 }
 
+/**
+ * "We always have this in." The Ingredient leaves the Buy list and joins the
+ * Cupboard Check, where it waits to be declared run out.
+ *
+ * This is the half of Staples the app never had a control for: spices, oil and
+ * flour are bought in quantities that last months, and a Shopping List that
+ * asks for them every week is a list nobody reads to the end.
+ */
+export const makeStaple = async (
+  client: AppSupabaseClient,
+  householdId: HouseholdId,
+  ingredientId: IngredientId,
+): Promise<Result<void, ShoppingWriteError>> => {
+  const { error } = await client
+    .from('household_staple')
+    .upsert({ household_id: householdId, ingredient_id: ingredientId, running_low: false })
+
+  return done(error)
+}
+
+/** No longer something the household keeps in; it goes back on the Buy list. */
+export const forgetStaple = async (
+  client: AppSupabaseClient,
+  householdId: HouseholdId,
+  ingredientId: IngredientId,
+): Promise<Result<void, ShoppingWriteError>> => {
+  const { error } = await client
+    .from('household_staple')
+    .delete()
+    .eq('household_id', householdId)
+    .eq('ingredient_id', ingredientId)
+
+  return done(error)
+}
+
 export const addExtra = async (
   client: AppSupabaseClient,
   weekPlanId: string,

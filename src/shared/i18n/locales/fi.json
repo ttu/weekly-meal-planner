@@ -165,7 +165,9 @@
     "summaryMeals_one": "{{count}} ostettavaa · {{meals}} ateria",
     "summaryMeals_other": "{{count}} ostettavaa · {{meals}} ateriaa",
     "listTitle": "Ostoslista",
-    "addExtraAction": "Lisää"
+    "addExtraAction": "Lisää",
+    "keepInCupboard": "Tätä on aina kaapissa",
+    "stopKeeping": "Ei ole aina kaapissa"
   },
   "presence": {
     "editing": "{{name}} on myös täällä",

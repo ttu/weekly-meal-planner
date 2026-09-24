@@ -83,9 +83,6 @@ Honest ones, not aspirational:
 
 - **Email sign-in** (`/sign-in`) is untested. Anonymous boards are the main path
   (ADR 0010) and email is the secondary one.
-- **Staples and the cupboard check** are untested because they have no UI to
-  test: nothing in the app marks an Ingredient as a Staple, so the "Check the
-  cupboard" section can never appear. The derivation is covered by unit tests.
 - **Realtime and presence** are verified with two real clients and airplane
   mode, as below.
 - **Adding a Leftover above 1024px** — the wide day column has no such action,

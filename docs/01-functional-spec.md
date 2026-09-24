@@ -76,7 +76,7 @@ first.
 | **Servings Cooked** | How many are actually being made at a Cook Event. Surfaced as "Cooking N".                                               | batch size, quantity                        |
 | **Ingredient**      | A canonical shopping-list-able thing, with a category and a dimension.                                                   | item, product                               |
 | **Dimension**       | Mass, volume or count. Quantities convert only within one.                                                               | unit type                                   |
-| **Staple**          | An ingredient the household normally has in. Kept off the Buy list.                                                      | pantry item, household ingredient           |
+| **Staple**          | An ingredient the household normally has in, declared from a Buy Line's "we always have this in". Kept off the Buy list. | pantry item, household ingredient           |
 | **Running Low**     | A staple flagged as needing replacement; promotes it to Buy.                                                             | out of stock, empty                         |
 | **Shopping List**   | The derived output for a Week Plan. Never stored.                                                                        | groceries, basket                           |
 | **Buy Line**        | One aggregated row on the Shopping List.                                                                                 | list item                                   |

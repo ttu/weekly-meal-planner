@@ -165,7 +165,9 @@
     "summaryMeals_one": "{{count}} to buy · {{meals}} meal",
     "summaryMeals_other": "{{count}} to buy · {{meals}} meals",
     "listTitle": "Shopping list",
-    "addExtraAction": "Add"
+    "addExtraAction": "Add",
+    "keepInCupboard": "We always have this in",
+    "stopKeeping": "Don't keep this in"
   },
   "presence": {
     "editing": "{{name}} is here too",
