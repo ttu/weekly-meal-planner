@@ -6,7 +6,7 @@ import { tokens } from '@/shared/theme/tokens'
 import { formStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { isOk } from '@/shared/types/result'
-import { parseQuantity } from '@/shared/units'
+import { defaultAmountFor, parseQuantity } from '@/shared/units'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
 import { IngredientRow } from './IngredientRow'
@@ -315,9 +315,10 @@ export const MealEditorScreen = ({
         ingredients={unpicked}
         onSelect={(ingredientId) => {
           const ingredient = byId.get(ingredientId)
+          const amount = defaultAmountFor(ingredient?.dimension ?? 'count')
           setEntries((current) => [
             ...current,
-            { ingredientId, quantityText: '1', unit: ingredient?.baseUnit ?? 'g' },
+            { ingredientId, quantityText: String(amount.quantity), unit: amount.unit },
           ])
           setPickerOpen(false)
         }}

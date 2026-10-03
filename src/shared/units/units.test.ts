@@ -1,4 +1,4 @@
-import { unitsFor, dimensionOf, parseQuantity } from './index'
+import { unitsFor, dimensionOf, defaultAmountFor, parseQuantity } from './index'
 import { isOk, isErr } from '../types/result'
 
 describe('unitsFor', () => {
@@ -64,5 +64,26 @@ describe('parseQuantity', () => {
   it('rejects zero and negatives', () => {
     expect(isErr(parseQuantity('0'))).toBe(true)
     expect(isErr(parseQuantity('-3'))).toBe(true)
+  })
+})
+
+describe('defaultAmountFor', () => {
+  // One gram of potato is the number the editor used to offer.
+  it('starts a mass row at an amount someone might cook with', () => {
+    expect(defaultAmountFor('mass')).toEqual({ quantity: 200, unit: 'g' })
+  })
+
+  it('starts a volume row in decilitres, not millilitres', () => {
+    expect(defaultAmountFor('volume')).toEqual({ quantity: 2, unit: 'dl' })
+  })
+
+  it('starts a count row at one, where one is the right answer', () => {
+    expect(defaultAmountFor('count')).toEqual({ quantity: 1, unit: 'pcs' })
+  })
+
+  it('only ever offers a unit of the right dimension', () => {
+    for (const dimension of ['mass', 'volume', 'count'] as const) {
+      expect(dimensionOf(defaultAmountFor(dimension).unit)).toBe(dimension)
+    }
   })
 })

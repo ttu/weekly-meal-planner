@@ -24,6 +24,25 @@ export const unitsFor = (dimension: Dimension): readonly string[] => UNITS[dimen
 export const dimensionOf = (unit: string): Dimension | undefined =>
   DIMENSIONS.find((dimension) => UNITS[dimension].some((known) => known === unit))
 
+/**
+ * What a new Ingredient row starts at.
+ *
+ * The editor used to open every row at "1" of the Ingredient's base unit,
+ * which is one gram of potato and one millilitre of cream — a number nobody
+ * wants, in a field they then have to clear before typing. These are the
+ * amounts a household actually cooks with, so most rows need no edit at all
+ * and the rest start from something closer than 1.
+ */
+const DEFAULT_AMOUNTS = {
+  mass: { quantity: 200, unit: 'g' },
+  volume: { quantity: 2, unit: 'dl' },
+  count: { quantity: 1, unit: 'pcs' },
+} as const satisfies Record<Dimension, { quantity: number; unit: string }>
+
+export const defaultAmountFor = (
+  dimension: Dimension,
+): { readonly quantity: number; readonly unit: string } => DEFAULT_AMOUNTS[dimension]
+
 export type QuantityError = 'not-a-number' | 'not-positive'
 
 /**

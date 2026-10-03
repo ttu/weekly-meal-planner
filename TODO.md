@@ -29,9 +29,6 @@ you want to overturn one, change the spec first.
 
 ## Missing functionality
 
-- [ ] **Ingredient quantities default to 1 of whatever unit.** The Meal editor
-      offers "1 g" of potato and "1 ml" of cream. A sane default per dimension
-      — or an empty field — would beat a number nobody wants.
 - [ ] **No day-one empty state.** The canvas opens a brand-new board with
       "Nothing on the board yet." and three escalating offers. A new Household
       currently gets the ordinary empty board. (The "Fill the week for me"

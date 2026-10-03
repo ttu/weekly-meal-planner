@@ -42,7 +42,19 @@ test.describe('a household writes down its own Meals', () => {
     await page.getByTestId('ingredient-search').fill('onion')
     await page.getByTestId('ingredient-option-onion').click()
     await expect(page.getByTestId('ingredient-row-onion')).toBeVisible()
+    // A count Ingredient starts at one of it, which is usually the answer.
+    await expect(page.getByTestId('ingredient-quantity-onion')).toHaveValue('1')
     await page.getByTestId('ingredient-quantity-onion').fill('3')
+
+    // A mass one does not: "1 g of potato" was the old default and nobody
+    // cooks that.
+    await page.getByTestId('editor-add-ingredient').click()
+    await page.getByTestId('ingredient-search').fill('potato')
+    await page.getByTestId('ingredient-option-potato').click()
+    await expect(page.getByTestId('ingredient-quantity-potato')).toHaveValue('200')
+    await expect(
+      page.getByTestId('ingredient-row-potato').getByText('g', { exact: true }),
+    ).toBeVisible()
 
     await page.getByTestId('editor-save').click()
 
