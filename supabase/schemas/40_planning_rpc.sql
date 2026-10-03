@@ -25,16 +25,21 @@ security invoker
 as $fn$
 declare
   new_id uuid;
+  claimed uuid;
 begin
+  if p_backlog_item_id is not null then
+    delete from backlog_item where id = p_backlog_item_id returning id into claimed;
+    -- Already gone: the first caller planned it, and this is the echo.
+    if claimed is null then
+      return null;
+    end if;
+  end if;
+
   insert into cook_event (week_plan_id, meal_id, date, slot_key, servings_cooked,
                           from_backlog_item_id, added_by)
   values (p_week_plan_id, p_meal_id, p_date, p_slot_key, p_servings_cooked,
           p_backlog_item_id, p_added_by)
   returning id into new_id;
-
-  if p_backlog_item_id is not null then
-    delete from backlog_item where id = p_backlog_item_id;
-  end if;
 
   return new_id;
 end;

@@ -18,22 +18,6 @@ you want to overturn one, change the spec first.
 
 ---
 
-## Bugs
-
-- [ ] **A long Finnish compound breaks mid-word in a wide day column.**
-      "Uunilohi ja perunamuusi" renders as "perunamuu / si". At 14px in a ~66px
-      usable column the word genuinely does not fit, so the browser breaks it;
-      truncating instead would hide information. Needs a real decision —
-      hyphenation, a smaller face in that column, or accepting it. Seen at
-      1400px with a Finnish board.
-- [ ] **Double-tapping a Backlog card plans the Meal twice.** Nothing guards
-      the second submission, so two Cook Events appear. Found by a test script
-      that clicked faster than the list refreshed, which is also what a person
-      with a trackpad does.
-- [ ] **The Shopping List header counts Meals, not sittings.** Seven Cook
-      Events over six distinct Meals reads "6 meals". Defensible, but it
-      disagrees with the board above it. Decide which the number means.
-
 ## Sharing and abuse
 
 - [ ] **Sharing copies the link and says nothing about the password.** "Share

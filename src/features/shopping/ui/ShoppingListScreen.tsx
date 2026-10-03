@@ -5,7 +5,7 @@ import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
 import type { IngredientId } from '@/shared/types/ids'
-import { countMealsBehind, groupBuyLines } from '../domain/group'
+import { groupBuyLines } from '../domain/group'
 import type { BuyLine, ExtraId, ShoppingList } from '../domain/types'
 
 /**
@@ -211,7 +211,6 @@ export const ShoppingListScreen = ({
 
   const unitLabel = (unit: string): string => t(`unit.${unit}`)
   const groups = useMemo(() => groupBuyLines(list.buy), [list.buy])
-  const mealCount = useMemo(() => countMealsBehind(list.buy), [list.buy])
 
   const isEmpty =
     list.buy.length === 0 && list.cupboard.length === 0 && list.incomplete.length === 0
@@ -315,7 +314,7 @@ export const ShoppingListScreen = ({
           <View>
             <Text style={styles.title}>{t('shopping.title')}</Text>
             <Text style={styles.summary} testID="shopping-summary">
-              {t('shopping.summaryMeals', { count: list.buy.length, meals: mealCount })}
+              {t('shopping.summaryMeals', { count: list.buy.length, meals: list.sittings })}
             </Text>
           </View>
         </View>

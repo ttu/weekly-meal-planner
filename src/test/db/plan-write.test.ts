@@ -72,6 +72,54 @@ describe('plan_meal and unplan_meal', () => {
     ).toHaveLength(1)
   })
 
+  // A trackpad double-tap, and two Members planning the same card at once,
+  // look identical from here: the second call arrives with a Backlog Item id
+  // the first has already consumed.
+  it('plans a Backlog Item once however many times it is asked', async () => {
+    await db.asOwner()
+    const backlogId = await addBacklogItem(aliceWeek, aliceMeal, ALICE)
+
+    await db.asMember(ALICE)
+    const plan = async (): Promise<unknown> =>
+      db.sql('select plan_meal($1, $2, $3, $4, $5, $6, $7) as id', [
+        aliceWeek,
+        aliceMeal,
+        '2026-09-09',
+        'dinner',
+        4,
+        ALICE,
+        backlogId,
+      ])
+
+    await plan()
+    const [second] = (await plan()) as { id: string | null }[]
+
+    expect(second!.id).toBeNull()
+    expect(
+      await db.sql("select id from cook_event where date = '2026-09-09' and slot_key = 'dinner'"),
+    ).toHaveLength(1)
+  })
+
+  // Straight onto the board, with no Backlog Item to consume: two deliberate
+  // helpings of the same Meal are still two Cook Events.
+  it('still plans the same Meal twice when it comes from no Backlog Item', async () => {
+    await db.asMember(ALICE)
+    for (let i = 0; i < 2; i += 1) {
+      await db.sql('select plan_meal($1, $2, $3, $4, $5, $6)', [
+        aliceWeek,
+        aliceMeal,
+        '2026-09-10',
+        'dinner',
+        4,
+        ALICE,
+      ])
+    }
+
+    expect(
+      await db.sql("select id from cook_event where date = '2026-09-10' and slot_key = 'dinner'"),
+    ).toHaveLength(2)
+  })
+
   it('carries added_by onto the Cook Event, so unplanning can restore it', async () => {
     await db.asMember(ALICE)
     const rows = (await db.sql(

@@ -54,6 +54,22 @@ const base: DeriveInput = {
 }
 
 describe('deriveShoppingList', () => {
+  // The header has to agree with the board above it: two cards, two sittings,
+  // even though both are the same Meal.
+  it('counts sittings rather than distinct Meals', () => {
+    const list = deriveShoppingList({
+      plannedMeals: [chili(4), chili(4)],
+      mealIngredients: [mi('chili', 'onion', 2, 'pcs')],
+      ingredients: [onion],
+      staples: [],
+      overrides: [],
+      checkedIngredientIds: [],
+      extras: [],
+    })
+
+    expect(list.sittings).toBe(2)
+  })
+
   // Chili on Monday and again on Thursday is two sittings, not four. The
   // Ingredient list belongs to the Meal; the Cook Events say how many times to
   // count it, and nothing may multiply the two together.

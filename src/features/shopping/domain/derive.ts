@@ -150,5 +150,5 @@ export const deriveShoppingList = ({
   buy.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
   cupboard.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
 
-  return { buy, cupboard, extras, incomplete }
+  return { sittings: plannedMeals.length, buy, cupboard, extras, incomplete }
 }

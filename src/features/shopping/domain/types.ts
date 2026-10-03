@@ -86,6 +86,12 @@ export type IncompleteMealLine = {
 }
 
 export type ShoppingList = {
+  /**
+   * How many sittings this list is for — Cook Events, not distinct Meals.
+   * Chili on Monday and again on Thursday is two, and the header has to agree
+   * with the board above it, which shows two cards.
+   */
+  readonly sittings: number
   readonly buy: readonly BuyLine[]
   readonly cupboard: readonly CupboardLine[]
   readonly extras: readonly Extra[]

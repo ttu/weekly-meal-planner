@@ -93,7 +93,7 @@ const Board = ({
   const present = usePresence(weekStart, me)
   const { meals } = useHouseholdMeals()
   const { add, hasFailed } = useAddToBacklog(clock)
-  const { plan, hasFailed: planFailed } = usePlanMeal(clock)
+  const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal(clock)
   const [isPickerOpen, setPickerOpen] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<DropTarget | undefined>(undefined)
   const [planning, setPlanning] = useState<BacklogItem | undefined>(undefined)
@@ -229,6 +229,7 @@ const Board = ({
           slots={household?.slots ?? []}
           today={today}
           locale={locale}
+          isPending={planPending}
           onSubmit={(choice) => {
             plan({
               weekPlanId,

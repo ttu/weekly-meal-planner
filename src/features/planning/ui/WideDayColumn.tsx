@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   headingToday: { color: tokens.color.affirm },
   today: { ...tokens.type.labelSmall, fontWeight: '400', color: tokens.color.affirm },
   body: { flex: 1 },
-  slot: { flex: 1, padding: 9, gap: 6 },
+  slot: { flex: 1, paddingVertical: 9, paddingHorizontal: 6, gap: 6 },
   slotDivided: {
     borderBottomWidth: 1,
     borderStyle: 'dashed',
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     borderColor: tokens.color.cardBorder,
     borderRadius: tokens.radius.md,
     paddingVertical: 9,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     boxShadow: tokens.shadow.subtle,
   },
   cardName: { ...tokens.type.mealNameTight, color: tokens.color.textPrimary },

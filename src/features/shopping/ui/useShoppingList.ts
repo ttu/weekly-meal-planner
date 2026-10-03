@@ -16,7 +16,7 @@ import {
 } from '../application/shopping-writes'
 import type { ExtraId, ShoppingList } from '../domain/types'
 
-const EMPTY: ShoppingList = { buy: [], cupboard: [], extras: [], incomplete: [] }
+const EMPTY: ShoppingList = { sittings: 0, buy: [], cupboard: [], extras: [], incomplete: [] }
 
 export type ShoppingListView = {
   readonly list: ShoppingList

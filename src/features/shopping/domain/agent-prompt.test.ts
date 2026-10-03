@@ -4,6 +4,7 @@ import type { ExtraId } from './types'
 import type { ShoppingList } from './types'
 
 const list: ShoppingList = {
+  sittings: 2,
   buy: [
     {
       ingredientId: 'onion' as IngredientId,

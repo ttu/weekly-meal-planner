@@ -29,7 +29,3 @@ export const groupBuyLines = (lines: readonly BuyLine[]): readonly BuyGroup[] =>
 
   return order.map((category) => ({ category, lines: byCategory.get(category) ?? [] }))
 }
-
-/** How many Meals this list is for — the second half of "18 to buy · 6 meals". */
-export const countMealsBehind = (lines: readonly BuyLine[]): number =>
-  new Set(lines.flatMap((line) => line.contributions.map((c) => c.mealName))).size

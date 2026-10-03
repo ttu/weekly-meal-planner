@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitPressed: { backgroundColor: tokens.color.actionPressed },
+  submitBusy: { opacity: 0.6 },
   submitText: { ...tokens.type.mealNameLarge, color: tokens.color.surfaceRaised },
 })
 
@@ -110,6 +111,10 @@ type Props = {
   readonly slots: readonly Slot[]
   readonly today: string
   readonly locale: Locale
+  /** A second submit while the first is in flight is the commonest way to ask
+   *  for the same Meal twice. The server refuses it too; this is the half the
+   *  person can see. */
+  readonly isPending?: boolean | undefined
   readonly onSubmit: (choice: PlanChoice) => void
   readonly onDismiss: () => void
 }
@@ -128,6 +133,7 @@ export const PlanSheet = ({
   slots,
   today,
   locale,
+  isPending = false,
   onSubmit,
   onDismiss,
 }: Props): React.JSX.Element => {
@@ -278,8 +284,12 @@ export const PlanSheet = ({
           </View>
 
           <Pressable
-            style={({ pressed }) => [styles.submit, pressed && styles.submitPressed]}
-            disabled={slotKey === undefined}
+            style={({ pressed }) => [
+              styles.submit,
+              pressed && styles.submitPressed,
+              isPending && styles.submitBusy,
+            ]}
+            disabled={slotKey === undefined || isPending}
             onPress={() => {
               if (slotKey === undefined) return
               onSubmit({ date, slotKey, servingsCooked: brand<number, 'Servings'>(servings) })

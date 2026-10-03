@@ -1,4 +1,4 @@
-import { groupBuyLines, countMealsBehind } from './group'
+import { groupBuyLines } from './group'
 import type { BuyLine } from './types'
 import { brand } from '@/shared/types/brand'
 
@@ -45,17 +45,5 @@ describe('groupBuyLines', () => {
 
   it('has no groups for an empty list', () => {
     expect(groupBuyLines([])).toEqual([])
-  })
-})
-
-describe('countMealsBehind', () => {
-  it('counts each Meal once however many Buy Lines it touches', () => {
-    const lines = [line('onion', 'produce', ['Chili', 'Soup']), line('carrot', 'produce', ['Soup'])]
-
-    expect(countMealsBehind(lines)).toBe(2)
-  })
-
-  it('is zero when nothing is planned', () => {
-    expect(countMealsBehind([])).toBe(0)
   })
 })
