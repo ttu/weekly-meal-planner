@@ -18,16 +18,6 @@ you want to overturn one, change the spec first.
 
 ---
 
-## Sharing and abuse
-
-- [ ] **No email verification.** Anonymous boards are the main path (ADR 0010)
-      and deliberately ask for nothing, so this is about the email sign-in
-      beside them, and about the start screen's "add an email later to keep
-      it safe", which is still plain text because nothing can add one. An
-      unverified address can hold a seat on a board today. Needed before
-      anything is shared outside a household; board creation is already
-      limited per account and per address, which was the other half of this.
-
 ## Missing functionality
 
 - [ ] **Dark mode.** Not designed; see "Open" in `docs/07-design-system.md`.

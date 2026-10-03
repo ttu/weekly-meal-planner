@@ -9,7 +9,20 @@ deleting the account.
 
 **Anonymous identities are a first-class path** (ADR 0010). Starting a board
 asks for no account: the app signs in anonymously and creates the board. Email
-sign-in remains, and an anonymous identity can be upgraded by adding an email.
+sign-in remains, and an anonymous identity is upgraded by adding an email in
+Settings.
+
+**An address is not an address until a link in it has been clicked.**
+`enable_confirmations` is on, so adding an email leaves it pending: the
+identity stays anonymous, nothing on the board changes, and the account is
+only upgraded by the click. `double_confirm_changes` is off because the
+address being added is the identity's first — there is no old inbox to
+confirm from, and with it on the change never completes.
+
+**Creating boards is rate-limited** — five an hour per account, twenty per
+address. The address comes from the forwarded-for header and is advisory; the
+per-account count is the one that holds. Joining was already throttled, ten
+attempts per share token per fifteen minutes.
 
 `household_member.user_id` is a foreign key to `auth.users` with
 `on delete cascade`. Without it a deleted account leaves a ghost Member that

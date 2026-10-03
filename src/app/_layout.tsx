@@ -31,7 +31,7 @@ const Blank = (): React.JSX.Element => (
  * exactly who needs them.
  */
 const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.JSX.Element => {
-  const { userId, isLoading } = useAuthSession(client)
+  const { userId, email, pendingEmail, isLoading } = useAuthSession(client)
   const { household, member, checked } = useHouseholdSession(client, userId)
 
   if (isLoading) return <Blank />
@@ -42,6 +42,8 @@ const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.J
       household={household}
       member={member}
       userId={userId}
+      email={email}
+      pendingEmail={pendingEmail}
       householdChecked={checked}
     >
       <Stack screenOptions={{ headerShown: false }} />

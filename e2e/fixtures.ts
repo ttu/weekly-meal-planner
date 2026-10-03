@@ -200,3 +200,29 @@ export const createEmailUser = async (email: string, password: string): Promise<
 
   if (!response.ok) throw new Error(`Could not create ${email}: ${await response.text()}`)
 }
+
+/** Mailpit, the local inbox the Supabase stack sends to. */
+const MAILPIT = 'http://127.0.0.1:54324'
+
+export const emptyInbox = async (): Promise<void> => {
+  await fetch(`${MAILPIT}/api/v1/messages`, { method: 'DELETE' })
+}
+
+/**
+ * The first link in the newest message, verbatim.
+ *
+ * It points at GoTrue's own /auth/v1/verify, which checks the token and then
+ * redirects to the `redirect_to` the app asked for — so rewriting any part of
+ * it breaks the one thing being tested.
+ */
+export const confirmationLink = async (): Promise<string> => {
+  const latest = await fetch(`${MAILPIT}/api/v1/message/latest`)
+  if (!latest.ok) throw new Error(`No message in the inbox: ${await latest.text()}`)
+
+  const message = (await latest.json()) as { Text?: string; HTML?: string }
+  const body = `${message.Text ?? ''}\n${message.HTML ?? ''}`
+  const found = /https?:\/\/[^\s"'<>]+/.exec(body)
+  if (found === null) throw new Error(`No link in the message:\n${body.slice(0, 400)}`)
+
+  return found[0].replace(/&amp;/g, '&')
+}

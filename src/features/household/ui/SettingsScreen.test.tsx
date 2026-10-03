@@ -20,9 +20,12 @@ const preset = (name: string): Slot => {
 
 const DEFAULTS = [preset('lunch'), preset('dinner')]
 
+const ANONYMOUS = { isPending: false, onAddEmail: jest.fn() }
+
 const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
   renderWithProviders(
     <SettingsScreen
+      account={ANONYMOUS}
       slots={DEFAULTS}
       isPending={false}
       onAddPreset={jest.fn()}
@@ -102,5 +105,35 @@ describe('SettingsScreen', () => {
       ],
     })
     expect(view.queryByTestId('settings-own-name')).toBeNull()
+  })
+
+  it('offers an email to someone who has none, and says what it is for', async () => {
+    const onAddEmail = jest.fn()
+    const view = await show({ account: { isPending: false, onAddEmail } })
+
+    await fireEvent.changeText(view.getByTestId('settings-email-field'), 'aino@example.test')
+    await fireEvent.press(view.getByTestId('settings-send-link'))
+
+    expect(onAddEmail).toHaveBeenCalledWith('aino@example.test')
+  })
+
+  it('shows the address once it is confirmed, and stops asking', async () => {
+    const view = await show({
+      account: { email: 'aino@example.test', isPending: false, onAddEmail: jest.fn() },
+    })
+
+    expect(view.getByTestId('settings-email')).toBeTruthy()
+    expect(view.queryByTestId('settings-email-field')).toBeNull()
+  })
+
+  // Given but not clicked: the account is still anonymous, and the screen
+  // must not imply otherwise.
+  it('keeps asking while an address is only pending', async () => {
+    const view = await show({
+      account: { pendingEmail: 'aino@example.test', isPending: false, onAddEmail: jest.fn() },
+    })
+
+    expect(view.getByTestId('settings-email-pending')).toBeTruthy()
+    expect(view.getByTestId('settings-email-field')).toBeTruthy()
   })
 })

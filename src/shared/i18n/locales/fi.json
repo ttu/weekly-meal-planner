@@ -255,8 +255,18 @@
       "too-many-slots": "Enempää paikkoja ei päiväsarakkeeseen mahdu.",
       "last-slot": "Taululla pitää olla ainakin yksi ateriapaikka.",
       "name-required": "Anna paikalle ensin nimi.",
-      "writeFailed": "Paikkojen tallennus ei onnistunut. Yritä uudelleen."
-    }
+      "writeFailed": "Paikkojen tallennus ei onnistunut. Yritä uudelleen.",
+      "invalid-email": "Tuo ei näytä sähköpostiosoitteelta.",
+      "taken": "Osoite on jo toisella tilillä.",
+      "rate-limited": "Liian monta linkkiä. Odota muutama minuutti.",
+      "unavailable": "Linkin lähetys ei onnistunut. Yritä uudelleen."
+    },
+    "account": "Tilisi",
+    "emailWhy": "Tämä laite on ainoa avaimesi tauluun. Lisää sähköposti, niin linkki pitää sen tallessa.",
+    "emailPlaceholder": "sinä@esimerkki.fi",
+    "sendLink": "Lähetä linkki",
+    "emailPending": "Lähetetty osoitteeseen {{email}}. Klikkaa viestin linkkiä — ennen sitä mikään ei muutu.",
+    "emailOn": "Kirjautuneena osoitteella {{email}}."
   },
   "dayOne": {
     "title": "Taululla ei ole vielä mitään.",

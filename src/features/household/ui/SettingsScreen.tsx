@@ -8,12 +8,24 @@ import { BackLink } from '@/shared/ui/BackLink'
 import { Notice } from '@/shared/ui/Notice'
 import { useTranslation } from '@/shared/i18n'
 import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain/slot-edit'
+import type { AddEmailError } from '../application/add-email'
 import type { Slot, SlotKey } from '../domain/types'
 
 const errorKey = (error: SlotEditError | 'write-failed'): string =>
   `settings.error.${error === 'write-failed' ? 'writeFailed' : error}`
 
+type Account = {
+  /** The confirmed address on this identity, if it has one. */
+  readonly email?: string | undefined
+  /** Given, but not yet clicked through from the inbox. */
+  readonly pendingEmail?: string | undefined
+  readonly isPending: boolean
+  readonly error?: AddEmailError | undefined
+  readonly onAddEmail: (email: string) => void
+}
+
 type Props = {
+  readonly account: Account
   readonly slots: readonly Slot[]
   readonly isPending: boolean
   readonly error?: SlotEditError | 'write-failed' | undefined
@@ -62,6 +74,7 @@ const styles = StyleSheet.create({
  * is the question that stops people from tidying up.
  */
 export const SettingsScreen = ({
+  account,
   slots,
   isPending,
   error,
@@ -74,6 +87,7 @@ export const SettingsScreen = ({
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [named, setNamed] = useState('')
+  const [email, setEmail] = useState('')
 
   const unused = SLOT_PRESETS.filter((preset) => !slots.some((slot) => slot.key === preset.key))
   const full = slots.length >= MAX_SLOTS
@@ -190,9 +204,60 @@ export const SettingsScreen = ({
         )}
 
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
+
+        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
+          {t('settings.account')}
+        </Text>
+        {account.email !== undefined ? (
+          <Text style={styles.body} testID="settings-email">
+            {t('settings.emailOn', { email: account.email })}
+          </Text>
+        ) : (
+          <>
+            <Text style={styles.body}>{t('settings.emailWhy')}</Text>
+            {account.pendingEmail !== undefined && (
+              <Text style={styles.hint} testID="settings-email-pending">
+                {t('settings.emailPending', { email: account.pendingEmail })}
+              </Text>
+            )}
+            <View style={styles.addRow}>
+              <Field
+                style={styles.addField}
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t('settings.emailPlaceholder')}
+                accessibilityLabel={t('settings.account')}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                hasError={account.error === 'invalid-email'}
+                testID="settings-email-field"
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  formStyles.primary,
+                  styles.addButton,
+                  pressed && formStyles.primaryPressed,
+                ]}
+                disabled={account.isPending}
+                onPress={() => {
+                  account.onAddEmail(email)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.sendLink')}
+                testID="settings-send-link"
+              >
+                <Text style={formStyles.primaryText}>{t('settings.sendLink')}</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       {error !== undefined && <Notice message={t(errorKey(error))} testID="settings-error" />}
+      {account.error !== undefined && (
+        <Notice message={t(`settings.error.${account.error}`)} testID="settings-email-error" />
+      )}
     </View>
   )
 }

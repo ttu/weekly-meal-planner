@@ -255,8 +255,18 @@
       "too-many-slots": "That is as many slots as a day column can hold.",
       "last-slot": "A board needs at least one slot.",
       "name-required": "Give the slot a name first.",
-      "writeFailed": "Could not save the slots. Try again."
-    }
+      "writeFailed": "Could not save the slots. Try again.",
+      "invalid-email": "That does not look like an email address.",
+      "taken": "That address is already on another account.",
+      "rate-limited": "Too many links sent. Wait a few minutes.",
+      "unavailable": "Could not send the link. Try again."
+    },
+    "account": "Your account",
+    "emailWhy": "This device is the only key to your seat. Add an email and a link will keep it safe.",
+    "emailPlaceholder": "you@example.com",
+    "sendLink": "Send the link",
+    "emailPending": "Sent to {{email}}. Click the link in it — nothing changes until you do.",
+    "emailOn": "Signed in as {{email}}."
   },
   "dayOne": {
     "title": "Nothing on the board yet.",

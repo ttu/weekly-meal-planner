@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { Platform } from 'react-native'
 import { Redirect, router } from 'expo-router'
 import { isErr, isOk, ok, type Result } from '@/shared/types/result'
 import {
   SettingsScreen,
+  addEmail,
   addNamedSlot,
   addPresetSlot,
   moveSlot,
@@ -11,15 +13,24 @@ import {
   useRefreshHousehold,
   useSession,
   type Slot,
+  type AddEmailError,
   type SlotEditError,
   type SlotKey,
 } from '@/features/household'
 
+/** Where the link in the inbox lands. Back on Settings, which is where the
+ *  person was standing when they asked for it. */
+const redirectTo = (): string =>
+  Platform.OS === 'web' ? `${window.location.origin}/settings` : 'mealplanner://settings'
+
 export default function Settings(): React.JSX.Element {
-  const { client, household, householdChecked } = useSession()
+  const { client, household, householdChecked, email, pendingEmail } = useSession()
   const refreshHousehold = useRefreshHousehold()
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<SlotEditError | 'write-failed' | undefined>(undefined)
+  const [emailPending, setEmailPending] = useState(false)
+  const [emailError, setEmailError] = useState<AddEmailError | undefined>(undefined)
+  const [sentTo, setSentTo] = useState<string | undefined>(undefined)
 
   if (householdChecked && household === undefined) return <Redirect href="/" />
 
@@ -48,6 +59,24 @@ export default function Settings(): React.JSX.Element {
 
   return (
     <SettingsScreen
+      account={{
+        ...(email === undefined ? {} : { email }),
+        ...((pendingEmail ?? sentTo) === undefined ? {} : { pendingEmail: pendingEmail ?? sentTo }),
+        isPending: emailPending,
+        ...(emailError === undefined ? {} : { error: emailError }),
+        onAddEmail: (next) => {
+          setEmailPending(true)
+          setEmailError(undefined)
+          void addEmail(client, next, redirectTo()).then((result) => {
+            setEmailPending(false)
+            if (isErr(result)) {
+              setEmailError(result.error)
+              return
+            }
+            setSentTo(next.trim())
+          })
+        },
+      }}
       slots={slots}
       isPending={isPending}
       error={error}
