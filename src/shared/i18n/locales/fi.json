@@ -257,5 +257,12 @@
       "name-required": "Anna paikalle ensin nimi.",
       "writeFailed": "Paikkojen tallennus ei onnistunut. Yritä uudelleen."
     }
+  },
+  "dayOne": {
+    "title": "Taululla ei ole vielä mitään.",
+    "body": "Viikko syntyy parissa minuutissa. Aloita mistä on helpointa.",
+    "browse": "Valitse jotain ruokalistasta",
+    "writeOwn": "Kirjoita oma ruoka",
+    "invite": "Kysy perheeltä — jaa taulu"
   }
 }

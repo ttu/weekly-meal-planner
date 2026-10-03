@@ -16,6 +16,7 @@ import { MealLibraryScreen, MealPicker, useHouseholdMeals } from '@/features/mea
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
+import { DayOne } from './DayOne'
 import { BoardHeader } from './BoardHeader'
 import { DayColumn } from './DayColumn'
 import { WeekStrip } from './WeekStrip'
@@ -77,6 +78,7 @@ type Props = {
   readonly onOpenLibrary?: (() => void) | undefined
   readonly onOpenShopping?: (() => void) | undefined
   readonly onOpenSettings?: (() => void) | undefined
+  readonly onWriteOwnMeal?: (() => void) | undefined
   readonly onShare?: ((url: string) => void) | undefined
   readonly shared?: boolean | undefined
 }
@@ -87,6 +89,7 @@ const Board = ({
   onOpenLibrary,
   onOpenShopping,
   onOpenSettings,
+  onWriteOwnMeal,
   onShare: onShareUrl,
   shared = false,
 }: Props): React.JSX.Element => {
@@ -216,11 +219,30 @@ const Board = ({
     />
   )
 
+  /** Day one: nothing wanted, nothing planned. Not the same as an empty
+   *  Backlog, which is the ordinary state of a week that is already planned. */
+  const isDayOne =
+    backlog.length === 0 && board.every((day) => day.slots.every((slot) => slot.cards.length === 0))
+
+  const dayOne = (
+    <DayOne
+      onBrowse={() => {
+        setPickerTarget(undefined)
+        setPickerOpen(true)
+      }}
+      onWriteOwn={() => {
+        onWriteOwnMeal?.()
+      }}
+      onInvite={onShare}
+    />
+  )
+
   const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => (
     <BacklogShelf
       layout={layout}
       onDropped={onDropped}
       items={backlog}
+      {...(isDayOne ? { empty: dayOne } : {})}
       onAdd={() => {
         setPickerTarget(undefined)
         setPickerOpen(true)

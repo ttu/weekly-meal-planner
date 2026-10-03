@@ -89,6 +89,9 @@ type Props = {
   readonly onAdd?: () => void
   readonly onPlan?: (id: BacklogItemId) => void
   readonly onRemove?: (id: BacklogItemId) => void
+  /** Replaces "Nobody has added anything yet." on a board where nothing has
+   *  happened at all — see DayOne. */
+  readonly empty?: React.JSX.Element | undefined
   /** Dragging is the accelerator; tapping always works and does the same thing
    *  through the plan sheet. */
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
@@ -100,6 +103,7 @@ export const BacklogShelf = ({
   onAdd,
   onPlan,
   onRemove,
+  empty,
   onDropped,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
@@ -191,7 +195,7 @@ export const BacklogShelf = ({
 
       {items.length === 0 ? (
         <View style={[styles.empty, isShelf && styles.measure]} testID="backlog-empty">
-          <Text style={styles.emptyText}>{t('backlog.empty')}</Text>
+          {empty ?? <Text style={styles.emptyText}>{t('backlog.empty')}</Text>}
         </View>
       ) : isShelf ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>

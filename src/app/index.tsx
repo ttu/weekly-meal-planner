@@ -49,6 +49,9 @@ export default function Index(): React.JSX.Element {
       onOpenSettings={() => {
         router.push('/settings')
       }}
+      onWriteOwnMeal={() => {
+        router.push('/meals/new')
+      }}
     />
   )
 }

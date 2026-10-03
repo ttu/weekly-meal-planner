@@ -29,10 +29,6 @@ you want to overturn one, change the spec first.
 
 ## Missing functionality
 
-- [ ] **No day-one empty state.** The canvas opens a brand-new board with
-      "Nothing on the board yet." and three escalating offers. A new Household
-      currently gets the ordinary empty board. (The "Fill the week for me"
-      button on that screen is deliberately not built — see the spec.)
 - [ ] **Dark mode.** Not designed; see "Open" in `docs/07-design-system.md`.
       Tokens are already semantic, so it is a value swap rather than a
       refactor. Amber is the token most likely to fail on a dark ground.

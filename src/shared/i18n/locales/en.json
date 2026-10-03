@@ -257,5 +257,12 @@
       "name-required": "Give the slot a name first.",
       "writeFailed": "Could not save the slots. Try again."
     }
+  },
+  "dayOne": {
+    "title": "Nothing on the board yet.",
+    "body": "A week takes about two minutes. Start wherever is easiest.",
+    "browse": "Pick something from the catalogue",
+    "writeOwn": "Write down a meal of your own",
+    "invite": "Ask the family — share the board"
   }
 }
