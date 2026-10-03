@@ -22,6 +22,8 @@ as $fn$
 declare
   new_id uuid;
   token text;
+  caller_ip text;
+  recent integer;
 begin
   if auth.uid() is null then
     raise exception 'Not signed in';
@@ -30,6 +32,38 @@ begin
   if length(coalesce(p_password, '')) < 6 then
     raise exception 'Board password must be at least 6 characters';
   end if;
+
+  -- The first address in x-forwarded-for, or nothing when there are no
+  -- headers to read.
+  caller_ip := split_part(
+    coalesce(
+      nullif(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for',
+      ''
+    ),
+    ',',
+    1
+  );
+  caller_ip := nullif(btrim(caller_ip), '');
+
+  select count(*) into recent
+  from household_creation_attempt
+  where user_id = auth.uid() and attempted_at > now() - interval '1 hour';
+
+  if recent >= 5 then
+    raise exception 'Too many boards created. Wait an hour.';
+  end if;
+
+  if caller_ip is not null then
+    select count(*) into recent
+    from household_creation_attempt
+    where ip = caller_ip and attempted_at > now() - interval '1 hour';
+
+    if recent >= 20 then
+      raise exception 'Too many boards created. Wait an hour.';
+    end if;
+  end if;
+
+  insert into household_creation_attempt (user_id, ip) values (auth.uid(), caller_ip);
 
   insert into household (name, locale, join_password_hash)
   values (

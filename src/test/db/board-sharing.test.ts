@@ -2,6 +2,7 @@ import { createTestDb, type TestDb } from './harness'
 
 const OWNER = '11111111-1111-1111-1111-111111111111'
 const JOINER = '22222222-2222-2222-2222-222222222222'
+const LOOPER = '44444444-4444-4444-4444-444444444444'
 const STRANGER = '33333333-3333-3333-3333-333333333333'
 
 /**
@@ -149,5 +150,17 @@ describe('board sharing', () => {
     await expect(
       db.sql('select * from create_board($1, $2, $3, $4, $5)', ['X', 'A', '#000000', 'fi', 'abc']),
     ).rejects.toThrow()
+  })
+
+  // Joins were throttled from the start and creation was not, so one identity
+  // could make boards in a loop.
+  it('refuses a sixth board from the same account within the hour', async () => {
+    await db.asMember(LOOPER)
+    const create = async (name: string): Promise<unknown> =>
+      db.sql("select * from create_board($1, 'Mum', '#C05A38', 'fi', 'kaalikaari')", [name])
+
+    for (let i = 0; i < 5; i += 1) await create(`Board ${String(i)}`)
+
+    await expect(create('One too many')).rejects.toThrow(/Too many boards/)
   })
 })

@@ -20,6 +20,24 @@ create table household_join_attempt (
 
 create index household_join_attempt_idx on household_join_attempt (share_token, attempted_at);
 
+create table household_creation_attempt (
+  user_id uuid not null,
+  -- Null wherever the request did not arrive through PostgREST: the pglite
+  -- test harness has no headers, and the per-IP limit simply does not apply
+  -- there.
+  ip text,
+  attempted_at timestamptz not null default now()
+);
+
+create index household_creation_attempt_user_idx
+  on household_creation_attempt (user_id, attempted_at);
+create index household_creation_attempt_ip_idx
+  on household_creation_attempt (ip, attempted_at);
+
+alter table household_creation_attempt enable row level security;
+-- No policy: only the SECURITY DEFINER function below touches this, and
+-- nothing should be able to read how often anyone has tried.
+
 -- A membership without an account behind it is a ghost: it counts towards the
 -- Household, shows a name on Backlog cards, and nothing can ever clean it up.
 -- Anonymous identities make this likely rather than theoretical — they are

@@ -20,14 +20,6 @@ you want to overturn one, change the spec first.
 
 ## Sharing and abuse
 
-- [ ] **Nothing limits how many boards one person can create.** `create_board`
-      has no guard at all: joins are throttled — `household_join_attempt`, ten
-      attempts per share token per fifteen minutes — and creation is not. The
-      only thing in the way is Supabase's own
-      `auth.rate_limit.anonymous_users`, 30 per hour per IP, which caps
-      anonymous sign-ins rather than boards, and a signed-in account can make
-      as many as it likes. A per-IP creation limit shaped like the join limiter
-      is the obvious first move.
 - [ ] **"Got an invite? Join a board" has nowhere to go.** The design puts it
       in the start screen's footer, and an invite arrives as a link, so there
       is no screen that takes one typed or pasted in. The pair is hidden until
@@ -37,8 +29,8 @@ you want to overturn one, change the spec first.
 - [ ] **No email verification.** Anonymous boards are the main path (ADR 0010)
       and deliberately ask for nothing, so this is about the email sign-in
       beside them: an unverified address can hold a seat on a board today.
-      Needed before anything is shared outside a household, and the natural
-      partner to a creation limit.
+      Needed before anything is shared outside a household. Board creation is
+      now limited per account and per IP, which was the other half of this.
 
 ## Missing functionality
 
