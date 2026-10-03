@@ -81,10 +81,6 @@ Four specs, one story each:
 
 Honest ones, not aspirational:
 
-- **Email sign-in** (`/sign-in`) is untested. Anonymous boards are the main path
-  (ADR 0010) and email is the secondary one.
-- **Realtime and presence** are verified with two real clients and airplane
-  mode, as below.
 - **Adding a Leftover above 1024px** — the wide day column has no such action,
   and neither has it an unplan button: a planned card there is tap-to-unplan
   only.
@@ -141,8 +137,13 @@ whatever had rendered by that microsecond.
 
 ## Not unit-tested
 
-Realtime sync and presence. Both are dominated by integration behaviour and are
-verified with two real clients and airplane mode. Mocked sockets test the mock.
+Realtime sync and presence. Both are dominated by integration behaviour, and a
+mocked socket tests the mock. They are covered end to end instead
+(`e2e/realtime.spec.ts`): two browser contexts on one board, asserting that a
+Meal wanted, planned and unplanned in one reaches the other without a reload,
+and that each sees the other's avatar. Losing the network is still checked by
+hand with two real clients and airplane mode — Playwright's offline mode does
+not reproduce a socket that drops mid-session.
 
 ## Also run
 

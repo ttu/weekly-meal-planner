@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, type Browser, type Locator, type Page } from '@playwright/test'
 
 export const DEMO_PASSWORD = 'kaalikaari'
@@ -168,4 +170,33 @@ export const dragOnto = async (page: Page, from: Locator, to: Locator): Promise<
     )
   }
   await page.mouse.up()
+}
+
+const envValue = (key: string): string => {
+  const env = readFileSync(join(process.cwd(), '.env'), 'utf8')
+  const line = env.split('\n').find((l) => l.startsWith(`${key}=`))
+  if (line === undefined) throw new Error(`No ${key} in .env`)
+  return line.slice(key.length + 1).trim()
+}
+
+/**
+ * An account with an email and a password, made through the Auth admin API.
+ *
+ * Email is the secondary way in (ADR 0010) and there is no sign-up screen, so
+ * a test account cannot be created through the UI. `email_confirm` is set
+ * because confirmation is a mail flow, not what these tests are about.
+ */
+export const createEmailUser = async (email: string, password: string): Promise<void> => {
+  const key = envValue('SUPABASE_SERVICE_ROLE_KEY')
+  const response = await fetch(`${envValue('EXPO_PUBLIC_SUPABASE_URL')}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password, email_confirm: true }),
+  })
+
+  if (!response.ok) throw new Error(`Could not create ${email}: ${await response.text()}`)
 }

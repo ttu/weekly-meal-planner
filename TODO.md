@@ -33,15 +33,6 @@ you want to overturn one, change the spec first.
       Tokens are already semantic, so it is a value swap rather than a
       refactor. Amber is the token most likely to fail on a dark ground.
 
-## Testing
-
-- [ ] **Email sign-in is untested.** `/sign-in` has no E2E coverage. Anonymous
-      boards are the main path (ADR 0010) and email the secondary one.
-- [ ] **Realtime and presence have no automated coverage.** Verified with two
-      real clients and airplane mode, as `docs/04-testing.md` says. Two browser
-      contexts in one spec could assert that one Member's change reaches
-      another without a reload.
-
 ## Housekeeping
 
 - [ ] **Decide whether to re-enable Supabase analytics.**
