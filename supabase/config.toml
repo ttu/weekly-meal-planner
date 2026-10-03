@@ -392,10 +392,11 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-# Logflare is a local log viewer and nothing in the app reads it. It failed to
-# become healthy and took the whole stack down with it on every `supabase
-# start`, so it stays off: the cost is the Studio Logs tab, locally.
-enabled = false
+# Logflare, behind the Studio Logs tab. It was switched off while chasing a
+# stack that would not start; the real cause was a port collision on the API,
+# now fixed, and it comes up healthy again. Nothing in the app reads it, so
+# turn it off again rather than debug it if it ever misbehaves.
+enabled = true
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"

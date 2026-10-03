@@ -22,21 +22,14 @@ you want to overturn one, change the spec first.
 
 - [ ] **No email verification.** Anonymous boards are the main path (ADR 0010)
       and deliberately ask for nothing, so this is about the email sign-in
-      beside them, and about the start screen's "add an email later to keep it
-      safe", which is still plain text because nothing can add one: an unverified address can hold a seat on a board today.
-      Needed before anything is shared outside a household. Board creation is
-      now limited per account and per IP, which was the other half of this.
+      beside them, and about the start screen's "add an email later to keep
+      it safe", which is still plain text because nothing can add one. An
+      unverified address can hold a seat on a board today. Needed before
+      anything is shared outside a household; board creation is already
+      limited per account and per address, which was the other half of this.
 
 ## Missing functionality
 
 - [ ] **Dark mode.** Not designed; see "Open" in `docs/07-design-system.md`.
       Tokens are already semantic, so it is a value swap rather than a
       refactor. Amber is the token most likely to fail on a dark ground.
-
-## Housekeeping
-
-- [ ] **Decide whether to re-enable Supabase analytics.**
-      `analytics.enabled = false` in `supabase/config.toml` was set while
-      chasing a stack that would not start. The real cause turned out to be a
-      port collision, now fixed, so Logflare may well be healthy again. The
-      cost of leaving it off is the Studio Logs tab, locally.
