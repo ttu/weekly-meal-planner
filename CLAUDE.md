@@ -15,6 +15,7 @@ Realtime). No server of our own.
 
 | Need                               | Doc                                |
 | ---------------------------------- | ---------------------------------- |
+| Known bugs and what to do next     | `TODO.md`                          |
 | The working agreement              | `docs/00-engineering-standards.md` |
 | What it does, and **the glossary** | `docs/01-functional-spec.md`       |
 | Where code goes                    | `docs/02-architecture.md`          |
@@ -77,6 +78,9 @@ pnpm run catalogue:sync  # reference data in data/ -> database (service role)
 
 ## Workflow
 
+- `TODO.md` is the issue tracker — there is no other one. Anything found and
+  not fixed on the spot goes there; anything finished comes out of it in the
+  same commit that finishes it.
 - TDD by default — red, green, refactor. Tests before implementation.
 - Mock only at system boundaries: network, filesystem, clock, randomness,
   third-party SDKs. Real collaborators inside the system.
