@@ -36,7 +36,33 @@ const leftover: Leftover = {
   slotKey: brand<string, 'SlotKey'>('lunch'),
 }
 
+const libraryMeal = {
+  id: brand<string, 'MealId'>('m9'),
+  name: 'Lohikeitto',
+  servings: brand<number, 'Servings'>(4),
+}
+
 describe('resolveDrop', () => {
+  // The canvas's one gesture direction: library → backlog → board.
+  it('wants a Meal carried from the library to the Backlog', () => {
+    const action = resolveDrop({ kind: 'library', meal: libraryMeal }, { kind: 'backlog' })
+
+    expect(action).toEqual({ kind: 'want', mealId: 'm9' })
+  })
+
+  // The Backlog is a staging post, not a toll gate.
+  it('plans a Meal carried from the library straight onto a day', () => {
+    const action = resolveDrop({ kind: 'library', meal: libraryMeal }, slot('2026-09-17', 'dinner'))
+
+    expect(action).toEqual({
+      kind: 'plan',
+      mealId: 'm9',
+      date: '2026-09-17',
+      slotKey: 'dinner',
+      servingsCooked: 4,
+    })
+  })
+
   it('plans a Backlog Item dropped on a Slot, keeping the Meal servings', () => {
     const action = resolveDrop({ kind: 'backlog', item: backlogItem }, slot('2026-09-16', 'lunch'))
 

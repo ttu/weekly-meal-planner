@@ -58,7 +58,8 @@
     "empty": "Kukaan ei ole vielä lisännyt mitään.",
     "add": "Lisää",
     "addShort": "+ Lisää",
-    "dropToRemove": "Pudota tähän poistaaksesi viikosta"
+    "dropToRemove": "Pudota tähän poistaaksesi viikosta",
+    "dropToWant": "Pudota tähän lisätäksesi viikolle"
   },
   "picker": {
     "title": "Lisää ateria",

@@ -72,6 +72,12 @@ type Props = {
   readonly onSelect?: ((id: MealId) => void) | undefined
   readonly onAdd?: (() => void) | undefined
   readonly onBack?: (() => void) | undefined
+  /**
+   * Wraps each row, so the board can make it draggable without this feature
+   * importing the planning one — meals must not depend on planning, which
+   * already depends on meals.
+   */
+  readonly wrapRow?: ((meal: Meal, row: React.ReactNode) => React.ReactNode) | undefined
 }
 
 export const MealLibraryScreen = ({
@@ -80,6 +86,7 @@ export const MealLibraryScreen = ({
   onSelect,
   onAdd,
   onBack,
+  wrapRow,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
@@ -93,24 +100,30 @@ export const MealLibraryScreen = ({
       ? t('picker.catalogueHint')
       : t('meal.servesCount', { count: meal.servings })
 
-  const renderMeal = (meal: Meal): React.JSX.Element => (
-    <Pressable
-      key={meal.id}
-      onPress={() => onSelect?.(meal.id)}
-      accessibilityRole="button"
-      accessibilityLabel={meal.name}
-      testID={`library-meal-${meal.id}`}
-    >
-      <MealCard
-        name={meal.name}
-        photoUrl={meal.photoUrl}
-        variant="library"
-        compact={isPane}
-        isCatalogue={isCatalogueMeal(meal)}
-        detail={detailFor(meal)}
-      />
-    </Pressable>
-  )
+  const renderMeal = (meal: Meal): React.ReactNode => {
+    // When the row is wrapped the wrapper owns the tap: leaving an onPress
+    // here fires it again on pointer-up at the end of a drag, and the Meal is
+    // added twice.
+    const row = (
+      <Pressable
+        onPress={wrapRow === undefined ? () => onSelect?.(meal.id) : undefined}
+        accessibilityRole="button"
+        accessibilityLabel={meal.name}
+        testID={`library-meal-${meal.id}`}
+      >
+        <MealCard
+          name={meal.name}
+          photoUrl={meal.photoUrl}
+          variant="library"
+          compact={isPane}
+          isCatalogue={isCatalogueMeal(meal)}
+          detail={detailFor(meal)}
+        />
+      </Pressable>
+    )
+
+    return <View key={meal.id}>{wrapRow === undefined ? row : wrapRow(meal, row)}</View>
+  }
 
   return (
     <View

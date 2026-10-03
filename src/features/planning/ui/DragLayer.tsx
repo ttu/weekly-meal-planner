@@ -59,6 +59,9 @@ export const DragLayer = (): React.JSX.Element | null => {
           addedByColour={dragging.cookEvent.addedByColour}
         />
       )}
+      {dragging.kind === 'library' && (
+        <MealCard compact variant="library" name={dragging.meal.name} />
+      )}
       {dragging.kind === 'leftover' && (
         <LeftoverCard compact parentMealName={dragging.leftover.parentMealName} />
       )}

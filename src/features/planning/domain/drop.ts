@@ -2,12 +2,20 @@ import type { SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/shared/types/ids'
 import type { BacklogItem, CookEvent, CookEventId, Leftover, LeftoverId } from './types'
 
+/** A Meal as the library offers it: not yet wanted, not yet dated. */
+export type LibraryMeal = {
+  readonly id: MealId
+  readonly name: string
+  readonly servings: Servings
+}
+
 /** What is being carried. A Backlog card and a planned card are both cards you
  *  can pick up, and the board should not care which one is in the air. */
 export type DragPayload =
   | { readonly kind: 'backlog'; readonly item: BacklogItem }
   | { readonly kind: 'cook-event'; readonly cookEvent: CookEvent }
   | { readonly kind: 'leftover'; readonly leftover: Leftover }
+  | { readonly kind: 'library'; readonly meal: LibraryMeal }
 
 /** Where it can land: a Slot on the board, or the Backlog — dropping a planned
  *  Meal back on the Backlog is how it leaves the week. */
@@ -21,10 +29,11 @@ export type DropTarget =
  * saying it.
  */
 export type DropAction =
+  | { readonly kind: 'want'; readonly mealId: MealId }
   | {
       readonly kind: 'plan'
       readonly mealId: MealId
-      readonly backlogItemId: BacklogItem['id']
+      readonly backlogItemId?: BacklogItem['id']
       readonly date: string
       readonly slotKey: SlotKey
       readonly servingsCooked: Servings
@@ -51,9 +60,24 @@ export const resolveDrop = (payload: DragPayload, target: DropTarget): DropActio
     // Leftover cannot: it is not a Meal anyone wants this week, it is a second
     // sitting of one already cooked, and there is nothing to put there. Use the
     // card's own remove instead.
-    return payload.kind === 'cook-event'
-      ? { kind: 'unplan', cookEventId: payload.cookEvent.id }
-      : { kind: 'none' }
+    if (payload.kind === 'cook-event') {
+      return { kind: 'unplan', cookEventId: payload.cookEvent.id }
+    }
+    // Carried out of the library, which is how a Meal becomes wanted.
+    if (payload.kind === 'library') return { kind: 'want', mealId: payload.meal.id }
+    return { kind: 'none' }
+  }
+
+  // Straight from the library onto a day: the Backlog is a staging post, not a
+  // toll gate.
+  if (payload.kind === 'library') {
+    return {
+      kind: 'plan',
+      mealId: payload.meal.id,
+      date: target.date,
+      slotKey: target.slotKey,
+      servingsCooked: payload.meal.servings,
+    }
   }
 
   if (payload.kind === 'leftover') {

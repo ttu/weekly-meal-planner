@@ -24,6 +24,7 @@ import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
 import { DragProvider, type DragPayload, type DropTarget } from './DragContext'
 import { DragLayer } from './DragLayer'
+import { DraggableCard } from './DraggableCard'
 import { useEdgeAutoScroll } from './useEdgeAutoScroll'
 import { PlanSheet } from './PlanSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
@@ -164,6 +165,9 @@ const Board = ({
     const action = resolveDrop(payload, target)
 
     switch (action.kind) {
+      case 'want':
+        add(action.mealId)
+        return
       case 'plan':
         if (weekPlanId === undefined) return
         plan({ weekPlanId, ...action })
@@ -317,6 +321,21 @@ const Board = ({
               add(mealId)
             }}
             onAdd={onOpenLibrary}
+            wrapRow={(meal, row) => (
+              <DraggableCard
+                payload={{
+                  kind: 'library',
+                  meal: { id: meal.id, name: meal.name, servings: meal.servings },
+                }}
+                onDropped={onDropped}
+                onTap={() => {
+                  add(meal.id)
+                }}
+                accessibilityLabel={meal.name}
+              >
+                {row}
+              </DraggableCard>
+            )}
           />
         }
         backlog={shelf('pane')}

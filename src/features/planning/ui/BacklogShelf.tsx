@@ -107,7 +107,7 @@ export const BacklogShelf = ({
   const ref = useRef<View>(null)
   const isShelf = layout === 'shelf'
   const isHovered = isSameTarget(hovered, { kind: 'backlog' })
-  const canReceive = dragging?.kind === 'cook-event'
+  const canReceive = dragging?.kind === 'cook-event' || dragging?.kind === 'library'
 
   useEffect(() => {
     const target = { kind: 'backlog' } as const
@@ -183,7 +183,9 @@ export const BacklogShelf = ({
 
       {canReceive && (
         <View style={styles.dropHere} testID="backlog-drop-hint">
-          <Text style={styles.dropHereText}>{t('backlog.dropToRemove')}</Text>
+          <Text style={styles.dropHereText}>
+            {dragging.kind === 'library' ? t('backlog.dropToWant') : t('backlog.dropToRemove')}
+          </Text>
         </View>
       )}
 

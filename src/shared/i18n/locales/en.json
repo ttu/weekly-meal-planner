@@ -58,7 +58,8 @@
     "empty": "Nobody has added anything yet.",
     "add": "Add",
     "addShort": "+ Add",
-    "dropToRemove": "Drop here to take it off the week"
+    "dropToRemove": "Drop here to take it off the week",
+    "dropToWant": "Drop here to want it this week"
   },
   "picker": {
     "title": "Add a Meal",
