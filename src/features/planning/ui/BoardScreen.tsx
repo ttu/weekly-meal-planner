@@ -76,6 +76,7 @@ type Props = {
   readonly origin?: string
   readonly onOpenLibrary?: (() => void) | undefined
   readonly onOpenShopping?: (() => void) | undefined
+  readonly onOpenSettings?: (() => void) | undefined
   readonly onShare?: ((url: string) => void) | undefined
   readonly shared?: boolean | undefined
 }
@@ -85,6 +86,7 @@ const Board = ({
   origin = '',
   onOpenLibrary,
   onOpenShopping,
+  onOpenSettings,
   onShare: onShareUrl,
   shared = false,
 }: Props): React.JSX.Element => {
@@ -207,6 +209,7 @@ const Board = ({
       onShare={onShare}
       onOpenShopping={onOpenShopping}
       onOpenLibrary={onOpenLibrary}
+      onOpenSettings={onOpenSettings}
       onSignOut={() => {
         void signOut(session.client)
       }}
@@ -425,6 +428,14 @@ const Board = ({
               testID="share-board"
             >
               <Text style={styles.link}>{shared ? t('board.shareCopied') : t('board.share')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onOpenSettings}
+              accessibilityRole="button"
+              accessibilityLabel={t('nav.settings')}
+              testID="open-settings"
+            >
+              <Text style={styles.link}>{t('nav.settings')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {

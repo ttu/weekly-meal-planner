@@ -100,9 +100,14 @@ membership, except the global catalogue rows.
 
 ### Household and identity
 
-- **`household`** — name, and `slots`: an ordered list of `{key, label}`,
-  defaulting to lunch and dinner. Configurable, so a single person isn't staring
-  at an empty breakfast row all week.
+- **`household`** — name, and `slots`: an ordered list of
+  `{key, labelKey, label?}`, defaulting to lunch and dinner. Edited in Settings
+  — add a preset, name one of your own, reorder, remove — so a single person
+  isn't staring at an empty breakfast row all week. `labelKey` is a translation
+  key; `label` is set only for a slot the household named itself, which is
+  monolingual by nature. Removing a slot never deletes what was planned in it:
+  the board stops drawing the row, and putting the slot back brings the meals
+  into view again. At most six, which is what a phone's day column can hold.
 - **`household_member`** — user to household, with role `owner` or `member`,
   plus `display_name`, optional `avatar_url` and an assigned `colour`. The
   design puts a person's initial and colour on every backlog and planned card

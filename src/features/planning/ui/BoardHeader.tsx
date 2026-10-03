@@ -22,6 +22,7 @@ type Props = {
   readonly onShare: () => void
   readonly onOpenShopping?: (() => void) | undefined
   readonly onOpenLibrary?: (() => void) | undefined
+  readonly onOpenSettings?: (() => void) | undefined
   readonly onSignOut: () => void
 }
 
@@ -67,6 +68,7 @@ export const BoardHeader = ({
   onShare,
   onOpenShopping,
   onOpenLibrary,
+  onOpenSettings,
   onSignOut,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
@@ -111,6 +113,15 @@ export const BoardHeader = ({
           testID="share-board"
         >
           <Text style={styles.link}>{shared ? t('board.shareCopied') : t('board.share')}</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onOpenSettings}
+          accessibilityRole="button"
+          accessibilityLabel={t('nav.settings')}
+          testID="open-settings"
+        >
+          <Text style={styles.link}>{t('nav.settings')}</Text>
         </Pressable>
 
         <Pressable

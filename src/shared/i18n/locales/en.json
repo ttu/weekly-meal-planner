@@ -57,7 +57,9 @@
   "slot": {
     "lunch": "Lunch",
     "dinner": "Dinner",
-    "breakfast": "Breakfast"
+    "breakfast": "Breakfast",
+    "snack": "Snack",
+    "supper": "Supper"
   },
   "cookEvent": {
     "cookingCount": "Cooking {{count}}"
@@ -226,6 +228,29 @@
   },
   "nav": {
     "back": "← Back to the board",
-    "backPlain": "← Back"
+    "backPlain": "← Back",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "slots": "Slots",
+    "slotsBody": "Slots are the rows on every day of the board. They are the same for everyone in the household.",
+    "removeKeepsMeals": "Removing a slot keeps what was planned in it — put the slot back and the meals reappear.",
+    "addSlot": "Add a slot",
+    "addNamedSlot": "Add {{slot}}",
+    "ownName": "Or call it something else",
+    "ownNamePlaceholder": "Packed lunch",
+    "add": "Add",
+    "moveEarlier": "Move {{slot}} earlier in the day",
+    "moveLater": "Move {{slot}} later in the day",
+    "removeSlot": "Remove {{slot}}",
+    "slotsFull": "That is as many slots as a day column can hold.",
+    "error": {
+      "duplicate-slot": "That slot is already on the board.",
+      "too-many-slots": "That is as many slots as a day column can hold.",
+      "last-slot": "A board needs at least one slot.",
+      "name-required": "Give the slot a name first.",
+      "writeFailed": "Could not save the slots. Try again."
+    }
   }
 }

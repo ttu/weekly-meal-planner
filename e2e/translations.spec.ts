@@ -21,7 +21,7 @@ test.describe('no screen shows a raw translation key', () => {
 
     await createBoard(page, { boardName: 'Kielitesti' })
 
-    for (const path of ['/', '/meals', '/shopping', '/meals/new']) {
+    for (const path of ['/', '/meals', '/shopping', '/meals/new', '/settings', '/join']) {
       await page.goto(path)
       await page.waitForTimeout(1500)
       expectNoRawKeys(await page.locator('body').innerText())

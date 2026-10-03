@@ -5,6 +5,8 @@ import type { BoardCard, CookEvent, Leftover, WeekStart } from './types'
 export type BoardSlot = {
   readonly slotKey: SlotKey
   readonly labelKey: string
+  /** Set only for a Slot the household named itself; see Slot in household. */
+  readonly label?: string | undefined
   readonly cards: readonly BoardCard[]
 }
 
@@ -42,6 +44,7 @@ export const buildBoard = (input: BuildBoardInput): readonly BoardDay[] => {
     slots: input.slots.map((slot) => ({
       slotKey: slot.key,
       labelKey: slot.labelKey,
+      ...(slot.label === undefined ? {} : { label: slot.label }),
       cards: placed.filter((p) => p.date === date && p.slotKey === slot.key).map((p) => p.card),
     })),
   }))

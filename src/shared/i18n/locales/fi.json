@@ -57,7 +57,9 @@
   "slot": {
     "lunch": "Lounas",
     "dinner": "Päivällinen",
-    "breakfast": "Aamiainen"
+    "breakfast": "Aamiainen",
+    "snack": "Välipala",
+    "supper": "Iltapala"
   },
   "cookEvent": {
     "cookingCount": "Valmistetaan {{count}}"
@@ -226,6 +228,29 @@
   },
   "nav": {
     "back": "← Takaisin taululle",
-    "backPlain": "← Takaisin"
+    "backPlain": "← Takaisin",
+    "settings": "Asetukset"
+  },
+  "settings": {
+    "title": "Asetukset",
+    "slots": "Ateriapaikat",
+    "slotsBody": "Ateriapaikat ovat taulun rivit joka päivällä. Ne ovat samat koko taloudelle.",
+    "removeKeepsMeals": "Paikan poisto ei poista siihen suunniteltuja ruokia — lisää paikka takaisin, niin ne näkyvät taas.",
+    "addSlot": "Lisää ateriapaikka",
+    "addNamedSlot": "Lisää {{slot}}",
+    "ownName": "Tai anna oma nimi",
+    "ownNamePlaceholder": "Eväät",
+    "add": "Lisää",
+    "moveEarlier": "Siirrä {{slot}} aiemmaksi",
+    "moveLater": "Siirrä {{slot}} myöhemmäksi",
+    "removeSlot": "Poista {{slot}}",
+    "slotsFull": "Enempää paikkoja ei päiväsarakkeeseen mahdu.",
+    "error": {
+      "duplicate-slot": "Se paikka on jo taululla.",
+      "too-many-slots": "Enempää paikkoja ei päiväsarakkeeseen mahdu.",
+      "last-slot": "Taululla pitää olla ainakin yksi ateriapaikka.",
+      "name-required": "Anna paikalle ensin nimi.",
+      "writeFailed": "Paikkojen tallennus ei onnistunut. Yritä uudelleen."
+    }
   }
 }

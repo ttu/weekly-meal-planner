@@ -1,11 +1,23 @@
 export type { Household, HouseholdId, Member, MemberId, Slot, SlotKey } from './domain/types'
 export { parseSlots, type ParseSlotsError } from './domain/slot'
+export {
+  MAX_SLOTS,
+  SLOT_PRESETS,
+  addNamedSlot,
+  addPresetSlot,
+  moveSlot,
+  removeSlot,
+  slotName,
+  type SlotEditError,
+} from './domain/slot-edit'
 export { createSupabaseClient, type AppSupabaseClient } from './infrastructure/supabase-client'
 export {
   loadHousehold,
   loadMember,
+  saveSlots,
   type LoadHouseholdError,
   type LoadMemberError,
+  type SaveSlotsError,
 } from './infrastructure/household-repository'
 export { SessionProvider, useSession } from './ui/SessionProvider'
 export { signIn, signOut, type SignInError } from './application/sign-in'
@@ -26,6 +38,7 @@ export {
 export { ShareSheet } from './ui/ShareSheet'
 export { StartBoardScreen } from './ui/StartBoardScreen'
 export { EnterInviteScreen } from './ui/EnterInviteScreen'
+export { SettingsScreen } from './ui/SettingsScreen'
 export { inviteToken } from './domain/invite'
 export { JoinBoardScreen } from './ui/JoinBoardScreen'
 export {

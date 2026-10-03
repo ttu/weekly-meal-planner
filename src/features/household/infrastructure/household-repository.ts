@@ -3,7 +3,7 @@ import type { AppSupabaseClient } from './supabase-client'
 import { brand } from '@/shared/types/brand'
 import { ok, err, isErr, type Result } from '@/shared/types/result'
 import { parseSlots } from '../domain/slot'
-import type { Household, Member } from '../domain/types'
+import type { Household, HouseholdId, Member, Slot } from '../domain/types'
 
 const rowSchema = z.object({
   id: z.uuid(),
@@ -76,4 +76,25 @@ export const loadMember = async (
     colour: row.data.colour,
     ...(row.data.avatar_url === null ? {} : { avatarUrl: row.data.avatar_url }),
   })
+}
+
+export type SaveSlotsError = 'write-failed'
+
+/**
+ * The Household's Slots, replaced wholesale — they are one ordered list, and
+ * a partial update would let two tabs interleave into an order neither chose.
+ * RLS decides whether this caller may write them (ADR 0002).
+ */
+export const saveSlots = async (
+  client: AppSupabaseClient,
+  householdId: HouseholdId,
+  slots: readonly Slot[],
+): Promise<Result<readonly Slot[], SaveSlotsError>> => {
+  const { error } = await client
+    .from('household')
+    .update({ slots: slots.map((slot) => ({ ...slot })) })
+    .eq('id', householdId)
+
+  if (error !== null) return err('write-failed')
+  return ok(slots)
 }

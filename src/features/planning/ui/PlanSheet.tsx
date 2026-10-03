@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation, type Locale } from '@/shared/i18n'
-import type { Slot, SlotKey } from '@/features/household'
+import { slotName, type Slot, type SlotKey } from '@/features/household'
 import type { Servings } from '@/features/meals'
 import { describePlacement } from '../domain/placement'
 import { formatWeekday } from '../domain/format-day'
@@ -152,7 +152,8 @@ export const PlanSheet = ({
     [board, date, slotKey],
   )
 
-  const slotLabel = slots.find((s) => s.key === slotKey)?.labelKey ?? ''
+  const chosen = slots.find((s) => s.key === slotKey)
+  const slotLabel = chosen === undefined ? '' : slotName(chosen, t)
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
@@ -232,13 +233,13 @@ export const PlanSheet = ({
                   }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: slot.key === slotKey }}
-                  accessibilityLabel={t(slot.labelKey)}
+                  accessibilityLabel={slotName(slot, t)}
                   testID={`plan-slot-${slot.key}`}
                 >
                   <Text
                     style={[styles.slotChipText, slot.key === slotKey && styles.chipTextSelected]}
                   >
-                    {t(slot.labelKey)}
+                    {slotName(slot, t)}
                   </Text>
                 </Pressable>
               ))}
@@ -247,7 +248,7 @@ export const PlanSheet = ({
             {/* The app never refuses an edit; it says what will happen instead. */}
             {placement.willJoinExisting && (
               <Text style={styles.note} testID="plan-will-join">
-                {t('plan.willJoin', { slot: t(slotLabel), count: placement.existingCount })}
+                {t('plan.willJoin', { slot: slotLabel, count: placement.existingCount })}
               </Text>
             )}
           </View>

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation, type Locale } from '@/shared/i18n'
-import type { SlotKey } from '@/features/household'
+import { slotName, type SlotKey } from '@/features/household'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { formatColumnHeading } from '../domain/format-day'
 import { LeftoverCard } from '@/features/meals'
@@ -180,7 +180,7 @@ export const WideDayColumn = ({
             slotKey={slot.slotKey}
             style={[styles.slot, index < day.slots.length - 1 && styles.slotDivided]}
           >
-            <Text style={styles.slotLabel}>{t(slot.labelKey)}</Text>
+            <Text style={styles.slotLabel}>{slotName(slot, t)}</Text>
 
             {/* A brand-new board is seven blank columns. Without this the only
                 way in is to know the Slot label is tappable, which nobody

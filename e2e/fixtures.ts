@@ -36,7 +36,9 @@ export const resetDatabase = (): void => {
       '-v',
       'ON_ERROR_STOP=1',
       '-c',
-      'delete from household; delete from auth.users;',
+      // The creation attempt log too: a run that makes twenty boards from one
+      // address would otherwise trip the rate limit halfway through the suite.
+      'delete from household; delete from auth.users; delete from household_creation_attempt;',
     ],
     { stdio: 'ignore' },
   )

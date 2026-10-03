@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { tokens } from '@/shared/theme/tokens'
 import { useTranslation, type Locale } from '@/shared/i18n'
-import type { SlotKey } from '@/features/household'
+import { slotName, type SlotKey } from '@/features/household'
 import { formatWeekday } from '../domain/format-day'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { LeftoverCard, MealCard } from '@/features/meals'
@@ -189,7 +189,7 @@ export const DayColumn = ({
 
       {day.slots.map((slot) => (
         <View key={slot.slotKey} style={styles.slotRow}>
-          <Text style={styles.slotLabel}>{t(slot.labelKey)}</Text>
+          <Text style={styles.slotLabel}>{slotName(slot, t)}</Text>
           <DropSlot date={day.date} slotKey={slot.slotKey} style={styles.slotBody}>
             {slot.cards.length === 0 ? (
               <Pressable

@@ -61,6 +61,19 @@ describe('household RLS', () => {
     expect(rows[0]!.name).toBe('Bob household')
   })
 
+  // Slots are edited from Settings as a plain update to the household row, so
+  // the policy that allows it is the only thing standing between one family's
+  // board and another's.
+  it("refuses to rewrite another Household's Slots", async () => {
+    await db.asMember(ALICE)
+    await db.sql(`update household set slots = '[{"key":"brunch","labelKey":"x"}]'::jsonb`)
+    await db.asMember(BOB)
+    const rows = (await db.sql('select slots from household where id = $1', [bobHousehold])) as {
+      slots: { key: string }[]
+    }[]
+    expect(rows[0]!.slots.map((slot) => slot.key)).toEqual(['lunch', 'dinner'])
+  })
+
   it("hides another Household's Members", async () => {
     await db.asMember(ALICE)
     expect(

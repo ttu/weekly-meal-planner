@@ -29,11 +29,6 @@ you want to overturn one, change the spec first.
 
 ## Missing functionality
 
-- [ ] **Slots cannot be added or removed.** The canvas's board footer says
-      "Slots are per household — add one in Settings", and there is no
-      Settings screen. The `household.slots` column already holds them, so a
-      Household is stuck with lunch and dinner. The footer link was left out
-      rather than ship a control that goes nowhere.
 - [ ] **A Meal cannot have a photo.** `meal.photo_url` exists, the card renders
       a 46px chip when it is set, and nothing in the app can set it.
 - [ ] **Ingredient quantities default to 1 of whatever unit.** The Meal editor

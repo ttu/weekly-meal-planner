@@ -4,7 +4,11 @@ import { ok, err, type Result } from '@/shared/types/result'
 import type { Slot } from './types'
 
 const slotSchema = z.array(
-  z.object({ key: z.string().min(1).max(24), labelKey: z.string().min(1) }),
+  z.object({
+    key: z.string().min(1).max(24),
+    labelKey: z.string().min(1),
+    label: z.string().min(1).max(24).optional(),
+  }),
 )
 
 export type ParseSlotsError = 'invalid-slots'
@@ -17,6 +21,10 @@ export const parseSlots = (input: unknown): Result<readonly Slot[], ParseSlotsEr
   if (new Set(keys).size !== keys.length) return err('invalid-slots')
 
   return ok(
-    parsed.data.map((s) => ({ key: brand<string, 'SlotKey'>(s.key), labelKey: s.labelKey })),
+    parsed.data.map((s) => ({
+      key: brand<string, 'SlotKey'>(s.key),
+      labelKey: s.labelKey,
+      ...(s.label === undefined ? {} : { label: s.label }),
+    })),
   )
 }
