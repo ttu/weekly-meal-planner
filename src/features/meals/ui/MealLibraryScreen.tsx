@@ -101,13 +101,16 @@ export const MealLibraryScreen = ({
       : t('meal.servesCount', { count: meal.servings })
 
   const renderMeal = (meal: Meal): React.ReactNode => {
-    // When the row is wrapped the wrapper owns the tap: leaving an onPress
-    // here fires it again on pointer-up at the end of a drag, and the Meal is
-    // added twice.
+    // A wrapped row is a plain View: the wrapper is already the button, and
+    // nesting one inside another is invalid on web — the browser complains
+    // and swallows a tap. It also owns the press, because the row's own would
+    // fire again on pointer-up at the end of a drag and add the Meal twice.
+    const Row = wrapRow === undefined ? Pressable : View
     const row = (
-      <Pressable
-        onPress={wrapRow === undefined ? () => onSelect?.(meal.id) : undefined}
-        accessibilityRole="button"
+      <Row
+        {...(wrapRow === undefined
+          ? { onPress: () => onSelect?.(meal.id), accessibilityRole: 'button' as const }
+          : {})}
         accessibilityLabel={meal.name}
         testID={`library-meal-${meal.id}`}
       >
@@ -119,7 +122,7 @@ export const MealLibraryScreen = ({
           isCatalogue={isCatalogueMeal(meal)}
           detail={detailFor(meal)}
         />
-      </Pressable>
+      </Row>
     )
 
     return <View key={meal.id}>{wrapRow === undefined ? row : wrapRow(meal, row)}</View>
