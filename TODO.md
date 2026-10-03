@@ -34,6 +34,35 @@ you want to overturn one, change the spec first.
       Events over six distinct Meals reads "6 meals". Defensible, but it
       disagrees with the board above it. Decide which the number means.
 
+## Sharing and abuse
+
+- [ ] **Sharing copies the link and says nothing about the password.** "Share
+      this board" puts the URL on the clipboard and that is all, so a recipient
+      sent only that cannot get in and the sharer is never told why.
+      `board.shareBody` — "Send the link and tell them the password separately"
+      — exists in both locales and is rendered nowhere. Wanted: a share panel
+      showing the link with its own copy button beside that reminder, so the
+      two travel separately on purpose rather than by accident. Note that **the
+      app cannot show the password**: only `join_password_hash` is stored,
+      bcrypt, by design (ADR 0010, `docs/06-security.md`), and the plaintext
+      exists only in the typing Member's head. Showing it would mean storing
+      it, which is the one thing that design refuses — so if a sharer needs it
+      in front of them, the honest shape is to let them set a new one from the
+      panel, where they have just typed it.
+- [ ] **Nothing limits how many boards one person can create.** `create_board`
+      has no guard at all: joins are throttled — `household_join_attempt`, ten
+      attempts per share token per fifteen minutes — and creation is not. The
+      only thing in the way is Supabase's own
+      `auth.rate_limit.anonymous_users`, 30 per hour per IP, which caps
+      anonymous sign-ins rather than boards, and a signed-in account can make
+      as many as it likes. A per-IP creation limit shaped like the join limiter
+      is the obvious first move.
+- [ ] **No email verification.** Anonymous boards are the main path (ADR 0010)
+      and deliberately ask for nothing, so this is about the email sign-in
+      beside them: an unverified address can hold a seat on a board today.
+      Needed before anything is shared outside a household, and the natural
+      partner to a creation limit.
+
 ## Missing functionality
 
 - [ ] **Slots cannot be added or removed.** The canvas's board footer says
