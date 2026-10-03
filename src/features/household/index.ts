@@ -23,6 +23,7 @@ export {
   type JoinBoardError,
   type NewBoard,
 } from './application/boards'
+export { ShareSheet } from './ui/ShareSheet'
 export { StartBoardScreen } from './ui/StartBoardScreen'
 export { JoinBoardScreen } from './ui/JoinBoardScreen'
 export {

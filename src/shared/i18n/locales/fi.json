@@ -42,7 +42,10 @@
     "notThisOne": "Eikö tämä ole oikea?",
     "startYourOwn": "Luo oma taulu",
     "and": "ja",
-    "or": "tai"
+    "or": "tai",
+    "shareCopy": "Kopioi linkki",
+    "shareClose": "Valmis",
+    "sharePasswordNote": "Salasanaa ei näytetä tässä — sitä ei säilytetä, vain tarkistetaan. Kerro se itse."
   },
   "slot": {
     "lunch": "Lounas",

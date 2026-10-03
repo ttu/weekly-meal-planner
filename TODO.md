@@ -20,19 +20,6 @@ you want to overturn one, change the spec first.
 
 ## Sharing and abuse
 
-- [ ] **Sharing copies the link and says nothing about the password.** "Share
-      this board" puts the URL on the clipboard and that is all, so a recipient
-      sent only that cannot get in and the sharer is never told why.
-      `board.shareBody` — "Send the link and tell them the password separately"
-      — exists in both locales and is rendered nowhere. Wanted: a share panel
-      showing the link with its own copy button beside that reminder, so the
-      two travel separately on purpose rather than by accident. Note that **the
-      app cannot show the password**: only `join_password_hash` is stored,
-      bcrypt, by design (ADR 0010, `docs/06-security.md`), and the plaintext
-      exists only in the typing Member's head. Showing it would mean storing
-      it, which is the one thing that design refuses — so if a sharer needs it
-      in front of them, the honest shape is to let them set a new one from the
-      panel, where they have just typed it.
 - [ ] **Nothing limits how many boards one person can create.** `create_board`
       has no guard at all: joins are throttled — `household_join_attempt`, ten
       attempts per share token per fifteen minutes — and creation is not. The

@@ -42,7 +42,10 @@
     "notThisOne": "Not this one?",
     "startYourOwn": "Start your own board",
     "and": "and",
-    "or": "or"
+    "or": "or",
+    "shareCopy": "Copy link",
+    "shareClose": "Done",
+    "sharePasswordNote": "The password is not shown here — it isn't stored, only checked. Tell them yourself."
   },
   "slot": {
     "lunch": "Lunch",

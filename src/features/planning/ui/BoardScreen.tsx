@@ -4,7 +4,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
-import { boardUrl, signOut, usePresence, useSession, type SlotKey } from '@/features/household'
+import {
+  ShareSheet,
+  boardUrl,
+  signOut,
+  usePresence,
+  useSession,
+  type SlotKey,
+} from '@/features/household'
 import { MealLibraryScreen, MealPicker, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
@@ -109,14 +116,19 @@ const Board = ({
     unplanFailed,
   } = usePlanningActions(clock)
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
+  const [isSharing, setSharing] = useState(false)
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
   const autoScroll = useEdgeAutoScroll(scroll)
   const dayOffsets = useRef(new Map<string, number>())
 
+  const shareUrl = household === undefined ? '' : boardUrl(origin, household.shareToken)
+
+  /** Opens the panel rather than copying silently: the link alone is half of
+   *  what a recipient needs, and nothing used to say so. */
   const onShare = (): void => {
     if (household === undefined) return
-    onShareUrl?.(boardUrl(origin, household.shareToken))
+    setSharing(true)
   }
 
   const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
@@ -265,6 +277,18 @@ const Board = ({
           }}
         />
       )}
+
+      <ShareSheet
+        visible={isSharing}
+        url={shareUrl}
+        justCopied={shared}
+        onCopy={() => {
+          onShareUrl?.(shareUrl)
+        }}
+        onClose={() => {
+          setSharing(false)
+        }}
+      />
 
       <MealPicker
         visible={isPickerOpen}
