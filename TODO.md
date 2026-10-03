@@ -29,8 +29,6 @@ you want to overturn one, change the spec first.
 
 ## Missing functionality
 
-- [ ] **A Meal cannot have a photo.** `meal.photo_url` exists, the card renders
-      a 46px chip when it is set, and nothing in the app can set it.
 - [ ] **Ingredient quantities default to 1 of whatever unit.** The Meal editor
       offers "1 g" of potato and "1 ml" of cream. A sane default per dimension
       — or an empty field — would beat a number nobody wants.

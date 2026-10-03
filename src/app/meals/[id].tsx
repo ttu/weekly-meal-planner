@@ -33,6 +33,7 @@ export default function EditMeal(): React.JSX.Element | null {
   return (
     <MealEditorScreen
       initial={{ name: meal.name, servings: meal.servings, ingredients: meal.ingredients }}
+      photoUrl={meal.photoUrl}
       ingredients={ingredients}
       isPending={isPending}
       error={error}
@@ -47,8 +48,8 @@ export default function EditMeal(): React.JSX.Element | null {
           goBackTo('/meals')
         })
       }}
-      onSave={(draft) => {
-        save({ ...draft, id: meal.id }, () => {
+      onSave={(draft, photo) => {
+        save({ ...draft, id: meal.id, photo, existingPhotoPath: meal.photoPath }, () => {
           goBackTo('/meals')
         })
       }}

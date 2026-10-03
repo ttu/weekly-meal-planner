@@ -159,7 +159,12 @@
     "copied": "Copied to your Meals.",
     "catalogueReadOnly": "Catalogue Meals cannot be edited. Copy it first.",
     "servesCount": "Serves {{count}}",
-    "libraryPane": "Meal library"
+    "libraryPane": "Meal library",
+    "photo": "Photo",
+    "addPhoto": "Add a photo",
+    "replacePhoto": "Replace",
+    "removePhoto": "Remove",
+    "photoFailed": "The meal is saved, but the photo did not upload."
   },
   "ingredient": {
     "add": "Add an Ingredient",

@@ -18,6 +18,12 @@
             "./assets/fonts/InstrumentSans-Variable.ttf"
           ]
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Meal Planner uses your photos so a meal can carry a picture of itself."
+        }
       ]
     ],
     "ios": {

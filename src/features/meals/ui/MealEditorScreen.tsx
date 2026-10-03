@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
@@ -10,9 +10,11 @@ import { parseQuantity } from '@/shared/units'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
 import { IngredientRow } from './IngredientRow'
+import { pickPhotoFromLibrary, type PickPhoto } from '../infrastructure/photo-picker'
 import type { Ingredient, IngredientId } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
-import type { SaveMealError } from '../application/save-meal'
+import type { PhotoChange } from '../application/save-meal-photo'
+import type { EditorError } from './useSaveMeal'
 
 const styles = StyleSheet.create({
   cancel: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
@@ -48,6 +50,23 @@ const styles = StyleSheet.create({
     marginBottom: tokens.space.lg,
   },
   saveText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.space.md,
+    marginBottom: tokens.space.lg,
+  },
+  /** Bigger than the 46px chip on a card, because this is where you judge
+   *  whether the picture is the right one. */
+  photo: { width: 72, height: 72, borderRadius: tokens.radius.md },
+  photoEmpty: {
+    backgroundColor: tokens.color.surfaceInset,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoInitial: { ...tokens.type.display, color: tokens.color.textGhost },
+  photoActions: { flexDirection: 'row', gap: tokens.space.lg, flex: 1 },
+  photoAction: { minHeight: 54, justifyContent: 'center' },
   noIngredients: { paddingVertical: tokens.space.sm },
   addIngredient: { minHeight: 54, justifyContent: 'center', marginBottom: tokens.space.lg },
   delete: {
@@ -58,8 +77,11 @@ const styles = StyleSheet.create({
   },
 })
 
-const errorKey = (error: SaveMealError): string =>
-  error === 'name-required' ? 'meal.nameRequired' : 'meal.saveFailed'
+const errorKey = (error: EditorError): string => {
+  if (error === 'name-required') return 'meal.nameRequired'
+  if (error === 'photo-failed') return 'meal.photoFailed'
+  return 'meal.saveFailed'
+}
 
 /** The editor keeps quantities as text while typing: "0," is a legitimate
  *  intermediate state on a Finnish keyboard, and reformatting mid-keystroke is
@@ -80,8 +102,12 @@ type Props = {
   readonly onCopy?: (() => void) | undefined
   readonly onDelete?: (() => void) | undefined
   readonly isPending: boolean
-  readonly error?: SaveMealError | undefined
-  readonly onSave: (draft: MealDraft) => void
+  readonly error?: EditorError | undefined
+  /** What the Meal already has — a signed URL, not a path. */
+  readonly photoUrl?: string | undefined
+  /** The device dialog, injected so a test can answer without one. */
+  readonly pickPhoto?: PickPhoto
+  readonly onSave: (draft: MealDraft, photo: PhotoChange) => void
   readonly onCancel: () => void
 }
 
@@ -90,6 +116,8 @@ export const MealEditorScreen = ({
   ingredients,
   isPending,
   error,
+  photoUrl,
+  pickPhoto = pickPhotoFromLibrary,
   isReadOnly = false,
   plannedCount = 0,
   onCopy,
@@ -109,7 +137,11 @@ export const MealEditorScreen = ({
     })) ?? [],
   )
   const [isPickerOpen, setPickerOpen] = useState(false)
+  const [photo, setPhoto] = useState<PhotoChange>({ kind: 'unchanged' })
   const [isConfirmingDelete, setConfirmingDelete] = useState(false)
+
+  const shownPhoto =
+    photo.kind === 'picked' ? photo.uri : photo.kind === 'cleared' ? undefined : photoUrl
 
   const byId = new Map(ingredients.map((i) => [i.id, i]))
   const unpicked = ingredients.filter((i) => !entries.some((e) => e.ingredientId === i.id))
@@ -148,6 +180,61 @@ export const MealEditorScreen = ({
         accessibilityLabel={t('meal.name')}
         testID="editor-name"
       />
+
+      <Text style={formStyles.label}>{t('meal.photo')}</Text>
+      <View style={styles.photoRow}>
+        {shownPhoto === undefined ? (
+          <View style={[styles.photo, styles.photoEmpty]} testID="editor-photo-empty">
+            <Text style={styles.photoInitial}>{(name.trim()[0] ?? '?').toUpperCase()}</Text>
+          </View>
+        ) : (
+          <Image
+            style={styles.photo}
+            source={{ uri: shownPhoto }}
+            accessibilityLabel={t('meal.photo')}
+            testID="editor-photo"
+          />
+        )}
+
+        {!isReadOnly && (
+          <View style={styles.photoActions}>
+            <Pressable
+              style={styles.photoAction}
+              disabled={isPending}
+              onPress={() => {
+                void pickPhoto().then((picked) => {
+                  if (picked === undefined) return
+                  setPhoto({ kind: 'picked', uri: picked.uri, contentType: picked.contentType })
+                })
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={
+                shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')
+              }
+              testID="editor-pick-photo"
+            >
+              <Text style={formStyles.quietAction}>
+                {shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')}
+              </Text>
+            </Pressable>
+
+            {shownPhoto !== undefined && (
+              <Pressable
+                style={styles.photoAction}
+                disabled={isPending}
+                onPress={() => {
+                  setPhoto({ kind: 'cleared' })
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('meal.removePhoto')}
+                testID="editor-remove-photo"
+              >
+                <Text style={formStyles.quietAction}>{t('meal.removePhoto')}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
 
       <Text style={formStyles.label}>{t('meal.servings')}</Text>
       <View style={styles.stepperRow}>
@@ -296,26 +383,29 @@ export const MealEditorScreen = ({
           style={styles.save}
           disabled={isPending}
           onPress={() => {
-            onSave({
-              name,
-              servings: brand<number, 'Servings'>(servings),
-              // Rows with an unusable amount are dropped rather than blocking the
-              // save; the row already shows why, and losing a whole edit to one
-              // stray keystroke is worse.
-              ingredients: entries.flatMap((entry) => {
-                const quantity = parseQuantity(entry.quantityText)
-                return isOk(quantity)
-                  ? [
-                      {
-                        ingredientId: entry.ingredientId,
-                        quantity: quantity.value,
-                        unit: entry.unit,
-                        optional: false,
-                      },
-                    ]
-                  : []
-              }),
-            })
+            onSave(
+              {
+                name,
+                servings: brand<number, 'Servings'>(servings),
+                // Rows with an unusable amount are dropped rather than blocking the
+                // save; the row already shows why, and losing a whole edit to one
+                // stray keystroke is worse.
+                ingredients: entries.flatMap((entry) => {
+                  const quantity = parseQuantity(entry.quantityText)
+                  return isOk(quantity)
+                    ? [
+                        {
+                          ingredientId: entry.ingredientId,
+                          quantity: quantity.value,
+                          unit: entry.unit,
+                          optional: false,
+                        },
+                      ]
+                    : []
+                }),
+              },
+              photo,
+            )
           }}
           accessibilityRole="button"
           accessibilityLabel={t('meal.save')}

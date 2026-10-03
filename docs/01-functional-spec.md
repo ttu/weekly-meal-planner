@@ -129,6 +129,11 @@ the line.
 ### Meals
 
 - **`meal`** — name, description, `servings`, optional source URL and photo.
+  The photo is picked from the device in the Meal editor and lives in the
+  private `meal-photo` bucket as `<household id>/<meal id>`; `photo_url` holds
+  that path, and the app signs a URL for an hour when it needs to show one. An
+  absolute URL in the column is left alone, so a Catalogue Meal may point at a
+  picture we do not host.
   `household_id NULL` means public catalogue; otherwise it belongs to that
   household.
 - **`meal_ingredient`** — meal, ingredient, `quantity`, `unit`, `optional` flag.

@@ -16,7 +16,13 @@ export { useHouseholdMeals } from './ui/useHouseholdMeals'
 export { matchesSearch } from './domain/search'
 export { MealLibraryScreen } from './ui/MealLibraryScreen'
 export { MealEditorScreen } from './ui/MealEditorScreen'
-export { useSaveMeal, type SaveMeal } from './ui/useSaveMeal'
+export { useSaveMeal, type SaveMeal, type EditorError } from './ui/useSaveMeal'
+export { saveMealPhoto, type PhotoChange } from './application/save-meal-photo'
+export {
+  pickPhotoFromLibrary,
+  type PickPhoto,
+  type PickedImage,
+} from './infrastructure/photo-picker'
 export { saveMeal, type SaveMealError } from './application/save-meal'
 export {
   validateMealDraft,

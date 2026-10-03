@@ -3,6 +3,8 @@ import { brand } from '@/shared/types/brand'
 import { ok, err, type Result } from '@/shared/types/result'
 import type { Locale } from '@/shared/i18n'
 import type { AppSupabaseClient } from '@/features/household'
+import { isStoredPhoto } from '../domain/photo'
+import { signMealPhotos } from './meal-photo-repository'
 import type { IngredientId, Meal, MealId, Quantity } from '../domain/types'
 
 const rowSchema = z.object({
@@ -13,6 +15,21 @@ const rowSchema = z.object({
   photo_url: z.string().nullable(),
   meal_ingredient: z.array(z.object({ count: z.number() })),
 })
+
+/**
+ * What the card should display. A stored path becomes a signed URL; an
+ * absolute URL is already one. A path that could not be signed is dropped, and
+ * the card falls back to its serif initial.
+ */
+const photoOf = (
+  photoUrl: string | null,
+  signed: ReadonlyMap<string, string>,
+): { photoUrl?: string } => {
+  if (photoUrl === null) return {}
+  if (!isStoredPhoto(photoUrl)) return { photoUrl }
+  const url = signed.get(photoUrl)
+  return url === undefined ? {} : { photoUrl: url }
+}
 
 export type LoadMealsError = 'invalid-row'
 
@@ -33,6 +50,12 @@ export const loadMeals = async (
   const rows = z.array(rowSchema).safeParse(data ?? [])
   if (!rows.success) return err('invalid-row')
 
+  // One round trip for every photo on the screen, not one per card.
+  const signed = await signMealPhotos(
+    client,
+    rows.data.flatMap((r) => (r.photo_url === null ? [] : [r.photo_url])),
+  )
+
   // null at the edge becomes undefined inside; the domain never carries null.
   return ok(
     rows.data.map((r) => ({
@@ -43,7 +66,7 @@ export const loadMeals = async (
       name: r.name,
       servings: brand<number, 'Servings'>(r.servings),
       ingredientCount: r.meal_ingredient[0]?.count ?? 0,
-      ...(r.photo_url === null ? {} : { photoUrl: r.photo_url }),
+      ...photoOf(r.photo_url, signed),
     })),
   )
 }
@@ -65,6 +88,9 @@ const detailSchema = z.object({
 })
 
 export type MealDetail = Meal & {
+  /** The object path behind `photoUrl`, which is a signed URL and cannot be
+   *  turned back into one. The editor needs it to replace or delete the file. */
+  readonly photoPath?: string
   readonly ingredients: readonly {
     readonly ingredientId: IngredientId
     readonly quantity: Quantity
@@ -92,6 +118,11 @@ export const loadMeal = async (
   const row = detailSchema.safeParse(data)
   if (!row.success) return err('invalid-row')
 
+  const signed = await signMealPhotos(
+    client,
+    row.data.photo_url === null ? [] : [row.data.photo_url],
+  )
+
   return ok({
     id: brand<string, 'MealId'>(row.data.id),
     ...(row.data.household_id === null
@@ -99,7 +130,10 @@ export const loadMeal = async (
       : { householdId: brand<string, 'HouseholdId'>(row.data.household_id) }),
     name: row.data.name,
     servings: brand<number, 'Servings'>(row.data.servings),
-    ...(row.data.photo_url === null ? {} : { photoUrl: row.data.photo_url }),
+    ...photoOf(row.data.photo_url, signed),
+    ...(row.data.photo_url !== null && isStoredPhoto(row.data.photo_url)
+      ? { photoPath: row.data.photo_url }
+      : {}),
     ingredientCount: row.data.meal_ingredient.length,
     ingredients: row.data.meal_ingredient.map((i) => ({
       ingredientId: brand<string, 'IngredientId'>(i.ingredient_id),
