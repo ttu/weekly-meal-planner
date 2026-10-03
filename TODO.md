@@ -20,15 +20,10 @@ you want to overturn one, change the spec first.
 
 ## Sharing and abuse
 
-- [ ] **"Got an invite? Join a board" has nowhere to go.** The design puts it
-      in the start screen's footer, and an invite arrives as a link, so there
-      is no screen that takes one typed or pasted in. The pair is hidden until
-      there is — a control that goes nowhere is worse than no control. The
-      same screen's "add an email later to keep it safe" is plain text for the
-      same reason: nothing can add an email yet.
 - [ ] **No email verification.** Anonymous boards are the main path (ADR 0010)
       and deliberately ask for nothing, so this is about the email sign-in
-      beside them: an unverified address can hold a seat on a board today.
+      beside them, and about the start screen's "add an email later to keep it
+      safe", which is still plain text because nothing can add one: an unverified address can hold a seat on a board today.
       Needed before anything is shared outside a household. Board creation is
       now limited per account and per IP, which was the other half of this.
 

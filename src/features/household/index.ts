@@ -25,6 +25,8 @@ export {
 } from './application/boards'
 export { ShareSheet } from './ui/ShareSheet'
 export { StartBoardScreen } from './ui/StartBoardScreen'
+export { EnterInviteScreen } from './ui/EnterInviteScreen'
+export { inviteToken } from './domain/invite'
 export { JoinBoardScreen } from './ui/JoinBoardScreen'
 export {
   useHouseholdSession,

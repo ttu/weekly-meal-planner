@@ -25,6 +25,9 @@ export default function Start(): React.JSX.Element {
       onSignInInstead={() => {
         router.push('/sign-in')
       }}
+      onJoinInstead={() => {
+        router.push('/join')
+      }}
       onCreate={({ boardName, displayName, password }) => {
         setPending(true)
         setError(undefined)

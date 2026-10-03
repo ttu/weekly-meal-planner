@@ -45,7 +45,14 @@
     "or": "or",
     "shareCopy": "Copy link",
     "shareClose": "Done",
-    "sharePasswordNote": "The password is not shown here — it isn't stored, only checked. Tell them yourself."
+    "sharePasswordNote": "The password is not shown here — it isn't stored, only checked. Tell them yourself.",
+    "inviteTitle": "Open an invite",
+    "inviteBody": "Paste the link you were sent. If someone read it out, type the part after /join/.",
+    "inviteLabel": "Invite link",
+    "invitePlaceholder": "https://…/join/…",
+    "inviteHint": "The password comes separately — you'll be asked for it next.",
+    "inviteOpen": "Open the board",
+    "inviteUnreadable": "No invite link in there. Check you copied the whole thing."
   },
   "slot": {
     "lunch": "Lunch",
@@ -218,6 +225,7 @@
     "bunch": "bunch"
   },
   "nav": {
-    "back": "← Back to the board"
+    "back": "← Back to the board",
+    "backPlain": "← Back"
   }
 }

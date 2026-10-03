@@ -12,7 +12,11 @@ import { useTranslation } from '@/shared/i18n'
  * route, and importing expo-router here drags an ESM-only dependency into
  * every component test that renders a screen.
  */
-type Props = { readonly onPress: () => void }
+type Props = {
+  readonly onPress: () => void
+  /** Overrides "Back to the board" where there is no board behind you yet. */
+  readonly label?: string | undefined
+}
 
 const styles = StyleSheet.create({
   link: {
@@ -23,18 +27,19 @@ const styles = StyleSheet.create({
   text: { ...tokens.type.support, color: tokens.color.textMuted },
 })
 
-export const BackLink = ({ onPress }: Props): React.JSX.Element => {
+export const BackLink = ({ onPress, label }: Props): React.JSX.Element => {
   const { t } = useTranslation()
+  const text = label ?? t('nav.back')
 
   return (
     <Pressable
       style={styles.link}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={t('nav.back')}
+      accessibilityLabel={text}
       testID="back-link"
     >
-      <Text style={styles.text}>{t('nav.back')}</Text>
+      <Text style={styles.text}>{text}</Text>
     </Pressable>
   )
 }

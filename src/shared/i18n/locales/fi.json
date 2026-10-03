@@ -45,7 +45,14 @@
     "or": "tai",
     "shareCopy": "Kopioi linkki",
     "shareClose": "Valmis",
-    "sharePasswordNote": "Salasanaa ei näytetä tässä — sitä ei säilytetä, vain tarkistetaan. Kerro se itse."
+    "sharePasswordNote": "Salasanaa ei näytetä tässä — sitä ei säilytetä, vain tarkistetaan. Kerro se itse.",
+    "inviteTitle": "Avaa kutsu",
+    "inviteBody": "Liitä saamasi linkki. Jos joku luki sen ääneen, kirjoita /join/-osan jälkeinen pätkä.",
+    "inviteLabel": "Kutsulinkki",
+    "invitePlaceholder": "https://…/join/…",
+    "inviteHint": "Salasana tulee erikseen — sitä kysytään seuraavaksi.",
+    "inviteOpen": "Avaa taulu",
+    "inviteUnreadable": "Tuossa ei ole kutsulinkkiä. Tarkista, että kopioit koko linkin."
   },
   "slot": {
     "lunch": "Lounas",
@@ -218,6 +225,7 @@
     "bunch": "nippu"
   },
   "nav": {
-    "back": "← Takaisin taululle"
+    "back": "← Takaisin taululle",
+    "backPlain": "← Takaisin"
   }
 }
