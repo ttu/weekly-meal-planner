@@ -58,3 +58,20 @@ A person can start a board with no account at all:
   short board names collide.
 - **Hashing the password in the client.** The hash becomes the password; an
   attacker who learns it does not need the original.
+
+## Amended: the join screen names the board
+
+`board_preview(share_token)` returns a household's name and its Members' first
+names and colours to anyone holding the link, before they know the password.
+The join screen uses it to say "Join Koivisto household — Dad and Mum are
+already planning. Ask one of them for the board password", which turns a bare
+password prompt into something a person can act on.
+
+This discloses a little to a leaked link, and it is consistent with the threat
+model above: the token is 32 random bytes and is not guessable, so reaching
+this at all means having been sent the link. The attack this ADR defends
+against is brute-forcing the password, and that is unchanged — attempts are
+still rate-limited, and a wrong link and a wrong password are still answered
+the same way.
+
+It returns names and nothing else: no ids, no token, no hash.

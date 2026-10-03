@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { router, useLocalSearchParams } from 'expo-router'
 import { isErr } from '@/shared/types/result'
 import {
   JoinBoardScreen,
+  boardPreview,
   joinBoard,
   useRefreshHousehold,
   useSession,
+  type BoardPreview,
   type JoinBoardError,
 } from '@/features/household'
 
@@ -15,11 +17,27 @@ export default function Join(): React.JSX.Element {
   const refreshHousehold = useRefreshHousehold()
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<JoinBoardError | undefined>(undefined)
+  const [preview, setPreview] = useState<BoardPreview | undefined>(undefined)
+
+  // Whose board this is, so the screen can name it and the people on it.
+  useEffect(() => {
+    let current = true
+    void boardPreview(client, params.token).then((found) => {
+      if (current) setPreview(found)
+    })
+    return () => {
+      current = false
+    }
+  }, [client, params.token])
 
   return (
     <JoinBoardScreen
       isPending={isPending}
       error={error}
+      preview={preview}
+      onStartOwn={() => {
+        router.replace('/start')
+      }}
       onJoin={({ password, displayName }) => {
         setPending(true)
         setError(undefined)

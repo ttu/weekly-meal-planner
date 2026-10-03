@@ -57,6 +57,12 @@ you want to overturn one, change the spec first.
       anonymous sign-ins rather than boards, and a signed-in account can make
       as many as it likes. A per-IP creation limit shaped like the join limiter
       is the obvious first move.
+- [ ] **"Got an invite? Join a board" has nowhere to go.** The design puts it
+      in the start screen's footer, and an invite arrives as a link, so there
+      is no screen that takes one typed or pasted in. The pair is hidden until
+      there is — a control that goes nowhere is worse than no control. The
+      same screen's "add an email later to keep it safe" is plain text for the
+      same reason: nothing can add an email yet.
 - [ ] **No email verification.** Anonymous boards are the main path (ADR 0010)
       and deliberately ask for nothing, so this is about the email sign-in
       beside them: an unverified address can hold a seat on a board today.

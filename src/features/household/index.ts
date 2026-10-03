@@ -16,7 +16,9 @@ export { usePresence, type PresentMember } from './ui/usePresence'
 export {
   createBoard,
   joinBoard,
+  boardPreview,
   boardUrl,
+  type BoardPreview,
   type CreateBoardError,
   type JoinBoardError,
   type NewBoard,

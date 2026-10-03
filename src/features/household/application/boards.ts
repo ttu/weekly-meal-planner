@@ -92,3 +92,34 @@ export const joinBoard = async (
  *  not, and the UI says to send it separately. */
 export const boardUrl = (origin: string, shareToken: string): string =>
   `${origin}/join/${shareToken}`
+
+export type BoardPreview = {
+  readonly name: string
+  readonly members: readonly { readonly name: string; readonly colour: string }[]
+}
+
+/**
+ * Whose board this link opens, before anyone is let in.
+ *
+ * The join screen names the household and the people already planning, so a
+ * password prompt becomes something a person can act on — "ask Dad or Mum".
+ * Returns undefined for a link that matches nothing, which is also what a
+ * wrong password gets told: see ADR 0010 for why the two stay alike.
+ */
+export const boardPreview = async (
+  client: AppSupabaseClient,
+  shareToken: string,
+): Promise<BoardPreview | undefined> => {
+  const { data, error } = await client.rpc('board_preview', { p_share_token: shareToken })
+
+  const row = Array.isArray(data) ? data[0] : undefined
+  if (error !== null || row === undefined) return undefined
+
+  const names = row.out_member_names
+  const colours = row.out_member_colours
+
+  return {
+    name: row.out_name,
+    members: names.map((name, index) => ({ name, colour: colours[index] ?? '' })),
+  }
+}

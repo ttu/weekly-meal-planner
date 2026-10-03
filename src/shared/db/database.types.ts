@@ -561,6 +561,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      board_preview: {
+        Args: { p_share_token: string }
+        Returns: {
+          out_member_colours: string[]
+          out_member_names: string[]
+          out_name: string
+        }[]
+      }
       copy_catalogue_meal: {
         Args: { p_household_id: string; p_source_meal_id: string }
         Returns: string
@@ -579,7 +587,11 @@ export type Database = {
         }[]
       }
       join_board: {
-        Args: { p_password: string; p_share_token: string }
+        Args: {
+          p_display_name?: string
+          p_password: string
+          p_share_token: string
+        }
         Returns: {
           out_household_id: string
           out_status: Database["public"]["Enums"]["join_board_status"]
