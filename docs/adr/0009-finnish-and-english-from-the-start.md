@@ -12,7 +12,9 @@ a whole-codebase refactor, and retrofitting it into a _data model_ is worse.
 
 Ship Finnish and English together from the start. Every string goes through
 `t()`. The public catalogue carries both languages. Locale is a household
-setting.
+setting, chosen in Settings, and **English is what a board speaks until
+someone chooses otherwise** — not the device's language, which is a fact about
+one person while the board is shared by a household.
 
 ## Consequences
 
@@ -32,3 +34,6 @@ setting.
   stored as display text.
 - Adding a third language later is content plus one locale column value, not a
   migration.
+- The device's language is not read at all. It was, once: a Finnish phone
+  opened a Finnish board, which made the app's language depend on whose phone
+  reached it first.

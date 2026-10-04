@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { AppSupabaseClient } from './supabase-client'
 import { brand } from '@/shared/types/brand'
 import { ok, err, isErr, type Result } from '@/shared/types/result'
+import type { Locale } from '@/shared/i18n'
 import { parseSlots } from '../domain/slot'
 import type { Household, HouseholdId, Member, Slot } from '../domain/types'
 
@@ -97,4 +98,16 @@ export const saveSlots = async (
 
   if (error !== null) return err('write-failed')
   return ok(slots)
+}
+
+/** The language the whole board speaks (ADR 0009). A Household setting, not a
+ *  device one: everyone on the board sees the same Catalogue. */
+export const saveLocale = async (
+  client: AppSupabaseClient,
+  householdId: HouseholdId,
+  locale: Locale,
+): Promise<Result<Locale, SaveSlotsError>> => {
+  const { error } = await client.from('household').update({ locale }).eq('id', householdId)
+  if (error !== null) return err('write-failed')
+  return ok(locale)
 }

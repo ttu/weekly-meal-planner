@@ -5,16 +5,21 @@ import fi from './locales/fi.json'
 
 export type Locale = 'fi' | 'en'
 
-export const LOCALES: readonly Locale[] = ['fi', 'en']
+export const LOCALES: readonly Locale[] = ['en', 'fi']
 
 /**
- * Takes the starting Locale rather than detecting it. Detection is a device
- * concern and lives in `device-locale.ts`, which only the app entry point
- * imports — pulling expo-localization in here would drag expo-modules-core into
- * every consumer, including Storybook's web bundle, where it does not build.
+ * What a board speaks until someone says otherwise.
  *
- * The starting Locale is only a guess: Locale is a Household setting (ADR 0009)
- * and overrides it once a Household loads.
+ * Not the device's language: Locale is a Household setting (ADR 0009) shared
+ * by everyone on the board, and a phone's language is a fact about one person.
+ * A household that wants Finnish says so once, in Settings, and every Member
+ * gets it.
+ */
+export const DEFAULT_LOCALE: Locale = 'en'
+
+/**
+ * The starting Locale is only what the app opens in. Locale is a Household
+ * setting (ADR 0009) and overrides it as soon as a Household loads.
  */
 export const initI18n = (initialLocale: Locale): typeof i18next => {
   if (i18next.isInitialized) return i18next

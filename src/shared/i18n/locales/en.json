@@ -271,7 +271,11 @@
     "appearance_light": "Light",
     "appearance_dark": "Dark",
     "appearance_system": "Match device",
-    "appearanceHint": "The board is light unless you say otherwise. This is remembered on this device."
+    "appearanceHint": "The board is light unless you say otherwise. This is remembered on this device.",
+    "language": "Language",
+    "language_en": "English",
+    "language_fi": "Suomi",
+    "languageHint": "The whole board speaks it — the catalogue and the shopping list too, for everyone in the household."
   },
   "dayOne": {
     "title": "Nothing on the board yet.",

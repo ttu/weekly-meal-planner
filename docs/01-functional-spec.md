@@ -85,7 +85,7 @@ first.
 | **Override**        | A manually set quantity on a Buy Line, with an optional reason.                                                          | manual quantity                             |
 | **Provenance**      | The per-Meal breakdown behind a Buy Line's quantity.                                                                     | source, breakdown                           |
 | **Agent Prompt**    | The copyable text handing the Shopping List to a browser AI agent. Generated in the household's Locale.                  | export, share text                          |
-| **Locale**          | `fi` or `en`. Set per Household.                                                                                         | language, i18n                              |
+| **Locale**          | `fi` or `en`. Set per Household in Settings; English until someone chooses otherwise.                                    | language, i18n                              |
 | **Slug**            | An Ingredient's stable, locale-independent identity.                                                                     | key, code                                   |
 
 Two renames applied when this glossary was adopted: `plan_entry` became

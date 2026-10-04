@@ -6,6 +6,7 @@ import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { useSchemeChoice } from '@/shared/theme/theme'
+import { LOCALES, type Locale } from '@/shared/i18n'
 import type { SchemeChoice } from '@/shared/theme/scheme'
 import { BackLink } from '@/shared/ui/BackLink'
 import { Notice } from '@/shared/ui/Notice'
@@ -33,6 +34,10 @@ type Account = {
 
 type Props = {
   readonly account: Account
+  /** The language the whole board speaks. A Household setting, not a device
+   *  one (ADR 0009). */
+  readonly locale: Locale
+  readonly onChangeLocale: (locale: Locale) => void
   readonly slots: readonly Slot[]
   readonly isPending: boolean
   readonly error?: SlotEditError | 'write-failed' | undefined
@@ -84,6 +89,8 @@ const sheets = themed((tokens) =>
  */
 export const SettingsScreen = ({
   account,
+  locale,
+  onChangeLocale,
   slots,
   isPending,
   error,
@@ -216,6 +223,31 @@ export const SettingsScreen = ({
         )}
 
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
+
+        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
+          {t('settings.language')}
+        </Text>
+        <View style={styles.presets}>
+          {LOCALES.map((option) => (
+            <Pressable
+              key={option}
+              style={[formStyles.chip, styles.preset, locale === option && formStyles.chipSelected]}
+              disabled={isPending}
+              onPress={() => {
+                onChangeLocale(option)
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: locale === option }}
+              accessibilityLabel={t(`settings.language_${option}`)}
+              testID={`settings-language-${option}`}
+            >
+              <Text style={formStyles.chipText}>{t(`settings.language_${option}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>
+          {t('settings.languageHint')}
+        </Text>
 
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.appearance')}

@@ -8,8 +8,7 @@ import { View } from 'react-native'
 import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
-import { initI18n } from '@/shared/i18n'
-import { detectDeviceLocale } from '@/shared/i18n/device-locale'
+import { DEFAULT_LOCALE, initI18n } from '@/shared/i18n'
 import { ThemeProvider, useTheme } from '@/shared/theme/theme'
 import {
   createSupabaseClient,
@@ -19,7 +18,7 @@ import {
   type AppSupabaseClient,
 } from '@/features/household'
 
-initI18n(detectDeviceLocale())
+initI18n(DEFAULT_LOCALE)
 
 const Blank = (): React.JSX.Element => {
   const theme = useTheme()

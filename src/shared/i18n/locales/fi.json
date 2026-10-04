@@ -271,7 +271,11 @@
     "appearance_light": "Vaalea",
     "appearance_dark": "Tumma",
     "appearance_system": "Laitteen mukaan",
-    "appearanceHint": "Taulu on vaalea, ellet toisin sano. Valinta muistetaan tällä laitteella."
+    "appearanceHint": "Taulu on vaalea, ellet toisin sano. Valinta muistetaan tällä laitteella.",
+    "language": "Kieli",
+    "language_en": "English",
+    "language_fi": "Suomi",
+    "languageHint": "Koko taulu puhuu sitä — myös ruokalista ja ostoslista, kaikille taloudessa."
   },
   "dayOne": {
     "title": "Taululla ei ole vielä mitään.",

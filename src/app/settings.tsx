@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Platform } from 'react-native'
 import { Redirect, router } from 'expo-router'
 import { isErr, isOk, ok, type Result } from '@/shared/types/result'
+import { DEFAULT_LOCALE } from '@/shared/i18n'
 import {
   SettingsScreen,
   addEmail,
+  saveLocale,
   addNamedSlot,
   addPresetSlot,
   moveSlot,
@@ -59,6 +61,20 @@ export default function Settings(): React.JSX.Element {
 
   return (
     <SettingsScreen
+      locale={household?.locale ?? DEFAULT_LOCALE}
+      onChangeLocale={(next) => {
+        if (household === undefined) return
+        setPending(true)
+        setError(undefined)
+        void saveLocale(client, household.id, next).then((written) => {
+          setPending(false)
+          if (!isOk(written)) {
+            setError('write-failed')
+            return
+          }
+          refreshHousehold()
+        })
+      }}
       account={{
         ...(email === undefined ? {} : { email }),
         ...((pendingEmail ?? sentTo) === undefined ? {} : { pendingEmail: pendingEmail ?? sentTo }),

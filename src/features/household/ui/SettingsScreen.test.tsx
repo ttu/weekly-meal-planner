@@ -26,6 +26,8 @@ const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
   renderWithProviders(
     <SettingsScreen
       account={ANONYMOUS}
+      locale="en"
+      onChangeLocale={jest.fn()}
       slots={DEFAULTS}
       isPending={false}
       onAddPreset={jest.fn()}
@@ -135,5 +137,14 @@ describe('SettingsScreen', () => {
 
     expect(view.getByTestId('settings-email-pending')).toBeTruthy()
     expect(view.getByTestId('settings-email-field')).toBeTruthy()
+  })
+
+  it('offers the board a language, and shows which one it speaks', async () => {
+    const onChangeLocale = jest.fn()
+    const view = await show({ locale: 'en', onChangeLocale })
+
+    await fireEvent.press(view.getByTestId('settings-language-fi'))
+
+    expect(onChangeLocale).toHaveBeenCalledWith('fi')
   })
 })

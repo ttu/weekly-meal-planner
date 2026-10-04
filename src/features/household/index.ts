@@ -14,6 +14,7 @@ export { createSupabaseClient, type AppSupabaseClient } from './infrastructure/s
 export {
   loadHousehold,
   loadMember,
+  saveLocale,
   saveSlots,
   type LoadHouseholdError,
   type LoadMemberError,
