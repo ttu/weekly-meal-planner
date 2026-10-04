@@ -74,6 +74,8 @@ pnpm run validate:all  # everything CI runs; pre-push runs this
 pnpm run test:watch
 pnpm run storybook
 pnpm run catalogue:sync  # reference data in data/ -> database (service role)
+pnpm run db:seed         # demo Household + logins (needs the Catalogue synced first)
+pnpm run db:fresh        # db:reset + catalogue:sync + db:seed: a full dev database
 ```
 
 ## Workflow

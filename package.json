@@ -24,6 +24,7 @@
     "prepare": "husky",
     "db:seed": "tsx --env-file=.env scripts/seed-demo.ts",
     "db:reset": "supabase db reset",
+    "db:fresh": "pnpm run db:reset && pnpm run catalogue:sync && pnpm run db:seed",
     "db:types": "supabase gen types typescript --local > src/shared/db/database.types.ts",
     "test:e2e": "playwright test",
     "catalogue:sync": "tsx --env-file=.env scripts/catalogue-sync.ts",

@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import type { Database } from '../src/shared/db/database.types'
-import ingredients from '../data/ingredients.json'
 
 // Validated at the edge like every other external input. The service role key
 // is deliberately not EXPO_PUBLIC_: it must never reach the app bundle.
@@ -84,34 +83,16 @@ const MEALS = [
 ]
 
 const seedMeals = async (householdId: string): Promise<void> => {
-  const slugToId = new Map<string, string>()
+  // The Ingredients are the Catalogue's: `catalogue:sync` owns them, so the demo
+  // Household's Meals point at the same rows every Household sees.
+  const { data: catalogueIngredients, error: ingredientError } = await admin
+    .from('ingredient')
+    .select('id,slug')
+    .is('household_id', null)
+  if (ingredientError !== null) fail('Catalogue Ingredients', ingredientError.message)
 
-  for (const ing of ingredients) {
-    const { data, error } = await admin
-      .from('ingredient')
-      .insert({
-        household_id: null,
-        slug: ing.slug,
-        category: ing.category,
-        dimension: ing.dimension,
-        base_unit: ing.baseUnit,
-      })
-      .select('id')
-      .single()
-    if (error !== null) fail(`Ingredient ${ing.slug}`, error.message)
-
-    const ingredientId = (data as { id: string }).id
-    slugToId.set(ing.slug, ingredientId)
-
-    const { error: nameError } = await admin.from('ingredient_name').insert(
-      Object.entries(ing.names).map(([locale, name]) => ({
-        ingredient_id: ingredientId,
-        locale,
-        name,
-      })),
-    )
-    if (nameError !== null) fail(`Ingredient names ${ing.slug}`, nameError.message)
-  }
+  const slugToId = new Map((catalogueIngredients ?? []).map((i) => [i.slug, i.id]))
+  if (slugToId.size === 0) fail('Catalogue Ingredients', 'none found — run catalogue:sync first')
 
   for (const meal of MEALS) {
     const { data, error } = await admin
@@ -265,7 +246,6 @@ const seedWeek = async (householdId: string, userId: (email: string) => string):
 const seed = async (): Promise<void> => {
   // Cascades clear members, meals and meal_ingredient rows.
   await admin.from('household').delete().neq('id', NIL_UUID)
-  await admin.from('ingredient').delete().is('household_id', null)
 
   const { data: household, error } = await admin
     .from('household')
