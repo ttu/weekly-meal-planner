@@ -5,12 +5,18 @@ import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
+import { useSchemeChoice } from '@/shared/theme/theme'
+import type { SchemeChoice } from '@/shared/theme/scheme'
 import { BackLink } from '@/shared/ui/BackLink'
 import { Notice } from '@/shared/ui/Notice'
 import { useTranslation } from '@/shared/i18n'
 import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain/slot-edit'
 import type { AddEmailError } from '../application/add-email'
 import type { Slot, SlotKey } from '../domain/types'
+
+/** Light first, because light is what the board is unless someone says
+ *  otherwise; "match device" last, for the people who want to be asked once. */
+const APPEARANCES: readonly SchemeChoice[] = ['light', 'dark', 'system']
 
 const errorKey = (error: SlotEditError | 'write-failed'): string =>
   `settings.error.${error === 'write-failed' ? 'writeFailed' : error}`
@@ -93,6 +99,7 @@ export const SettingsScreen = ({
   const insets = useSafeAreaInsets()
   const [named, setNamed] = useState('')
   const [email, setEmail] = useState('')
+  const { choice, setChoice } = useSchemeChoice()
 
   const unused = SLOT_PRESETS.filter((preset) => !slots.some((slot) => slot.key === preset.key))
   const full = slots.length >= MAX_SLOTS
@@ -209,6 +216,30 @@ export const SettingsScreen = ({
         )}
 
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
+
+        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
+          {t('settings.appearance')}
+        </Text>
+        <View style={styles.presets}>
+          {APPEARANCES.map((option) => (
+            <Pressable
+              key={option}
+              style={[formStyles.chip, styles.preset, choice === option && formStyles.chipSelected]}
+              onPress={() => {
+                setChoice(option)
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: choice === option }}
+              accessibilityLabel={t(`settings.appearance_${option}`)}
+              testID={`settings-appearance-${option}`}
+            >
+              <Text style={formStyles.chipText}>{t(`settings.appearance_${option}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>
+          {t('settings.appearanceHint')}
+        </Text>
 
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.account')}

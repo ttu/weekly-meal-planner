@@ -120,6 +120,13 @@ sheet cannot follow the scheme; building both up front keeps styles off the
 render path. `useTheme()` is for the handful of colours that are props rather
 than styles — a placeholder colour, an avatar's ring.
 
+**Light is the default, and the device does not override it.** The board is a
+sheet of warm paper and that is the design; a phone left in dark mode must not
+quietly change what the app looks like for a household that never asked. Dark
+is chosen in Settings — Light, Dark, or Match device — and the choice is
+remembered on that device, not on the account, because it is about the screen
+in front of you.
+
 Storybook has a Scheme toolbar that pins one, so a story can be looked at in
 both without changing the machine's setting.
 

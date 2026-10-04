@@ -266,7 +266,12 @@
     "emailPlaceholder": "you@example.com",
     "sendLink": "Send the link",
     "emailPending": "Sent to {{email}}. Click the link in it — nothing changes until you do.",
-    "emailOn": "Signed in as {{email}}."
+    "emailOn": "Signed in as {{email}}.",
+    "appearance": "Appearance",
+    "appearance_light": "Light",
+    "appearance_dark": "Dark",
+    "appearance_system": "Match device",
+    "appearanceHint": "The board is light unless you say otherwise. This is remembered on this device."
   },
   "dayOne": {
     "title": "Nothing on the board yet.",

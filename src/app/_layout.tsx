@@ -10,7 +10,7 @@ import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
 import { initI18n } from '@/shared/i18n'
 import { detectDeviceLocale } from '@/shared/i18n/device-locale'
-import { useTheme } from '@/shared/theme/theme'
+import { ThemeProvider, useTheme } from '@/shared/theme/theme'
 import {
   createSupabaseClient,
   SessionProvider,
@@ -53,7 +53,7 @@ const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.J
   )
 }
 
-export default function RootLayout(): React.JSX.Element {
+const App = (): React.JSX.Element => {
   const theme = useTheme()
   // Held before first paint so text never swaps face mid-read.
   const [fontsLoaded] = useFonts({
@@ -74,5 +74,13 @@ export default function RootLayout(): React.JSX.Element {
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  )
+}
+
+export default function RootLayout(): React.JSX.Element {
+  return (
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   )
 }

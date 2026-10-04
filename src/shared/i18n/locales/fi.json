@@ -266,7 +266,12 @@
     "emailPlaceholder": "sinä@esimerkki.fi",
     "sendLink": "Lähetä linkki",
     "emailPending": "Lähetetty osoitteeseen {{email}}. Klikkaa viestin linkkiä — ennen sitä mikään ei muutu.",
-    "emailOn": "Kirjautuneena osoitteella {{email}}."
+    "emailOn": "Kirjautuneena osoitteella {{email}}.",
+    "appearance": "Ulkoasu",
+    "appearance_light": "Vaalea",
+    "appearance_dark": "Tumma",
+    "appearance_system": "Laitteen mukaan",
+    "appearanceHint": "Taulu on vaalea, ellet toisin sano. Valinta muistetaan tällä laitteella."
   },
   "dayOne": {
     "title": "Taululla ei ole vielä mitään.",

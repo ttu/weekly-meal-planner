@@ -24,6 +24,7 @@ module.exports = {
         // render real output.
         '^react-native-reanimated$': '<rootDir>/src/test/mocks/react-native-reanimated.tsx',
         '^react-native-worklets$': '<rootDir>/src/test/mocks/react-native-worklets.ts',
+        '^@react-native-async-storage/async-storage$': '<rootDir>/src/test/mocks/async-storage.ts',
       },
     },
   ],
