@@ -7,7 +7,7 @@ import { useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
 import type { IngredientId } from '@/shared/types/ids'
 import { groupBuyLines } from '../domain/group'
-import type { BuyLine, ExtraId, ShoppingList } from '../domain/types'
+import type { BuyLine, Extra, ExtraId, ShoppingList } from '../domain/types'
 
 /**
  * Row ergonomics are requirements, not styling: 19px text, 28px checkbox, 54px
@@ -200,6 +200,76 @@ type Props = {
   readonly onBack?: (() => void) | undefined
 }
 
+/** An Extra is a Buy Line nobody derived: milk, bin bags, the thing someone
+ *  shouted from the next room. It ticks off like any other line. */
+const ExtraRow = ({
+  extra,
+  onToggle,
+}: {
+  readonly extra: Extra
+  readonly onToggle: (id: ExtraId, checked: boolean) => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+
+  return (
+    <Pressable
+      style={[styles.row, styles.divided]}
+      onPress={() => {
+        onToggle(extra.id, !extra.checked)
+      }}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: extra.checked }}
+      accessibilityLabel={extra.label}
+      testID={`extra-${extra.id}`}
+    >
+      <View style={[styles.checkbox, extra.checked && styles.checkboxOn]}>
+        {extra.checked && <Text style={styles.tick}>✓</Text>}
+      </View>
+      <Text style={[styles.label, extra.checked && styles.labelChecked]}>{extra.label}</Text>
+    </Pressable>
+  )
+}
+
+/** The last row of the list: type a thing, press enter, it is on the list. The
+ *  half-typed label is this row's own business and lives here. */
+const AddExtraRow = ({ onAdd }: { readonly onAdd: (label: string) => void }): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
+  const { t } = useTranslation()
+  const [label, setLabel] = useState('')
+
+  const add = (): void => {
+    onAdd(label)
+    setLabel('')
+  }
+
+  return (
+    <View style={styles.addRow}>
+      <View style={styles.addBox}>
+        <Text style={styles.addSign}>+</Text>
+      </View>
+      <TextInput
+        style={styles.addInput}
+        value={label}
+        onChangeText={setLabel}
+        onSubmitEditing={add}
+        placeholder={t('shopping.addExtra')}
+        placeholderTextColor={theme.color.textGhost}
+        accessibilityLabel={t('shopping.addExtra')}
+        testID="extra-input"
+      />
+      <Pressable
+        onPress={add}
+        accessibilityRole="button"
+        accessibilityLabel={t('shopping.addExtra')}
+        testID="extra-add"
+      >
+        <Text style={styles.noteAction}>{t('shopping.addExtraAction')}</Text>
+      </Pressable>
+    </View>
+  )
+}
+
 export const ShoppingListScreen = ({
   list,
   onToggle,
@@ -213,11 +283,9 @@ export const ShoppingListScreen = ({
   onBack,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
-  const theme = useTheme()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
-  const [extraLabel, setExtraLabel] = useState('')
 
   const unitLabel = (unit: string): string => t(`unit.${unit}`)
   const groups = useMemo(() => groupBuyLines(list.buy), [list.buy])
@@ -423,55 +491,10 @@ export const ShoppingListScreen = ({
           </View>
           <View style={styles.card}>
             {list.extras.map((extra) => (
-              <Pressable
-                key={extra.id}
-                style={[styles.row, styles.divided]}
-                onPress={() => {
-                  onToggleExtra(extra.id, !extra.checked)
-                }}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: extra.checked }}
-                accessibilityLabel={extra.label}
-                testID={`extra-${extra.id}`}
-              >
-                <View style={[styles.checkbox, extra.checked && styles.checkboxOn]}>
-                  {extra.checked && <Text style={styles.tick}>✓</Text>}
-                </View>
-                <Text style={[styles.label, extra.checked && styles.labelChecked]}>
-                  {extra.label}
-                </Text>
-              </Pressable>
+              <ExtraRow key={extra.id} extra={extra} onToggle={onToggleExtra} />
             ))}
 
-            <View style={styles.addRow}>
-              <View style={styles.addBox}>
-                <Text style={styles.addSign}>+</Text>
-              </View>
-              <TextInput
-                style={styles.addInput}
-                value={extraLabel}
-                onChangeText={setExtraLabel}
-                onSubmitEditing={() => {
-                  onAddExtra(extraLabel)
-                  setExtraLabel('')
-                }}
-                placeholder={t('shopping.addExtra')}
-                placeholderTextColor={theme.color.textGhost}
-                accessibilityLabel={t('shopping.addExtra')}
-                testID="extra-input"
-              />
-              <Pressable
-                onPress={() => {
-                  onAddExtra(extraLabel)
-                  setExtraLabel('')
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('shopping.addExtra')}
-                testID="extra-add"
-              >
-                <Text style={styles.noteAction}>{t('shopping.addExtraAction')}</Text>
-              </Pressable>
-            </View>
+            <AddExtraRow onAdd={onAddExtra} />
           </View>
         </View>
       </ScrollView>

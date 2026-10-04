@@ -127,6 +127,164 @@ const weekdayKey = (isoDate: string): string => {
   return `weekday.${String(day === 0 ? 7 : day)}`
 }
 
+/** Which Meal is being planned, who wanted it, and the way out. */
+const PlanHeader = ({
+  mealName,
+  addedByName,
+  defaultServings,
+  onDismiss,
+}: {
+  readonly mealName: string
+  readonly addedByName?: string | undefined
+  readonly defaultServings: number
+  readonly onDismiss: () => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.headerRow}>
+      <View style={{ flexShrink: 1, gap: 4 }}>
+        <Text style={styles.title}>{t('plan.title', { meal: mealName })}</Text>
+        {addedByName !== undefined && addedByName !== '' && (
+          <Text style={styles.addedBy}>
+            {t('plan.addedBy', { name: addedByName, servings: defaultServings })}
+          </Text>
+        )}
+      </View>
+      <Pressable
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel={t('plan.cancel')}
+        testID="plan-cancel"
+      >
+        <Text style={styles.cancel}>{t('plan.cancel')}</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+/** The seven days of the week being planned, today marked. */
+const DayChips = ({
+  board,
+  date,
+  today,
+  onPick,
+}: {
+  readonly board: readonly BoardDay[]
+  readonly date: string
+  readonly today: string
+  readonly onPick: (date: string) => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.dayRow}>
+      {board.map((day) => (
+        <Pressable
+          key={day.date}
+          style={[
+            styles.chip,
+            day.date === today && styles.chipToday,
+            day.date === date && styles.chipSelected,
+          ]}
+          onPress={() => {
+            onPick(day.date)
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: day.date === date }}
+          accessibilityLabel={day.date}
+          testID={`plan-day-${day.date}`}
+        >
+          <Text style={[styles.chipText, day.date === date && styles.chipTextSelected]}>
+            {t(weekdayKey(day.date))}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  )
+}
+
+/** The household's own Slots, in the order they eat them. */
+const SlotChips = ({
+  slots,
+  slotKey,
+  onPick,
+}: {
+  readonly slots: readonly Slot[]
+  readonly slotKey: SlotKey | undefined
+  readonly onPick: (key: SlotKey) => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.slotRow}>
+      {slots.map((slot) => (
+        <Pressable
+          key={slot.key}
+          style={[styles.chip, styles.slotChip, slot.key === slotKey && styles.chipSelected]}
+          onPress={() => {
+            onPick(slot.key)
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: slot.key === slotKey }}
+          accessibilityLabel={slotName(slot, t)}
+          testID={`plan-slot-${slot.key}`}
+        >
+          <Text style={[styles.slotChipText, slot.key === slotKey && styles.chipTextSelected]}>
+            {slotName(slot, t)}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  )
+}
+
+/** Servings Cooked, between one and fifty: a stepper rather than a keyboard,
+ *  because this is the one number planning a week needs. */
+const ServingsStepper = ({
+  servings,
+  onChange,
+}: {
+  readonly servings: number
+  readonly onChange: (next: (current: number) => number) => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.stepperRow}>
+      <Pressable
+        style={styles.stepper}
+        onPress={() => {
+          onChange((n) => Math.max(1, n - 1))
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('plan.cookingFor')}
+        testID="plan-servings-down"
+      >
+        <Text style={styles.stepperSign}>−</Text>
+      </Pressable>
+      <Text style={styles.stepperValue} testID="plan-servings">
+        {String(servings)}
+      </Text>
+      <Pressable
+        style={styles.stepper}
+        onPress={() => {
+          onChange((n) => Math.min(50, n + 1))
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('plan.cookingFor')}
+        testID="plan-servings-up"
+      >
+        <Text style={styles.stepperSign}>+</Text>
+      </Pressable>
+    </View>
+  )
+}
+
 export const PlanSheet = ({
   visible,
   mealName,
@@ -175,79 +333,21 @@ export const PlanSheet = ({
         >
           <View style={styles.grip} />
 
-          <View style={styles.headerRow}>
-            <View style={{ flexShrink: 1, gap: 4 }}>
-              <Text style={styles.title}>{t('plan.title', { meal: mealName })}</Text>
-              {addedByName !== undefined && addedByName !== '' && (
-                <Text style={styles.addedBy}>
-                  {t('plan.addedBy', { name: addedByName, servings: defaultServings })}
-                </Text>
-              )}
-            </View>
-            <Pressable
-              onPress={onDismiss}
-              accessibilityRole="button"
-              accessibilityLabel={t('plan.cancel')}
-              testID="plan-cancel"
-            >
-              <Text style={styles.cancel}>{t('plan.cancel')}</Text>
-            </Pressable>
-          </View>
+          <PlanHeader
+            mealName={mealName}
+            addedByName={addedByName}
+            defaultServings={defaultServings}
+            onDismiss={onDismiss}
+          />
 
           <View style={styles.group}>
             <Text style={styles.label}>{t('plan.day')}</Text>
-            <View style={styles.dayRow}>
-              {board.map((day) => (
-                <Pressable
-                  key={day.date}
-                  style={[
-                    styles.chip,
-                    day.date === today && styles.chipToday,
-                    day.date === date && styles.chipSelected,
-                  ]}
-                  onPress={() => {
-                    setDate(day.date)
-                  }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: day.date === date }}
-                  accessibilityLabel={day.date}
-                  testID={`plan-day-${day.date}`}
-                >
-                  <Text style={[styles.chipText, day.date === date && styles.chipTextSelected]}>
-                    {t(weekdayKey(day.date))}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <DayChips board={board} date={date} today={today} onPick={setDate} />
           </View>
 
           <View style={styles.group}>
             <Text style={styles.label}>{t('plan.slot')}</Text>
-            <View style={styles.slotRow}>
-              {slots.map((slot) => (
-                <Pressable
-                  key={slot.key}
-                  style={[
-                    styles.chip,
-                    styles.slotChip,
-                    slot.key === slotKey && styles.chipSelected,
-                  ]}
-                  onPress={() => {
-                    setSlotKey(slot.key)
-                  }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: slot.key === slotKey }}
-                  accessibilityLabel={slotName(slot, t)}
-                  testID={`plan-slot-${slot.key}`}
-                >
-                  <Text
-                    style={[styles.slotChipText, slot.key === slotKey && styles.chipTextSelected]}
-                  >
-                    {slotName(slot, t)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <SlotChips slots={slots} slotKey={slotKey} onPick={setSlotKey} />
 
             {/* The app never refuses an edit; it says what will happen instead. */}
             {placement.willJoinExisting && (
@@ -259,33 +359,7 @@ export const PlanSheet = ({
 
           <View style={styles.group}>
             <Text style={styles.label}>{t('plan.cookingFor')}</Text>
-            <View style={styles.stepperRow}>
-              <Pressable
-                style={styles.stepper}
-                onPress={() => {
-                  setServings((n) => Math.max(1, n - 1))
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('plan.cookingFor')}
-                testID="plan-servings-down"
-              >
-                <Text style={styles.stepperSign}>−</Text>
-              </Pressable>
-              <Text style={styles.stepperValue} testID="plan-servings">
-                {String(servings)}
-              </Text>
-              <Pressable
-                style={styles.stepper}
-                onPress={() => {
-                  setServings((n) => Math.min(50, n + 1))
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('plan.cookingFor')}
-                testID="plan-servings-up"
-              >
-                <Text style={styles.stepperSign}>+</Text>
-              </Pressable>
-            </View>
+            <ServingsStepper servings={servings} onChange={setServings} />
           </View>
 
           <Pressable

@@ -5,7 +5,7 @@ import { slotName, type SlotKey } from '@/features/household'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { formatColumnHeading } from '../domain/format-day'
 import { LeftoverCard } from '@/features/meals'
-import type { BoardCard, CookEventId, LeftoverId } from '../domain/types'
+import type { BoardCard, CookEvent, CookEventId, Leftover, LeftoverId } from '../domain/types'
 import type { BoardDay } from '../domain/board'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
@@ -126,6 +126,150 @@ const sheets = themed((tokens) =>
 const cardKey = (card: BoardCard): string =>
   card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id
 
+/** A Leftover in a 100px column: the card, and the × that takes it off the
+ *  week. Tapping the card itself opens nothing — a Leftover has nothing to
+ *  edit (ADR 0004). */
+const WideLeftoverCard = ({
+  leftover,
+  onRemoveLeftover,
+  onDropped,
+}: {
+  readonly leftover: Leftover
+  readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
+  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View>
+      <DraggableCard
+        payload={{ kind: 'leftover', leftover }}
+        onDropped={onDropped}
+        accessibilityLabel={t('leftover.suffix', { meal: leftover.parentMealName })}
+        testID={`leftover-${leftover.id}`}
+      >
+        <LeftoverCard compact parentMealName={leftover.parentMealName} />
+      </DraggableCard>
+      {onRemoveLeftover !== undefined && (
+        <Pressable
+          style={styles.removeLeftover}
+          onPress={() => {
+            onRemoveLeftover(leftover.id)
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('leftover.remove')}
+          testID={`remove-leftover-${leftover.id}`}
+        >
+          <Text style={styles.removeLeftoverText}>×</Text>
+        </Pressable>
+      )}
+    </View>
+  )
+}
+
+/** The same two actions the phone card carries, at the size a 100px column can
+ *  hold. Without them a Leftover could not be made above 1024px at all. */
+const WideCardActions = ({
+  cookEventId,
+  onSelect,
+  onAddLeftover,
+}: {
+  readonly cookEventId: CookEventId
+  readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.cardActions}>
+      <Pressable
+        style={styles.cardAction}
+        onPress={() => onAddLeftover?.(cookEventId)}
+        accessibilityRole="button"
+        accessibilityLabel={t('leftover.add')}
+        testID="card-add-leftover"
+      >
+        <Text style={styles.cardGlyph}>↻</Text>
+      </Pressable>
+      <Pressable
+        style={styles.cardAction}
+        onPress={() => onSelect?.(cookEventId)}
+        accessibilityRole="button"
+        accessibilityLabel={t('unplan.action')}
+        testID="card-unplan"
+      >
+        <Text style={styles.cardGlyph}>×</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+/** What the card says: the Meal's name, and a foot holding the servings count
+ *  beside the two actions. */
+const WideCardBody = ({
+  cookEvent,
+  onSelect,
+  onAddLeftover,
+}: {
+  readonly cookEvent: CookEvent
+  readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+
+  return (
+    <View style={styles.card} testID="meal-card-planned">
+      {/* Clamped rather than broken: a narrow column splits "perunamuusi" into
+          "perunamuu si", and a Finnish compound is exactly the case this
+          column will meet. */}
+      <Text style={styles.cardName} numberOfLines={3}>
+        {cookEvent.mealName}
+      </Text>
+      <View style={styles.cardFoot}>
+        <Text style={styles.cardCount}>{String(cookEvent.servingsCooked)}</Text>
+        <WideCardActions
+          cookEventId={cookEvent.id}
+          onSelect={onSelect}
+          onAddLeftover={onAddLeftover}
+        />
+      </View>
+    </View>
+  )
+}
+
+/**
+ * A Cook Event in a 100px column: the Meal's name, how many are being cooked,
+ * and the two actions. Carry it to another day or Slot, or back onto the
+ * Backlog to take it off the week; tapping still opens unplan.
+ */
+const WidePlannedCard = ({
+  cookEvent,
+  onSelect,
+  onAddLeftover,
+  onDropped,
+}: {
+  readonly cookEvent: CookEvent
+  readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
+}): React.JSX.Element => (
+  <AnimatedCard>
+    <View>
+      <DraggableCard
+        payload={{ kind: 'cook-event', cookEvent }}
+        onDropped={onDropped}
+        accessibilityLabel={cookEvent.mealName}
+        isTappable={false}
+        testID={`planned-${cookEvent.id}`}
+      >
+        <WideCardBody cookEvent={cookEvent} onSelect={onSelect} onAddLeftover={onAddLeftover} />
+      </DraggableCard>
+    </View>
+  </AnimatedCard>
+)
+
 type Props = {
   readonly day: BoardDay
   readonly isToday: boolean
@@ -204,82 +348,20 @@ export const WideDayColumn = ({
 
             {slot.cards.map((card) =>
               card.kind === 'leftover' ? (
-                <View key={cardKey(card)}>
-                  <DraggableCard
-                    payload={{ kind: 'leftover', leftover: card.leftover }}
-                    onDropped={onDropped}
-                    accessibilityLabel={t('leftover.suffix', {
-                      meal: card.leftover.parentMealName,
-                    })}
-                    testID={`leftover-${card.leftover.id}`}
-                  >
-                    <LeftoverCard compact parentMealName={card.leftover.parentMealName} />
-                  </DraggableCard>
-                  {onRemoveLeftover !== undefined && (
-                    <Pressable
-                      style={styles.removeLeftover}
-                      onPress={() => {
-                        onRemoveLeftover(card.leftover.id)
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('leftover.remove')}
-                      testID={`remove-leftover-${card.leftover.id}`}
-                    >
-                      <Text style={styles.removeLeftoverText}>×</Text>
-                    </Pressable>
-                  )}
-                </View>
+                <WideLeftoverCard
+                  key={cardKey(card)}
+                  leftover={card.leftover}
+                  onRemoveLeftover={onRemoveLeftover}
+                  onDropped={onDropped}
+                />
               ) : (
-                <AnimatedCard key={cardKey(card)}>
-                  {/* Carry it to another day or Slot, or back onto the Backlog
-                      to take it off the week. Tapping still opens unplan. */}
-                  <View>
-                    <DraggableCard
-                      payload={{ kind: 'cook-event', cookEvent: card.cookEvent }}
-                      onDropped={onDropped}
-                      accessibilityLabel={card.cookEvent.mealName}
-                      isTappable={false}
-                      testID={`planned-${card.cookEvent.id}`}
-                    >
-                      <View style={styles.card} testID="meal-card-planned">
-                        {/* Clamped rather than broken: a narrow column splits
-                            "perunamuusi" into "perunamuu si", and a Finnish
-                            compound is exactly the case this column will meet. */}
-                        <Text style={styles.cardName} numberOfLines={3}>
-                          {card.cookEvent.mealName}
-                        </Text>
-                        <View style={styles.cardFoot}>
-                          <Text style={styles.cardCount}>
-                            {String(card.cookEvent.servingsCooked)}
-                          </Text>
-                          {/* The same two actions the phone card carries, at
-                              the size a 100px column can hold. Without them a
-                              Leftover could not be made above 1024px at all. */}
-                          <View style={styles.cardActions}>
-                            <Pressable
-                              style={styles.cardAction}
-                              onPress={() => onAddLeftover?.(card.cookEvent.id)}
-                              accessibilityRole="button"
-                              accessibilityLabel={t('leftover.add')}
-                              testID="card-add-leftover"
-                            >
-                              <Text style={styles.cardGlyph}>↻</Text>
-                            </Pressable>
-                            <Pressable
-                              style={styles.cardAction}
-                              onPress={() => onSelect?.(card.cookEvent.id)}
-                              accessibilityRole="button"
-                              accessibilityLabel={t('unplan.action')}
-                              testID="card-unplan"
-                            >
-                              <Text style={styles.cardGlyph}>×</Text>
-                            </Pressable>
-                          </View>
-                        </View>
-                      </View>
-                    </DraggableCard>
-                  </View>
-                </AnimatedCard>
+                <WidePlannedCard
+                  key={cardKey(card)}
+                  cookEvent={card.cookEvent}
+                  onSelect={onSelect}
+                  onAddLeftover={onAddLeftover}
+                  onDropped={onDropped}
+                />
               ),
             )}
           </DropSlot>

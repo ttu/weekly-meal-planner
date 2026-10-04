@@ -1,5 +1,7 @@
 import js from '@eslint/js'
 import { defineConfig } from 'eslint/config'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
 import sonarjs from 'eslint-plugin-sonarjs'
 import tseslint from 'typescript-eslint'
 
@@ -23,6 +25,51 @@ export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   sonarjs.configs.recommended,
+  {
+    // React's own rules, for the files that actually contain JSX. The runtime
+    // config drops the rules about importing React, which this codebase never
+    // does - Expo's JSX transform handles it.
+    files: ['**/*.tsx'],
+    ...react.configs.flat.recommended,
+    ...react.configs.flat['jsx-runtime'],
+    // Pinned rather than detected: eslint-plugin-react's version detection
+    // calls context.getFilename(), which ESLint 10 removed.
+    settings: { react: { version: '19.2' } },
+    rules: {
+      ...react.configs.flat.recommended.rules,
+      ...react.configs.flat['jsx-runtime'].rules,
+      /**
+       * Four levels of JSX in one component is the point where a block has
+       * earned a name (docs/05-code-quality.md). The fix is to extract the
+       * inner block into its own component, never to raise the ceiling: the
+       * board is seven days x N Slots x four card variants, and it only stays
+       * readable if each of those is a thing with a name.
+       */
+      'react/jsx-max-depth': ['error', { max: 4 }],
+    },
+  },
+  {
+    // Test wrappers nest providers as deep as the tree needs; depth there is
+    // structural, not a readability problem.
+    files: ['**/*.test.tsx', 'src/test/**', '**/*.stories.tsx'],
+    rules: { 'react/jsx-max-depth': 'off' },
+  },
+  // The hooks rules, in the flat-config shape.
+  reactHooks.configs.flat.recommended,
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    rules: {
+      // Two of the compiler-era rules cannot read React Native. `immutability`
+      // sees every Reanimated shared-value write (`x.value = …`, which is the
+      // only way to drive a frame from a worklet) as mutating something React
+      // owns. `refs` cannot see through a custom hook that returns a ref
+      // alongside its callbacks - useEdgeAutoScroll's whole result then counts
+      // as a ref read during render. Both are false here, every time; the
+      // other fourteen hook rules stay on.
+      'react-hooks/immutability': 'off',
+      'react-hooks/refs': 'off',
+    },
+  },
   {
     rules: {
       // `TODO.md` is this project's issue tracker and the code points at it by

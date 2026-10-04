@@ -11,6 +11,7 @@ import {
   signOut,
   usePresence,
   useSession,
+  type PresentMember,
   type SlotKey,
 } from '@/features/household'
 import { MealLibraryScreen, MealPicker, useHouseholdMeals } from '@/features/meals'
@@ -97,7 +98,6 @@ const Board = ({
   shared = false,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
-  const theme = useTheme()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const session = useSession()
@@ -441,74 +441,17 @@ const Board = ({
           onContentSizeChange={autoScroll.onContentSizeChange}
           contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
         >
-          <View style={styles.links}>
-            <Pressable
-              onPress={onOpenLibrary}
-              accessibilityRole="button"
-              accessibilityLabel={t('meal.library')}
-              testID="open-library"
-            >
-              <Text style={styles.link}>{t('meal.library')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={onShare}
-              accessibilityRole="button"
-              accessibilityLabel={t('board.share')}
-              testID="share-board"
-            >
-              <Text style={styles.link}>{shared ? t('board.shareCopied') : t('board.share')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={onOpenSettings}
-              accessibilityRole="button"
-              accessibilityLabel={t('nav.settings')}
-              testID="open-settings"
-            >
-              <Text style={styles.link}>{t('nav.settings')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                void signOut(session.client)
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('auth.signOut')}
-              testID="sign-out"
-            >
-              <Text style={styles.link}>{t('auth.signOut')}</Text>
-            </Pressable>
-          </View>
+          <BoardLinks
+            shared={shared}
+            onOpenLibrary={onOpenLibrary}
+            onShare={onShare}
+            onOpenSettings={onOpenSettings}
+            onSignOut={() => {
+              void signOut(session.client)
+            }}
+          />
 
-          <View style={styles.titleRow}>
-            <View>
-              <Text style={styles.title}>{t('board.thisWeek')}</Text>
-              <Text style={styles.week}>{weekRange}</Text>
-            </View>
-            <View style={styles.links}>
-              {present.length > 0 && (
-                <View style={styles.presence} testID="presence">
-                  {present.map((member, index) => (
-                    <View key={member.userId} style={index > 0 && styles.overlap}>
-                      <Avatar
-                        name={member.displayName}
-                        colour={member.colour}
-                        size="large"
-                        ringColour={theme.color.surface}
-                      />
-                    </View>
-                  ))}
-                </View>
-              )}
-              <Pressable
-                style={styles.shopping}
-                onPress={onOpenShopping}
-                accessibilityRole="button"
-                accessibilityLabel={t('shopping.title')}
-                testID="open-shopping"
-              >
-                <Text style={styles.shoppingText}>{t('shopping.title')}</Text>
-              </Pressable>
-            </View>
-          </View>
+          <BoardTitleRow weekRange={weekRange} present={present} onOpenShopping={onOpenShopping} />
 
           <WeekStrip
             dates={board.map((day) => day.date)}
@@ -562,6 +505,124 @@ const Board = ({
  * Drag state wraps the whole board: the Backlog cards that start a drag and the
  * Slots that receive it are in different subtrees.
  */
+/** One of the board's top-row destinations. Four of them, identical but for
+ *  their words, so they are one component used four times. */
+const NavLink = ({
+  label,
+  onPress,
+  testID,
+}: {
+  readonly label: string
+  readonly onPress?: (() => void) | undefined
+  readonly testID: string
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={testID}
+    >
+      <Text style={styles.link}>{label}</Text>
+    </Pressable>
+  )
+}
+
+/** Everything the board is not: the library, the share link, settings, and the
+ *  way out. */
+const BoardLinks = ({
+  shared,
+  onOpenLibrary,
+  onShare,
+  onOpenSettings,
+  onSignOut,
+}: {
+  readonly shared: boolean
+  readonly onOpenLibrary?: (() => void) | undefined
+  readonly onShare?: (() => void) | undefined
+  readonly onOpenSettings?: (() => void) | undefined
+  readonly onSignOut: () => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.links}>
+      <NavLink label={t('meal.library')} onPress={onOpenLibrary} testID="open-library" />
+      <NavLink
+        label={shared ? t('board.shareCopied') : t('board.share')}
+        onPress={onShare}
+        testID="share-board"
+      />
+      <NavLink label={t('nav.settings')} onPress={onOpenSettings} testID="open-settings" />
+      <NavLink label={t('auth.signOut')} onPress={onSignOut} testID="sign-out" />
+    </View>
+  )
+}
+
+/** Who else is looking at this week, overlapped like a stack of faces. */
+const PresenceRow = ({
+  present,
+}: {
+  readonly present: readonly PresentMember[]
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
+
+  return (
+    <View style={styles.presence} testID="presence">
+      {present.map((member, index) => (
+        <View key={member.userId} style={index > 0 && styles.overlap}>
+          <Avatar
+            name={member.displayName}
+            colour={member.colour}
+            size="large"
+            ringColour={theme.color.surface}
+          />
+        </View>
+      ))}
+    </View>
+  )
+}
+
+/** The week being planned, who else is in it, and the way to the Shopping
+ *  List - the one thing the week is for. */
+const BoardTitleRow = ({
+  weekRange,
+  present,
+  onOpenShopping,
+}: {
+  readonly weekRange: string
+  readonly present: readonly PresentMember[]
+  readonly onOpenShopping?: (() => void) | undefined
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.titleRow}>
+      <View>
+        <Text style={styles.title}>{t('board.thisWeek')}</Text>
+        <Text style={styles.week}>{weekRange}</Text>
+      </View>
+      <View style={styles.links}>
+        {present.length > 0 && <PresenceRow present={present} />}
+        <Pressable
+          style={styles.shopping}
+          onPress={onOpenShopping}
+          accessibilityRole="button"
+          accessibilityLabel={t('shopping.title')}
+          testID="open-shopping"
+        >
+          <Text style={styles.shoppingText}>{t('shopping.title')}</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
 export const BoardScreen = (props: Props): React.JSX.Element => {
   return (
     <DragProvider>

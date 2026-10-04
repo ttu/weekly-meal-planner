@@ -104,6 +104,33 @@ codebase was already clean of it — a ratchet, not a backlog:
 happily until the tree is built some other way. It found `@storybook/react`
 being imported by the stories while only its framework package was declared.
 
+React's own rules run over every `.tsx`: `eslint-plugin-react`'s recommended
+set with `jsx-runtime` (this codebase never imports React), and all sixteen
+rules from `eslint-plugin-react-hooks` bar two.
+
+**On `react/jsx-max-depth`:** four levels, and the fix is always to extract the
+inner block into a named component — never to raise the ceiling. The board is
+seven days x N Slots x four card variants, and it only stays readable if each
+of those is a thing with a name. Test wrappers and stories are exempt: nesting
+providers is structural, not a readability problem.
+
+Two hook rules are off, and both are off because they cannot read React Native:
+
+| Rule                       | Why                                                            |
+| -------------------------- | -------------------------------------------------------------- |
+| `react-hooks/immutability` | every Reanimated `shared.value = …` looks like a mutation      |
+| `react-hooks/refs`         | cannot see through a hook returning a ref beside its callbacks |
+
+Reanimated's `.value` write is the only way to drive a frame from a worklet,
+and `useEdgeAutoScroll` returns a ref alongside `onScroll` — so the compiler
+counts reading its result as reading a ref during render. Both are false here
+every time. The other fourteen hook rules stay on, `rules-of-hooks` and
+`exhaustive-deps` included.
+
+`eslint-plugin-react` does not yet claim ESLint 10 support, and its React
+version _detection_ calls an API ESLint 10 removed — so the version is pinned
+in `settings` instead. Every rule itself works.
+
 Rules deliberately left off: `no-undefined-assignment` contradicts rule 5,
 `no-inconsistent-returns` flags the standard `useEffect` cleanup, and
 `cyclomatic-complexity` says again what the cognitive-complexity cap already

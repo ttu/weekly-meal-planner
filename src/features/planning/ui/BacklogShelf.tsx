@@ -101,6 +101,69 @@ type Props = {
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
 
+/** The shelf's own heading row: a grab handle on a phone, the count once
+ *  anything is wanted, and the add button the shelf layout carries. */
+const BacklogHeader = ({
+  isShelf,
+  count,
+  onAdd,
+}: {
+  readonly isShelf: boolean
+  readonly count: number
+  readonly onAdd?: (() => void) | undefined
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={[styles.header, isShelf && styles.measure]}>
+      <View style={styles.headingRow}>
+        {isShelf && <View style={styles.grip} />}
+        <Text style={[styles.heading, !isShelf && styles.headingPane]}>
+          {isShelf ? t('backlog.count') : t('board.backlogHeading')}
+        </Text>
+        {count > 0 && (
+          <Text style={styles.count} testID="backlog-count">
+            {String(count)}
+          </Text>
+        )}
+      </View>
+      {isShelf && <AddButton onAdd={onAdd} />}
+    </View>
+  )
+}
+
+const AddButton = ({ onAdd }: { readonly onAdd?: (() => void) | undefined }): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <Pressable
+      onPress={onAdd}
+      accessibilityRole="button"
+      accessibilityLabel={t('backlog.add')}
+      testID="backlog-add"
+    >
+      <Text style={styles.add}>{t('backlog.addShort')}</Text>
+    </Pressable>
+  )
+}
+
+/** What the Backlog will do with the card being carried: take it off the week,
+ *  or want it in the first place. */
+const DropHint = ({ dragKind }: { readonly dragKind: DragPayload['kind'] }): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.dropHere} testID="backlog-drop-hint">
+      <Text style={styles.dropHereText}>
+        {dragKind === 'library' ? t('backlog.dropToWant') : t('backlog.dropToRemove')}
+      </Text>
+    </View>
+  )
+}
+
 export const BacklogShelf = ({
   items,
   layout = 'shelf',
@@ -182,38 +245,8 @@ export const BacklogShelf = ({
 
   const content = (
     <>
-      <View style={[styles.header, isShelf && styles.measure]}>
-        <View style={styles.headingRow}>
-          {isShelf && <View style={styles.grip} />}
-          <Text style={[styles.heading, !isShelf && styles.headingPane]}>
-            {isShelf ? t('backlog.count') : t('board.backlogHeading')}
-          </Text>
-          {items.length > 0 && (
-            <Text style={styles.count} testID="backlog-count">
-              {String(items.length)}
-            </Text>
-          )}
-        </View>
-        {isShelf && (
-          <Pressable
-            onPress={onAdd}
-            accessibilityRole="button"
-            accessibilityLabel={t('backlog.add')}
-            testID="backlog-add"
-          >
-            <Text style={styles.add}>{t('backlog.addShort')}</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {canReceive && (
-        <View style={styles.dropHere} testID="backlog-drop-hint">
-          <Text style={styles.dropHereText}>
-            {dragging.kind === 'library' ? t('backlog.dropToWant') : t('backlog.dropToRemove')}
-          </Text>
-        </View>
-      )}
-
+      <BacklogHeader isShelf={isShelf} count={items.length} onAdd={onAdd} />
+      {canReceive && <DropHint dragKind={dragging.kind} />}
       {list}
     </>
   )
