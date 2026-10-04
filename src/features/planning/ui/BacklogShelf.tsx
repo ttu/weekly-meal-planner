@@ -32,7 +32,9 @@ const sheets = themed((tokens) =>
       gap: 11,
       boxShadow: tokens.shadow.shelf,
     },
-    pane: { paddingTop: tokens.space.md, gap: 11, minHeight: '100%' },
+    paneFill: { flex: 1, minHeight: 0 },
+    paneScroll: { flex: 1 },
+    pane: { paddingTop: tokens.space.md, gap: 11, flexGrow: 1 },
     hovered: { backgroundColor: tokens.color.dropTint },
     header: {
       flexDirection: 'row',
@@ -158,12 +160,8 @@ export const BacklogShelf = ({
     </View>
   ))
 
-  return (
-    <View
-      ref={ref}
-      style={[isShelf ? styles.shelf : styles.pane, isHovered && styles.hovered]}
-      testID="backlog-shelf"
-    >
+  const content = (
+    <>
       <View style={[styles.header, isShelf && styles.measure]}>
         <View style={styles.headingRow}>
           {isShelf && <View style={styles.grip} />}
@@ -207,6 +205,24 @@ export const BacklogShelf = ({
       ) : (
         <View style={styles.column}>{cards}</View>
       )}
+    </>
+  )
+
+  if (isShelf) {
+    return (
+      <View ref={ref} style={[styles.shelf, isHovered && styles.hovered]} testID="backlog-shelf">
+        {content}
+      </View>
+    )
+  }
+
+  // The drop target is the pane itself — the whole column — not the cards
+  // inside it, which are only as tall as their contents.
+  return (
+    <View ref={ref} style={[styles.paneFill, isHovered && styles.hovered]} testID="backlog-shelf">
+      <ScrollView style={styles.paneScroll} contentContainerStyle={styles.pane}>
+        {content}
+      </ScrollView>
     </View>
   )
 }

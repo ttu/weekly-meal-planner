@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native'
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 
@@ -28,7 +28,6 @@ const sheets = themed((tokens) =>
       backgroundColor: tokens.color.surface,
     },
     boardPane: { flex: 1, minWidth: 320, backgroundColor: tokens.color.surface },
-    scroll: { flex: 1 },
     /** Seven columns, sized by the pane rather than by their contents. */
     grid: { flex: 1, flexDirection: 'row', minHeight: 0 },
     footer: {
@@ -77,7 +76,7 @@ export const WideBoardLayout = ({
           {library}
         </View>
         <View style={styles.backlogPane} testID="pane-backlog">
-          <ScrollView style={styles.scroll}>{backlog}</ScrollView>
+          {backlog}
         </View>
         <View style={styles.boardPane} testID="pane-board">
           <View style={styles.grid}>{board}</View>
