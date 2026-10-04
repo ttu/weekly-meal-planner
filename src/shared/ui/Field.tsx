@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 
 /**
  * A text field that shows where you are.
@@ -12,15 +12,20 @@ import { formStyles } from '@/shared/theme/form-styles'
  */
 type Props = TextInputProps & { readonly hasError?: boolean | undefined }
 
-const styles = StyleSheet.create({
-  /** The browser's own ring is suppressed because this replaces it; see
-   *  src/types/react-native-web.d.ts. */
-  field: { outlineStyle: 'none' },
-  focused: { borderColor: tokens.color.action, borderWidth: 2 },
-  error: { borderColor: tokens.color.action, borderWidth: 2 },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    /** The browser's own ring is suppressed because this replaces it; see
+     *  src/types/react-native-web.d.ts. */
+    field: { outlineStyle: 'none' },
+    focused: { borderColor: tokens.color.action, borderWidth: 2 },
+    error: { borderColor: tokens.color.action, borderWidth: 2 },
+  }),
+)
 
 export const Field = ({ hasError = false, style, ...props }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
+  const formStyles = useFormStyles()
   const [focused, setFocused] = useState(false)
 
   return (
@@ -33,7 +38,7 @@ export const Field = ({ hasError = false, style, ...props }: Props): React.JSX.E
         hasError && styles.error,
         style,
       ]}
-      placeholderTextColor={tokens.color.textGhost}
+      placeholderTextColor={theme.color.textGhost}
       onFocus={(event) => {
         setFocused(true)
         props.onFocus?.(event)

@@ -10,7 +10,7 @@ import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
 import { initI18n } from '@/shared/i18n'
 import { detectDeviceLocale } from '@/shared/i18n/device-locale'
-import { tokens } from '@/shared/theme/tokens'
+import { useTheme } from '@/shared/theme/theme'
 import {
   createSupabaseClient,
   SessionProvider,
@@ -21,9 +21,11 @@ import {
 
 initI18n(detectDeviceLocale())
 
-const Blank = (): React.JSX.Element => (
-  <View style={{ flex: 1, backgroundColor: tokens.color.surface }} testID="app-loading" />
-)
+const Blank = (): React.JSX.Element => {
+  const theme = useTheme()
+
+  return <View style={{ flex: 1, backgroundColor: theme.color.surface }} testID="app-loading" />
+}
 
 /**
  * Inside the QueryClientProvider so the Household can be a query, and every
@@ -52,6 +54,7 @@ const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.J
 }
 
 export default function RootLayout(): React.JSX.Element {
+  const theme = useTheme()
   // Held before first paint so text never swaps face mid-read.
   const [fontsLoaded] = useFonts({
     'InstrumentSerif-Regular': InstrumentSerif,
@@ -64,7 +67,7 @@ export default function RootLayout(): React.JSX.Element {
     // The ground the whole app sits on. Screens that cap their own width —
     // the forms, the Shopping List — would otherwise show the browser's
     // default grey either side of their column.
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.color.surface }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.color.surface }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           {fontsLoaded ? <AppSession client={client} /> : <Blank />}

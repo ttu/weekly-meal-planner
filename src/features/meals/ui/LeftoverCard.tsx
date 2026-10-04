@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 
 /**
@@ -15,39 +15,46 @@ type Props = {
   readonly compact?: boolean | undefined
 }
 
-const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', paddingLeft: 22 },
-  wrapCompact: { paddingLeft: 0 },
-  /** The stub: an elbow drawn from the parent card down into the Leftover. */
-  stub: {
-    width: 14,
-    height: 20,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: tokens.color.dashed,
-    borderBottomLeftRadius: tokens.radius.sm,
-  },
-  card: {
-    flex: 1,
-    marginLeft: 10,
-    alignSelf: 'flex-end',
-    backgroundColor: tokens.color.surfaceInset,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: tokens.color.dashedInset,
-    borderRadius: 12,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-  },
-  cardCompact: { marginLeft: 0, paddingVertical: tokens.space.sm, paddingHorizontal: 10 },
-  text: { ...tokens.type.body, color: tokens.color.textMuted },
-  textCompact: { ...tokens.type.meta, color: tokens.color.textMuted },
-  /** "leftovers" in italic serif — the word itself is the label. */
-  word: { fontFamily: tokens.type.dayHeading.fontFamily, fontSize: 17, fontStyle: 'italic' },
-  wordCompact: { fontFamily: tokens.type.dayHeading.fontFamily, fontSize: 15, fontStyle: 'italic' },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    wrap: { flexDirection: 'row', paddingLeft: 22 },
+    wrapCompact: { paddingLeft: 0 },
+    /** The stub: an elbow drawn from the parent card down into the Leftover. */
+    stub: {
+      width: 14,
+      height: 20,
+      borderLeftWidth: 2,
+      borderBottomWidth: 2,
+      borderColor: tokens.color.dashed,
+      borderBottomLeftRadius: tokens.radius.sm,
+    },
+    card: {
+      flex: 1,
+      marginLeft: 10,
+      alignSelf: 'flex-end',
+      backgroundColor: tokens.color.surfaceInset,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.dashedInset,
+      borderRadius: 12,
+      paddingVertical: 9,
+      paddingHorizontal: 14,
+    },
+    cardCompact: { marginLeft: 0, paddingVertical: tokens.space.sm, paddingHorizontal: 10 },
+    text: { ...tokens.type.body, color: tokens.color.textMuted },
+    textCompact: { ...tokens.type.meta, color: tokens.color.textMuted },
+    /** "leftovers" in italic serif — the word itself is the label. */
+    word: { fontFamily: tokens.type.dayHeading.fontFamily, fontSize: 17, fontStyle: 'italic' },
+    wordCompact: {
+      fontFamily: tokens.type.dayHeading.fontFamily,
+      fontSize: 15,
+      fontStyle: 'italic',
+    },
+  }),
+)
 
 export const LeftoverCard = ({ parentMealName, compact = false }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (

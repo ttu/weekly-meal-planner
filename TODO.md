@@ -18,8 +18,4 @@ you want to overturn one, change the spec first.
 
 ---
 
-## Missing functionality
-
-- [ ] **Dark mode.** Not designed; see "Open" in `docs/07-design-system.md`.
-      Tokens are already semantic, so it is a value swap rather than a
-      refactor. Amber is the token most likely to fail on a dark ground.
+_Nothing open._

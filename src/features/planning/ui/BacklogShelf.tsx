@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 import { MealCard } from '@/features/meals'
 import { DraggableCard } from './DraggableCard'
@@ -21,67 +21,69 @@ import type { BacklogItem, BacklogItemId } from '../domain/types'
  */
 export type BacklogLayout = 'shelf' | 'pane'
 
-const styles = StyleSheet.create({
-  shelf: {
-    backgroundColor: tokens.color.surfaceRaised,
-    borderTopWidth: 1,
-    borderTopColor: tokens.color.cardBorder,
-    paddingTop: 12,
-    paddingBottom: 26,
-    gap: 11,
-    boxShadow: tokens.shadow.shelf,
-  },
-  pane: { paddingTop: tokens.space.md, gap: 11, minHeight: '100%' },
-  hovered: { backgroundColor: 'rgba(192, 90, 56, 0.06)' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: tokens.space.md,
-  },
-  /** The shelf's paper spans the window; its contents line up with the board
-   *  column above them. */
-  measure: { width: '100%', maxWidth: tokens.layout.readable, alignSelf: 'center' },
-  headingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  /** The grab handle: the shelf is a surface that can be pulled up. */
-  grip: { width: 28, height: 4, borderRadius: 2, backgroundColor: tokens.color.cardBorder },
-  heading: { ...tokens.type.label, color: tokens.color.textPrimary, textTransform: 'uppercase' },
-  headingPane: { color: tokens.color.textSupport },
-  count: {
-    fontFamily: tokens.type.label.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
-    color: tokens.color.textPrimary,
-    backgroundColor: tokens.color.backlog,
-    borderRadius: 9,
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-    overflow: 'hidden',
-  },
-  add: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
-  row: { flexDirection: 'row', gap: 10, paddingHorizontal: tokens.space.md },
-  column: { paddingHorizontal: 14, gap: 9 },
-  shelfCard: { width: 168 },
-  cardWrap: { position: 'relative' },
-  /** Removal sits on the card as a corner affordance rather than a row of its
-   *  own: a shelf card is 168px wide and cannot spare a line. */
-  remove: { position: 'absolute', top: 2, right: 4, padding: 6, zIndex: 1 },
-  removeText: { ...tokens.type.meta, color: tokens.color.textGhost },
-  empty: { paddingHorizontal: tokens.space.md },
-  emptyText: { ...tokens.type.body, color: tokens.color.textSupport },
-  /** Shown only while a planned card is in the air, so the way back is
-   *  visible at the moment it is wanted. */
-  dropHere: {
-    marginHorizontal: tokens.space.md,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: tokens.color.action,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 13,
-  },
-  dropHereText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.action },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    shelf: {
+      backgroundColor: tokens.color.surfaceRaised,
+      borderTopWidth: 1,
+      borderTopColor: tokens.color.cardBorder,
+      paddingTop: 12,
+      paddingBottom: 26,
+      gap: 11,
+      boxShadow: tokens.shadow.shelf,
+    },
+    pane: { paddingTop: tokens.space.md, gap: 11, minHeight: '100%' },
+    hovered: { backgroundColor: tokens.color.dropTint },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: tokens.space.md,
+    },
+    /** The shelf's paper spans the window; its contents line up with the board
+     *  column above them. */
+    measure: { width: '100%', maxWidth: tokens.layout.readable, alignSelf: 'center' },
+    headingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+    /** The grab handle: the shelf is a surface that can be pulled up. */
+    grip: { width: 28, height: 4, borderRadius: 2, backgroundColor: tokens.color.cardBorder },
+    heading: { ...tokens.type.label, color: tokens.color.textPrimary, textTransform: 'uppercase' },
+    headingPane: { color: tokens.color.textSupport },
+    count: {
+      fontFamily: tokens.type.label.fontFamily,
+      fontSize: 12,
+      fontWeight: '700',
+      color: tokens.color.textPrimary,
+      backgroundColor: tokens.color.backlog,
+      borderRadius: 9,
+      paddingHorizontal: 8,
+      paddingVertical: 1,
+      overflow: 'hidden',
+    },
+    add: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
+    row: { flexDirection: 'row', gap: 10, paddingHorizontal: tokens.space.md },
+    column: { paddingHorizontal: 14, gap: 9 },
+    shelfCard: { width: 168 },
+    cardWrap: { position: 'relative' },
+    /** Removal sits on the card as a corner affordance rather than a row of its
+     *  own: a shelf card is 168px wide and cannot spare a line. */
+    remove: { position: 'absolute', top: 2, right: 4, padding: 6, zIndex: 1 },
+    removeText: { ...tokens.type.meta, color: tokens.color.textGhost },
+    empty: { paddingHorizontal: tokens.space.md },
+    emptyText: { ...tokens.type.body, color: tokens.color.textSupport },
+    /** Shown only while a planned card is in the air, so the way back is
+     *  visible at the moment it is wanted. */
+    dropHere: {
+      marginHorizontal: tokens.space.md,
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.action,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 13,
+    },
+    dropHereText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.action },
+  }),
+)
 
 type Props = {
   readonly items: readonly BacklogItem[]
@@ -106,6 +108,7 @@ export const BacklogShelf = ({
   empty,
   onDropped,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
   const { dragging, hovered, registerTarget } = useDrag()
   const ref = useRef<View>(null)

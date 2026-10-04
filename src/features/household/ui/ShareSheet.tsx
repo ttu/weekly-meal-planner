@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 
 /**
@@ -21,48 +22,50 @@ type Props = {
   readonly onClose: () => void
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(36, 33, 28, 0.34)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: tokens.color.surface,
-    borderTopLeftRadius: tokens.radius.sheet,
-    borderTopRightRadius: tokens.radius.sheet,
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    gap: tokens.space.md,
-    width: '100%',
-    maxWidth: tokens.layout.readable,
-    alignSelf: 'center',
-  },
-  grip: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: tokens.color.dashed,
-    alignSelf: 'center',
-  },
-  title: { ...tokens.type.sheetTitle, color: tokens.color.textPrimary },
-  /** The link itself, sized to be read aloud over a phone if it comes to it. */
-  linkBox: {
-    backgroundColor: tokens.color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: tokens.color.cardBorder,
-    borderRadius: tokens.radius.md,
-    padding: tokens.space.md,
-  },
-  link: { ...tokens.type.meta, color: tokens.color.textPrimary },
-  note: { ...tokens.type.body, color: tokens.color.textMuted },
-  copy: {
-    backgroundColor: tokens.color.action,
-    borderRadius: tokens.radius.card,
-    paddingVertical: 17,
-    alignItems: 'center',
-  },
-  copyPressed: { backgroundColor: tokens.color.actionPressed },
-  copyText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
-  close: { alignSelf: 'center', paddingVertical: tokens.space.md },
-  closeText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.textMuted },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: tokens.color.scrim, justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: tokens.color.surface,
+      borderTopLeftRadius: tokens.radius.sheet,
+      borderTopRightRadius: tokens.radius.sheet,
+      paddingHorizontal: 22,
+      paddingTop: 22,
+      gap: tokens.space.md,
+      width: '100%',
+      maxWidth: tokens.layout.readable,
+      alignSelf: 'center',
+    },
+    grip: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: tokens.color.dashed,
+      alignSelf: 'center',
+    },
+    title: { ...tokens.type.sheetTitle, color: tokens.color.textPrimary },
+    /** The link itself, sized to be read aloud over a phone if it comes to it. */
+    linkBox: {
+      backgroundColor: tokens.color.surfaceRaised,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      borderRadius: tokens.radius.md,
+      padding: tokens.space.md,
+    },
+    link: { ...tokens.type.meta, color: tokens.color.textPrimary },
+    note: { ...tokens.type.body, color: tokens.color.textMuted },
+    copy: {
+      backgroundColor: tokens.color.action,
+      borderRadius: tokens.radius.card,
+      paddingVertical: 17,
+      alignItems: 'center',
+    },
+    copyPressed: { backgroundColor: tokens.color.actionPressed },
+    copyText: { ...tokens.type.mealName, color: tokens.color.onAction },
+    close: { alignSelf: 'center', paddingVertical: tokens.space.md },
+    closeText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.textMuted },
+  }),
+)
 
 export const ShareSheet = ({
   visible,
@@ -71,6 +74,7 @@ export const ShareSheet = ({
   onCopy,
   onClose,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
 

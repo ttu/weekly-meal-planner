@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
 import type { IngredientId } from '@/shared/types/ids'
@@ -16,164 +17,171 @@ import type { BuyLine, ExtraId, ShoppingList } from '../domain/types'
  * Ticked items grey and strike but stay in place, so the list never reflows
  * under a moving thumb.
  */
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: tokens.color.surface },
-  scroll: { flex: 1 },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: tokens.space.lg,
-    gap: 16,
-    width: '100%',
-    maxWidth: tokens.layout.readable,
-    alignSelf: 'center',
-  },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingTop: tokens.space.sm,
-  },
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  summary: { ...tokens.type.support, color: tokens.color.textSupport },
-  share: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
-  section: { gap: 9 },
-  /** A section head is a label, a hairline, and — for Buy — the category the
-   *  card below belongs to, right-aligned where the eye leaves the row. */
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  sectionLabel: {
-    ...tokens.type.label,
-    fontWeight: '700',
-    color: tokens.color.textPrimary,
-    textTransform: 'uppercase',
-  },
-  hairline: { flex: 1, height: 1, backgroundColor: tokens.color.cardBorder },
-  category: { ...tokens.type.meta, color: tokens.color.textSupport },
-  card: {
-    backgroundColor: tokens.color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: tokens.color.cardBorder,
-    borderRadius: tokens.radius.card,
-    overflow: 'hidden',
-  },
-  cupboardCard: {
-    backgroundColor: tokens.color.surfaceInset,
-    borderRadius: tokens.radius.card,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    minHeight: 54,
-    paddingVertical: 15,
-    paddingHorizontal: tokens.space.md,
-  },
-  divided: { borderBottomWidth: 1, borderBottomColor: tokens.color.cardDivider },
-  checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: tokens.radius.sm,
-    borderWidth: 2,
-    borderColor: tokens.color.dashed,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxOn: { backgroundColor: tokens.color.affirm, borderColor: tokens.color.affirm },
-  tick: { ...tokens.type.mealNameSmall, color: tokens.color.surfaceRaised },
-  labelBlock: { flex: 1, gap: 2 },
-  label: { ...tokens.type.shoppingRow, color: tokens.color.textPrimary },
-  labelChecked: { color: tokens.color.textGhost, textDecorationLine: 'line-through' },
-  amount: { ...tokens.type.shoppingRow, color: tokens.color.textMuted },
-  amountChecked: { color: '#C0B7A4' },
-  /** A hand-set amount keeps a terracotta underline and a one-line reason, so
-   *  nobody wonders why the maths looks wrong. */
-  amountOverridden: {
-    color: tokens.color.textPrimary,
-    fontWeight: '600',
-    borderBottomWidth: 2,
-    borderBottomColor: tokens.color.action,
-  },
-  noteAction: { ...tokens.type.meta, color: tokens.color.action },
-  noteAffirm: { ...tokens.type.meta, color: tokens.color.affirm },
-  chevron: { ...tokens.type.mealName, fontWeight: '400', color: tokens.color.textGhost },
-  /** "Why four onions?" expands in place, on a tinted ground inside the card. */
-  provenance: {
-    backgroundColor: tokens.color.surfacePane,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.cardDivider,
-    paddingTop: 12,
-    paddingRight: tokens.space.md,
-    paddingBottom: 14,
-    paddingLeft: 58,
-    gap: 6,
-  },
-  provenanceRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  provenanceAction: { paddingTop: tokens.space.sm },
-  provenanceText: { ...tokens.type.body, color: tokens.color.textMuted },
-  cupboardLabel: { ...tokens.type.mealNameLarge, fontWeight: '400', color: '#5F584C', flex: 1 },
-  outOf: {
-    borderWidth: 1,
-    borderColor: tokens.color.action,
-    borderRadius: tokens.radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: tokens.space.sm,
-  },
-  outOfText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
-  incomplete: { ...tokens.type.body, color: tokens.color.action },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 12,
-    paddingHorizontal: tokens.space.md,
-  },
-  addBox: {
-    width: 28,
-    height: 28,
-    borderRadius: tokens.radius.sm,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: tokens.color.dashed,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addSign: { ...tokens.type.meta, color: tokens.color.textGhost },
-  addInput: {
-    ...tokens.type.mealNameLarge,
-    fontWeight: '400',
-    color: tokens.color.textPrimary,
-    flex: 1,
-  },
-  /** The action bar is pinned: the prompt is copied at the door of the shop,
-   *  not after scrolling back up past forty rows. */
-  bar: {
-    borderTopWidth: 1,
-    borderTopColor: tokens.color.cardBorder,
-    backgroundColor: tokens.color.surfaceRaised,
-    alignItems: 'center',
-  },
-  barInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    width: '100%',
-    maxWidth: tokens.layout.readable,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-  },
-  copy: {
-    flex: 1,
-    backgroundColor: tokens.color.action,
-    borderRadius: tokens.radius.card,
-    paddingVertical: 17,
-    alignItems: 'center',
-  },
-  copyPressed: { backgroundColor: tokens.color.actionPressed },
-  /** An empty list has no prompt to hand anyone. */
-  copyDisabled: { opacity: 0.4 },
-  copyText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
-  empty: { ...tokens.type.body, color: tokens.color.textSupport },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    page: { flex: 1, backgroundColor: tokens.color.surface },
+    scroll: { flex: 1 },
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: tokens.space.lg,
+      gap: 16,
+      width: '100%',
+      maxWidth: tokens.layout.readable,
+      alignSelf: 'center',
+    },
+    head: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      paddingTop: tokens.space.sm,
+    },
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    summary: { ...tokens.type.support, color: tokens.color.textSupport },
+    share: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
+    section: { gap: 9 },
+    /** A section head is a label, a hairline, and — for Buy — the category the
+     *  card below belongs to, right-aligned where the eye leaves the row. */
+    sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+    sectionLabel: {
+      ...tokens.type.label,
+      fontWeight: '700',
+      color: tokens.color.textPrimary,
+      textTransform: 'uppercase',
+    },
+    hairline: { flex: 1, height: 1, backgroundColor: tokens.color.cardBorder },
+    category: { ...tokens.type.meta, color: tokens.color.textSupport },
+    card: {
+      backgroundColor: tokens.color.surfaceRaised,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      borderRadius: tokens.radius.card,
+      overflow: 'hidden',
+    },
+    cupboardCard: {
+      backgroundColor: tokens.color.surfaceInset,
+      borderRadius: tokens.radius.card,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      minHeight: 54,
+      paddingVertical: 15,
+      paddingHorizontal: tokens.space.md,
+    },
+    divided: { borderBottomWidth: 1, borderBottomColor: tokens.color.cardDivider },
+    checkbox: {
+      width: 28,
+      height: 28,
+      borderRadius: tokens.radius.sm,
+      borderWidth: 2,
+      borderColor: tokens.color.dashed,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkboxOn: { backgroundColor: tokens.color.affirm, borderColor: tokens.color.affirm },
+    tick: { ...tokens.type.mealNameSmall, color: tokens.color.onAction },
+    labelBlock: { flex: 1, gap: 2 },
+    label: { ...tokens.type.shoppingRow, color: tokens.color.textPrimary },
+    labelChecked: { color: tokens.color.textGhost, textDecorationLine: 'line-through' },
+    amount: { ...tokens.type.shoppingRow, color: tokens.color.textMuted },
+    amountChecked: { color: tokens.color.textDone },
+    /** A hand-set amount keeps a terracotta underline and a one-line reason, so
+     *  nobody wonders why the maths looks wrong. */
+    amountOverridden: {
+      color: tokens.color.textPrimary,
+      fontWeight: '600',
+      borderBottomWidth: 2,
+      borderBottomColor: tokens.color.action,
+    },
+    noteAction: { ...tokens.type.meta, color: tokens.color.action },
+    noteAffirm: { ...tokens.type.meta, color: tokens.color.affirm },
+    chevron: { ...tokens.type.mealName, fontWeight: '400', color: tokens.color.textGhost },
+    /** "Why four onions?" expands in place, on a tinted ground inside the card. */
+    provenance: {
+      backgroundColor: tokens.color.surfacePane,
+      borderBottomWidth: 1,
+      borderBottomColor: tokens.color.cardDivider,
+      paddingTop: 12,
+      paddingRight: tokens.space.md,
+      paddingBottom: 14,
+      paddingLeft: 58,
+      gap: 6,
+    },
+    provenanceRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    provenanceAction: { paddingTop: tokens.space.sm },
+    provenanceText: { ...tokens.type.body, color: tokens.color.textMuted },
+    cupboardLabel: {
+      ...tokens.type.mealNameLarge,
+      fontWeight: '400',
+      color: tokens.color.textMuted,
+      flex: 1,
+    },
+    outOf: {
+      borderWidth: 1,
+      borderColor: tokens.color.action,
+      borderRadius: tokens.radius.pill,
+      paddingHorizontal: 14,
+      paddingVertical: tokens.space.sm,
+    },
+    outOfText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
+    incomplete: { ...tokens.type.body, color: tokens.color.action },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      paddingVertical: 12,
+      paddingHorizontal: tokens.space.md,
+    },
+    addBox: {
+      width: 28,
+      height: 28,
+      borderRadius: tokens.radius.sm,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.dashed,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    addSign: { ...tokens.type.meta, color: tokens.color.textGhost },
+    addInput: {
+      ...tokens.type.mealNameLarge,
+      fontWeight: '400',
+      color: tokens.color.textPrimary,
+      flex: 1,
+    },
+    /** The action bar is pinned: the prompt is copied at the door of the shop,
+     *  not after scrolling back up past forty rows. */
+    bar: {
+      borderTopWidth: 1,
+      borderTopColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfaceRaised,
+      alignItems: 'center',
+    },
+    barInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      width: '100%',
+      maxWidth: tokens.layout.readable,
+      paddingHorizontal: 20,
+      paddingTop: 14,
+    },
+    copy: {
+      flex: 1,
+      backgroundColor: tokens.color.action,
+      borderRadius: tokens.radius.card,
+      paddingVertical: 17,
+      alignItems: 'center',
+    },
+    copyPressed: { backgroundColor: tokens.color.actionPressed },
+    /** An empty list has no prompt to hand anyone. */
+    copyDisabled: { opacity: 0.4 },
+    copyText: { ...tokens.type.mealName, color: tokens.color.onAction },
+    empty: { ...tokens.type.body, color: tokens.color.textSupport },
+  }),
+)
 
 const formatAmounts = (line: BuyLine, unitLabel: (unit: string) => string): string =>
   line.amounts.map((a) => `${String(a.quantity)} ${unitLabel(a.unit)}`).join(' + ')
@@ -204,6 +212,8 @@ export const ShoppingListScreen = ({
   justCopied,
   onBack,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
@@ -215,92 +225,96 @@ export const ShoppingListScreen = ({
   const isEmpty =
     list.buy.length === 0 && list.cupboard.length === 0 && list.incomplete.length === 0
 
-  const buyRow = (line: BuyLine, isLast: boolean): React.JSX.Element => (
-    <View key={line.ingredientId}>
-      <Pressable
-        style={[styles.row, !isLast && styles.divided]}
-        onPress={() => {
-          onToggle(line.ingredientId, !line.checked)
-        }}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: line.checked }}
-        accessibilityLabel={`${line.name} ${formatAmounts(line, unitLabel)}`}
-        testID={`buy-${line.ingredientId}`}
-      >
-        <View style={[styles.checkbox, line.checked && styles.checkboxOn]}>
-          {line.checked && <Text style={styles.tick}>✓</Text>}
-        </View>
-
-        <View style={styles.labelBlock}>
-          <Text style={[styles.label, line.checked && styles.labelChecked]}>{line.name}</Text>
-          {line.promotedFromCupboard && (
-            <Text style={styles.noteAffirm} testID={`promoted-${line.ingredientId}`}>
-              {t('shopping.promoted')}
-            </Text>
-          )}
-          {line.isOverridden && (
-            <Text style={styles.noteAction}>{line.overrideReason ?? t('shopping.overridden')}</Text>
-          )}
-        </View>
-
-        <Text
-          style={[
-            styles.amount,
-            line.checked && styles.amountChecked,
-            line.isOverridden && styles.amountOverridden,
-          ]}
+  const buyRow = (line: BuyLine, isLast: boolean): React.JSX.Element => {
+    return (
+      <View key={line.ingredientId}>
+        <Pressable
+          style={[styles.row, !isLast && styles.divided]}
+          onPress={() => {
+            onToggle(line.ingredientId, !line.checked)
+          }}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: line.checked }}
+          accessibilityLabel={`${line.name} ${formatAmounts(line, unitLabel)}`}
+          testID={`buy-${line.ingredientId}`}
         >
-          {formatAmounts(line, unitLabel)}
-        </Text>
+          <View style={[styles.checkbox, line.checked && styles.checkboxOn]}>
+            {line.checked && <Text style={styles.tick}>✓</Text>}
+          </View>
 
-        {line.contributions.length > 0 && (
-          <Pressable
-            onPress={() => {
-              setExpanded((current) =>
-                current === line.ingredientId ? undefined : line.ingredientId,
-              )
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('shopping.why')}
-            testID={`why-${line.ingredientId}`}
-          >
-            <Text style={styles.chevron}>{expanded === line.ingredientId ? '⌃' : '⌄'}</Text>
-          </Pressable>
-        )}
-      </Pressable>
-
-      {expanded === line.ingredientId && (
-        <View style={styles.provenance} testID={`provenance-${line.ingredientId}`}>
-          {line.contributions.map((c, index) => (
-            <View key={`${c.mealName}-${String(index)}`} style={styles.provenanceRow}>
-              <Text style={styles.provenanceText}>{c.mealName}</Text>
-              <Text style={styles.provenanceText}>
-                {String(c.quantity)} {unitLabel(c.unit)}
+          <View style={styles.labelBlock}>
+            <Text style={[styles.label, line.checked && styles.labelChecked]}>{line.name}</Text>
+            {line.promotedFromCupboard && (
+              <Text style={styles.noteAffirm} testID={`promoted-${line.ingredientId}`}>
+                {t('shopping.promoted')}
               </Text>
-            </View>
-          ))}
+            )}
+            {line.isOverridden && (
+              <Text style={styles.noteAction}>
+                {line.overrideReason ?? t('shopping.overridden')}
+              </Text>
+            )}
+          </View>
 
-          {onKeepInCupboard !== undefined && (
+          <Text
+            style={[
+              styles.amount,
+              line.checked && styles.amountChecked,
+              line.isOverridden && styles.amountOverridden,
+            ]}
+          >
+            {formatAmounts(line, unitLabel)}
+          </Text>
+
+          {line.contributions.length > 0 && (
             <Pressable
-              style={styles.provenanceAction}
               onPress={() => {
-                // The row is about to leave the Buy list; leaving it marked as
-                // expanded means the next tap on its chevron collapses
-                // something that is no longer open.
-                setExpanded(undefined)
-                onKeepInCupboard(line.ingredientId)
+                setExpanded((current) =>
+                  current === line.ingredientId ? undefined : line.ingredientId,
+                )
               }}
               accessibilityRole="button"
-              accessibilityLabel={t('shopping.keepInCupboard')}
-              testID={`keep-${line.ingredientId}`}
+              accessibilityLabel={t('shopping.why')}
+              testID={`why-${line.ingredientId}`}
             >
-              <Text style={styles.noteAction}>{t('shopping.keepInCupboard')}</Text>
+              <Text style={styles.chevron}>{expanded === line.ingredientId ? '⌃' : '⌄'}</Text>
             </Pressable>
           )}
-        </View>
-      )}
-    </View>
-  )
+        </Pressable>
+
+        {expanded === line.ingredientId && (
+          <View style={styles.provenance} testID={`provenance-${line.ingredientId}`}>
+            {line.contributions.map((c, index) => (
+              <View key={`${c.mealName}-${String(index)}`} style={styles.provenanceRow}>
+                <Text style={styles.provenanceText}>{c.mealName}</Text>
+                <Text style={styles.provenanceText}>
+                  {String(c.quantity)} {unitLabel(c.unit)}
+                </Text>
+              </View>
+            ))}
+
+            {onKeepInCupboard !== undefined && (
+              <Pressable
+                style={styles.provenanceAction}
+                onPress={() => {
+                  // The row is about to leave the Buy list; leaving it marked as
+                  // expanded means the next tap on its chevron collapses
+                  // something that is no longer open.
+                  setExpanded(undefined)
+                  onKeepInCupboard(line.ingredientId)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('shopping.keepInCupboard')}
+                testID={`keep-${line.ingredientId}`}
+              >
+                <Text style={styles.noteAction}>{t('shopping.keepInCupboard')}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
+    )
+  }
 
   return (
     <View style={styles.page} testID="shopping-screen">
@@ -314,7 +328,11 @@ export const ShoppingListScreen = ({
           <View>
             <Text style={styles.title}>{t('shopping.title')}</Text>
             <Text style={styles.summary} testID="shopping-summary">
-              {t('shopping.summaryMeals', { count: list.buy.length, meals: list.sittings })}
+              {/* Two counts, two plurals: i18next pluralises on `count`, so a
+                  single string gave "7 to buy · 1 meals". */}
+              {`${t('shopping.summary', { count: list.buy.length })} · ${t('shopping.sittings', {
+                count: list.sittings,
+              })}`}
             </Text>
           </View>
         </View>
@@ -438,7 +456,7 @@ export const ShoppingListScreen = ({
                   setExtraLabel('')
                 }}
                 placeholder={t('shopping.addExtra')}
-                placeholderTextColor={tokens.color.textGhost}
+                placeholderTextColor={theme.color.textGhost}
                 accessibilityLabel={t('shopping.addExtra')}
                 testID="extra-input"
               />

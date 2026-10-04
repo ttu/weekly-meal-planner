@@ -91,14 +91,37 @@ row is the tap target. Used one-handed, in a shop, sometimes with gloves.
 
 ## Open
 
-**Dark mode is not yet designed.** The canvas defines only the light palette,
-and this app is opened at 6am and 10pm. Needed before the board is built: dark
-equivalents for paper / paperDeep / card / tint / rule, and a contrast check
-that terracotta, sage and amber stay distinguishable. Amber on a dark ground is
-the likely failure, and it is the token carrying the most meaning.
+Nothing, for now. Dark mode was here and is built — see **Two schemes** above.
 
-Tokens must therefore be defined as semantic names from day one — `surfaceRaised`,
-not `white` — so a dark theme is a value swap rather than a refactor.
+## Two schemes
+
+Both palettes live in `src/shared/theme/palette.ts` under the same semantic
+names. The light one is the canvas, unchanged; the dark one is derived from it,
+warm near-black grounds in place of warm paper, so a board opened at 10pm is
+the same object in a different light.
+
+Three things the canvas asked for by name:
+
+- **Amber nearly failed.** `backlog` means wanted-but-unplanned, and #E8B04B on
+  a dark ground reads as a highlighter. It is lifted to a paler gold, keeping
+  the hue and about 8:1 against the dark paper.
+- **Terracotta is lifted too**, to #D97757 — the same hue at the lightness a
+  dark ground needs for an action colour that is also read as text.
+- **Elevation inverts.** A raised card is lighter than its ground in both; the
+  shadows go nearly black, because a shadow in the dark is read from its edge.
+
+A colour that sits on top of `action` or `affirm` uses `onAction`, never
+`surfaceRaised` — white on paper, near-black in the dark.
+
+Mechanically: a stylesheet that uses colours is wrapped in `themed(...)`, which
+builds one sheet per scheme at module load, and the component picks with
+`useThemed(sheets)`. Values are captured by `StyleSheet.create`, so a single
+sheet cannot follow the scheme; building both up front keeps styles off the
+render path. `useTheme()` is for the handful of colours that are props rather
+than styles — a placeholder colour, an avatar's ring.
+
+Storybook has a Scheme toolbar that pins one, so a story can be looked at in
+both without changing the machine's setting.
 
 ## The two layouts
 

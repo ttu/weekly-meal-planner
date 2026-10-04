@@ -1,21 +1,24 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 import { signOut } from '../application/sign-in'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: tokens.color.surface,
-    paddingHorizontal: tokens.space.lg,
-    gap: tokens.space.md,
-  },
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  body: { ...tokens.type.body, color: tokens.color.textMuted },
-  signOut: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: tokens.color.surface,
+      paddingHorizontal: tokens.space.lg,
+      gap: tokens.space.md,
+    },
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    body: { ...tokens.type.body, color: tokens.color.textMuted },
+    signOut: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
+  }),
+)
 
 /**
  * A signed-in Member whose Household cannot be loaded — a stale session after a
@@ -27,6 +30,7 @@ export const NoHouseholdScreen = ({
 }: {
   readonly client: AppSupabaseClient
 }): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
 

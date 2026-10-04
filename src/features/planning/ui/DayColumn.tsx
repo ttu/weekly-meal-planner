@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation, type Locale } from '@/shared/i18n'
 import { slotName, type SlotKey } from '@/features/household'
 import { formatWeekday } from '../domain/format-day'
@@ -11,55 +11,57 @@ import { DropSlot } from './DropSlot'
 import type { DragPayload, DropTarget } from './DragContext'
 import type { BoardDay } from '../domain/board'
 
-const styles = StyleSheet.create({
-  day: {
-    gap: tokens.space.sm,
-    borderLeftWidth: 2,
-    borderLeftColor: 'transparent',
-    paddingLeft: tokens.space.sm,
-    marginLeft: -tokens.space.sm,
-  },
-  dayChanged: { borderLeftColor: tokens.color.affirm },
-  header: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
-  dayName: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
-  today: {
-    ...tokens.type.label,
-    color: tokens.color.affirm,
-    textTransform: 'uppercase',
-  },
-  /** The Slot is a labelled gutter beside the cards, not a heading above them:
-   *  a Household with five Slots just grows the column. */
-  slotRow: { flexDirection: 'row', gap: 12 },
-  slotLabel: {
-    ...tokens.type.label,
-    letterSpacing: 1,
-    width: 56,
-    paddingTop: 14,
-    color: tokens.color.textSupport,
-    textTransform: 'uppercase',
-  },
-  slotBody: { flex: 1, gap: 6 },
-  /** An empty Slot is a single dashed line, not a hole. */
-  empty: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: tokens.color.dashed,
-    borderRadius: tokens.radius.card,
-    paddingVertical: 13,
-    paddingHorizontal: tokens.space.md,
-  },
-  emptyText: { ...tokens.type.mealNameSmall, fontWeight: '400', color: tokens.color.textGhost },
-  actions: { flexDirection: 'row', gap: tokens.space.md, paddingLeft: 2 },
-  removeLeftover: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  removeLeftoverText: { ...tokens.type.meta, color: tokens.color.textGhost },
-  action: { ...tokens.type.meta, color: tokens.color.textSupport },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    day: {
+      gap: tokens.space.sm,
+      borderLeftWidth: 2,
+      borderLeftColor: 'transparent',
+      paddingLeft: tokens.space.sm,
+      marginLeft: -tokens.space.sm,
+    },
+    dayChanged: { borderLeftColor: tokens.color.affirm },
+    header: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
+    dayName: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
+    today: {
+      ...tokens.type.label,
+      color: tokens.color.affirm,
+      textTransform: 'uppercase',
+    },
+    /** The Slot is a labelled gutter beside the cards, not a heading above them:
+     *  a Household with five Slots just grows the column. */
+    slotRow: { flexDirection: 'row', gap: 12 },
+    slotLabel: {
+      ...tokens.type.label,
+      letterSpacing: 1,
+      width: 56,
+      paddingTop: 14,
+      color: tokens.color.textSupport,
+      textTransform: 'uppercase',
+    },
+    slotBody: { flex: 1, gap: 6 },
+    /** An empty Slot is a single dashed line, not a hole. */
+    empty: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.dashed,
+      borderRadius: tokens.radius.card,
+      paddingVertical: 13,
+      paddingHorizontal: tokens.space.md,
+    },
+    emptyText: { ...tokens.type.mealNameSmall, fontWeight: '400', color: tokens.color.textGhost },
+    actions: { flexDirection: 'row', gap: tokens.space.md, paddingLeft: 2 },
+    removeLeftover: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    removeLeftoverText: { ...tokens.type.meta, color: tokens.color.textGhost },
+    action: { ...tokens.type.meta, color: tokens.color.textSupport },
+  }),
+)
 
 type CardProps = {
   readonly card: BoardCard
@@ -76,6 +78,7 @@ const Card = ({
   onRemoveLeftover,
   onDropped,
 }: CardProps): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   if (card.kind === 'leftover') {
@@ -174,6 +177,7 @@ export const DayColumn = ({
   onRemoveLeftover,
   onDropped,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (

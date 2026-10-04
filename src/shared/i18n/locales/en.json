@@ -197,12 +197,12 @@
     "copied": "Copied",
     "share": "Share",
     "promptIntro": "Order groceries for the week:",
-    "summaryMeals_one": "{{count}} to buy · {{meals}} meal",
-    "summaryMeals_other": "{{count}} to buy · {{meals}} meals",
     "listTitle": "Shopping list",
     "addExtraAction": "Add",
     "keepInCupboard": "We always have this in",
-    "stopKeeping": "Don't keep this in"
+    "stopKeeping": "Don't keep this in",
+    "sittings_one": "{{count}} meal",
+    "sittings_other": "{{count}} meals"
   },
   "presence": {
     "editing": "{{name}} is here too",

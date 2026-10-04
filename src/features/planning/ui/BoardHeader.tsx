@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
 
@@ -26,39 +26,41 @@ type Props = {
   readonly onSignOut: () => void
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: tokens.space.md,
-    backgroundColor: tokens.color.surfaceRaised,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.cardBorder,
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-  },
-  identity: { flexDirection: 'row', alignItems: 'baseline', gap: 14, flexShrink: 1 },
-  household: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
-  week: { ...tokens.type.support, color: tokens.color.textSupport },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  link: { ...tokens.type.support, color: tokens.color.textMuted },
-  /** Avatars overlap and wear a white ring, so a stack of three reads as three. */
-  presence: { flexDirection: 'row' },
-  overlap: { marginLeft: -8 },
-  shopping: {
-    backgroundColor: tokens.color.action,
-    borderRadius: 9,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-  },
-  shoppingPressed: { backgroundColor: tokens.color.actionPressed },
-  shoppingText: {
-    ...tokens.type.support,
-    fontWeight: '600',
-    color: tokens.color.surfaceRaised,
-  },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    bar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: tokens.space.md,
+      backgroundColor: tokens.color.surfaceRaised,
+      borderBottomWidth: 1,
+      borderBottomColor: tokens.color.cardBorder,
+      paddingHorizontal: 22,
+      paddingVertical: 12,
+    },
+    identity: { flexDirection: 'row', alignItems: 'baseline', gap: 14, flexShrink: 1 },
+    household: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
+    week: { ...tokens.type.support, color: tokens.color.textSupport },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    link: { ...tokens.type.support, color: tokens.color.textMuted },
+    /** Avatars overlap and wear a white ring, so a stack of three reads as three. */
+    presence: { flexDirection: 'row' },
+    overlap: { marginLeft: -8 },
+    shopping: {
+      backgroundColor: tokens.color.action,
+      borderRadius: 9,
+      paddingHorizontal: 15,
+      paddingVertical: 8,
+    },
+    shoppingPressed: { backgroundColor: tokens.color.actionPressed },
+    shoppingText: {
+      ...tokens.type.support,
+      fontWeight: '600',
+      color: tokens.color.onAction,
+    },
+  }),
+)
 
 export const BoardHeader = ({
   householdName,
@@ -71,6 +73,8 @@ export const BoardHeader = ({
   onOpenSettings,
   onSignOut,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
   const { t } = useTranslation()
 
   return (
@@ -90,7 +94,7 @@ export const BoardHeader = ({
                 <Avatar
                   name={member.displayName}
                   colour={member.colour}
-                  ringColour={tokens.color.surfaceRaised}
+                  ringColour={theme.color.surfaceRaised}
                 />
               </View>
             ))}

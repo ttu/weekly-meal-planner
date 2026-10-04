@@ -1,7 +1,12 @@
+import { lightColours, lightShadows } from './palette'
+
 /**
  * Translated from the Claude Design canvas (docs/07-design-system.md).
- * Names are semantic, not literal, so the undesigned dark theme is a value swap
- * rather than a refactor.
+ *
+ * Colours live in `palette.ts`, which holds both schemes under the same
+ * semantic names; this is the light one, and the default a component gets
+ * without a theme above it. Everything else here — type, space, radius — is
+ * the same in the dark.
  */
 /** Loaded by expo-font in the root layout; the fallbacks matter for the moment
  *  before they are ready and on web before the face is fetched. */
@@ -11,34 +16,7 @@ const FONT = {
 } as const
 
 export const tokens = {
-  color: {
-    surface: '#F7F2E9',
-    surfaceSunken: '#EDE6D9',
-    surfaceRaised: '#FFFFFF',
-    surfaceInset: '#EFE8DA',
-    /** The library pane and the board's footer rail: paper, a shade lighter. */
-    surfacePane: '#FBF8F1',
-    textPrimary: '#24211C',
-    textMuted: '#6B6459',
-    /** Labels and supporting metadata. Lighter than textMuted on purpose: the
-     *  canvas uses two greys, and collapsing them flattens every card. */
-    textSupport: '#8A8172',
-    /** Placeholders, slot labels, the initial in an empty photo chip. */
-    textGhost: '#A79C88',
-    /** Section rules between blocks of content. */
-    rule: '#DBD2C1',
-    /** The edge of a card. Warmer and lighter than a section rule. */
-    cardBorder: '#E2D9C9',
-    /** A hairline inside a card, between its rows. */
-    cardDivider: '#EFE8DA',
-    /** Dashed edges: an empty Slot, a Leftover, the add-an-item row. */
-    dashed: '#D3C9B6',
-    dashedInset: '#CFC3AC',
-    action: '#C05A38',
-    actionPressed: '#9C4529',
-    affirm: '#5F7355',
-    backlog: '#E8B04B',
-  },
+  color: lightColours,
   /**
    * Two families, clearly distinct: a serif that carries the personality on
    * week and day headings, and a sans for everything a person reads quickly.
@@ -117,12 +95,7 @@ export const tokens = {
    * Elevation says what kind of object this is: a planned Meal is raised off
    * the paper, a Backlog card barely, a dragged card clearly.
    */
-  shadow: {
-    card: '0 2px 6px rgba(36, 33, 28, 0.06)',
-    subtle: '0 1px 3px rgba(36, 33, 28, 0.06)',
-    lifted: '0 6px 16px rgba(36, 33, 28, 0.14)',
-    shelf: '0 -6px 20px rgba(36, 33, 28, 0.06)',
-  },
+  shadow: lightShadows,
 } as const
 
 /**

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 
 /**
  * A Member, as a face. Who wanted a Meal and who planned it is the point of a
@@ -20,12 +20,20 @@ const metrics = {
   large: { box: 30, font: 12 },
 } as const
 
-const styles = StyleSheet.create({
-  avatar: { alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: tokens.type.label.fontFamily, fontWeight: '600', color: '#FFFFFF' },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    avatar: { alignItems: 'center', justifyContent: 'center' },
+    initial: {
+      fontFamily: tokens.type.label.fontFamily,
+      fontWeight: '600',
+      color: tokens.color.onAvatar,
+    },
+  }),
+)
 
 export const Avatar = ({ name, colour, size = 'medium', ringColour }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
   const { box, font } = metrics[size]
 
   return (
@@ -36,7 +44,7 @@ export const Avatar = ({ name, colour, size = 'medium', ringColour }: Props): Re
           width: box,
           height: box,
           borderRadius: box / 2,
-          backgroundColor: colour === '' ? tokens.color.textSupport : colour,
+          backgroundColor: colour === '' ? theme.color.textSupport : colour,
         },
         ringColour !== undefined && { borderWidth: 2, borderColor: ringColour },
       ]}

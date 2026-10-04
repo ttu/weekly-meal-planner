@@ -2,21 +2,24 @@ import { useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { matchesSearch } from '../domain/search'
 import type { Ingredient, IngredientId } from '../domain/types'
 
-const styles = StyleSheet.create({
-  row: {
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.rule,
-    paddingVertical: tokens.space.md,
-    minHeight: 54,
-    justifyContent: 'center',
-  },
-  name: { ...tokens.type.body, color: tokens.color.textPrimary },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    row: {
+      borderBottomWidth: 1,
+      borderBottomColor: tokens.color.rule,
+      paddingVertical: tokens.space.md,
+      minHeight: 54,
+      justifyContent: 'center',
+    },
+    name: { ...tokens.type.body, color: tokens.color.textPrimary },
+  }),
+)
 
 type Props = {
   readonly visible: boolean
@@ -37,6 +40,9 @@ export const IngredientPicker = ({
   onSelect,
   onDismiss,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [query, setQuery] = useState('')
@@ -75,7 +81,7 @@ export const IngredientPicker = ({
           value={query}
           onChangeText={setQuery}
           placeholder={t('ingredient.search')}
-          placeholderTextColor={tokens.color.textMuted}
+          placeholderTextColor={theme.color.textMuted}
           autoCapitalize="none"
           accessibilityLabel={t('ingredient.search')}
           testID="ingredient-search"

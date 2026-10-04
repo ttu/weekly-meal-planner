@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { Avatar } from '@/shared/ui/Avatar'
 import { Field } from '@/shared/ui/Field'
 import { PasswordField } from '@/shared/ui/PasswordField'
@@ -25,22 +26,24 @@ type Props = {
   readonly onStartOwn?: (() => void) | undefined
 }
 
-const styles = StyleSheet.create({
-  faces: { flexDirection: 'row', marginBottom: tokens.space.md },
-  overlap: { marginLeft: -9 },
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: tokens.space.md,
-    marginBottom: tokens.space.lg,
-  },
-  muted: { ...tokens.type.meta, color: tokens.color.textSupport },
-  link: { ...tokens.type.meta, fontWeight: '600', color: tokens.color.action },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    faces: { flexDirection: 'row', marginBottom: tokens.space.md },
+    overlap: { marginLeft: -9 },
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: tokens.space.md,
+      marginBottom: tokens.space.lg,
+    },
+    muted: { ...tokens.type.meta, color: tokens.color.textSupport },
+    link: { ...tokens.type.meta, fontWeight: '600', color: tokens.color.action },
+  }),
+)
 
 export const JoinBoardScreen = ({
   isPending,
@@ -49,6 +52,9 @@ export const JoinBoardScreen = ({
   onJoin,
   onStartOwn,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [password, setPassword] = useState('')
@@ -84,7 +90,7 @@ export const JoinBoardScreen = ({
                 name={member.name}
                 colour={member.colour}
                 size="large"
-                ringColour={tokens.color.surface}
+                ringColour={theme.color.surface}
               />
             </View>
           ))}

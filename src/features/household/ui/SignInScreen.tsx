@@ -2,24 +2,31 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { isErr } from '@/shared/types/result'
 import { signIn, type SignInError } from '../application/sign-in'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
-const styles = StyleSheet.create({
-  title: { ...tokens.type.display, color: tokens.color.textPrimary, marginBottom: tokens.space.lg },
-  submit: {
-    backgroundColor: tokens.color.action,
-    borderRadius: 8,
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitPressed: { backgroundColor: tokens.color.actionPressed },
-  submitText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    title: {
+      ...tokens.type.display,
+      color: tokens.color.textPrimary,
+      marginBottom: tokens.space.lg,
+    },
+    submit: {
+      backgroundColor: tokens.color.action,
+      borderRadius: 8,
+      minHeight: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    submitPressed: { backgroundColor: tokens.color.actionPressed },
+    submitText: { ...tokens.type.mealName, color: tokens.color.onAction },
+  }),
+)
 
 const errorKey = (error: SignInError): string =>
   error === 'invalid-credentials' ? 'auth.invalid' : 'auth.unavailable'
@@ -27,6 +34,8 @@ const errorKey = (error: SignInError): string =>
 type Props = { readonly client: AppSupabaseClient }
 
 export const SignInScreen = ({ client }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [email, setEmail] = useState('')

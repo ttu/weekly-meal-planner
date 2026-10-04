@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation, type Locale } from '@/shared/i18n'
 import { slotName, type SlotKey } from '@/features/household'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
@@ -16,110 +16,112 @@ import type { DragPayload, DropTarget } from './DragContext'
  * the card shrinks to its name and a servings count and the Slot becomes a
  * horizontal band shared with the six columns beside it.
  */
-const styles = StyleSheet.create({
-  column: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: tokens.color.cardBorder,
-  },
-  columnToday: { backgroundColor: 'rgba(95, 115, 85, 0.05)' },
-  columnChanged: { boxShadow: 'inset 0 0 0 2px rgba(95, 115, 85, 0.35)' },
-  head: {
-    paddingTop: 11,
-    paddingBottom: tokens.space.sm,
-    paddingHorizontal: 12,
-    gap: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.cardBorder,
-  },
-  heading: {
-    ...tokens.type.labelSmall,
-    color: tokens.color.textSupport,
-    textTransform: 'uppercase',
-  },
-  headingToday: { color: tokens.color.affirm },
-  today: { ...tokens.type.labelSmall, fontWeight: '400', color: tokens.color.affirm },
-  body: { flex: 1 },
-  slot: { flex: 1, paddingVertical: 9, paddingHorizontal: 6, gap: 6 },
-  slotDivided: {
-    borderBottomWidth: 1,
-    borderStyle: 'dashed',
-    borderBottomColor: tokens.color.cardBorder,
-  },
-  slotLabel: {
-    ...tokens.type.labelTiny,
-    color: tokens.color.textGhost,
-    textTransform: 'uppercase',
-  },
-  empty: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: tokens.color.dashed,
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.space.sm,
-    paddingHorizontal: tokens.space.sm,
-  },
-  emptyText: { ...tokens.type.mealNameTight, fontWeight: '400', color: tokens.color.textGhost },
-  card: {
-    backgroundColor: tokens.color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: tokens.color.cardBorder,
-    borderRadius: tokens.radius.md,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    boxShadow: tokens.shadow.subtle,
-  },
-  cardName: { ...tokens.type.mealNameTight, color: tokens.color.textPrimary },
-  cardFoot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 4,
-  },
-  cardActions: { flexDirection: 'row', gap: 2 },
-  cardAction: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardGlyph: {
-    fontFamily: tokens.type.body.fontFamily,
-    fontSize: 13,
-    color: tokens.color.textGhost,
-  },
-  cardCount: {
-    ...tokens.type.labelTiny,
-    fontWeight: '400',
-    fontSize: 12,
-    color: tokens.color.textSupport,
-    paddingTop: 2,
-  },
-  leftover: {
-    backgroundColor: tokens.color.surfaceInset,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: tokens.color.dashedInset,
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.space.sm,
-    paddingHorizontal: 10,
-  },
-  leftoverText: { ...tokens.type.meta, color: tokens.color.textMuted },
-  removeLeftover: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  removeLeftoverText: { ...tokens.type.labelTiny, fontSize: 12, color: tokens.color.textGhost },
-  leftoverWord: {
-    fontFamily: tokens.type.dayHeading.fontFamily,
-    fontStyle: 'italic',
-    fontSize: 15,
-  },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    column: {
+      flex: 1,
+      borderRightWidth: 1,
+      borderRightColor: tokens.color.cardBorder,
+    },
+    columnToday: { backgroundColor: tokens.color.todayTint },
+    columnChanged: { boxShadow: `inset 0 0 0 2px ${tokens.color.todayEdge}` },
+    head: {
+      paddingTop: 11,
+      paddingBottom: tokens.space.sm,
+      paddingHorizontal: 12,
+      gap: 1,
+      borderBottomWidth: 1,
+      borderBottomColor: tokens.color.cardBorder,
+    },
+    heading: {
+      ...tokens.type.labelSmall,
+      color: tokens.color.textSupport,
+      textTransform: 'uppercase',
+    },
+    headingToday: { color: tokens.color.affirm },
+    today: { ...tokens.type.labelSmall, fontWeight: '400', color: tokens.color.affirm },
+    body: { flex: 1 },
+    slot: { flex: 1, paddingVertical: 9, paddingHorizontal: 6, gap: 6 },
+    slotDivided: {
+      borderBottomWidth: 1,
+      borderStyle: 'dashed',
+      borderBottomColor: tokens.color.cardBorder,
+    },
+    slotLabel: {
+      ...tokens.type.labelTiny,
+      color: tokens.color.textGhost,
+      textTransform: 'uppercase',
+    },
+    empty: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.dashed,
+      borderRadius: tokens.radius.md,
+      paddingVertical: tokens.space.sm,
+      paddingHorizontal: tokens.space.sm,
+    },
+    emptyText: { ...tokens.type.mealNameTight, fontWeight: '400', color: tokens.color.textGhost },
+    card: {
+      backgroundColor: tokens.color.surfaceRaised,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      borderRadius: tokens.radius.md,
+      paddingVertical: 9,
+      paddingHorizontal: 8,
+      boxShadow: tokens.shadow.subtle,
+    },
+    cardName: { ...tokens.type.mealNameTight, color: tokens.color.textPrimary },
+    cardFoot: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 4,
+    },
+    cardActions: { flexDirection: 'row', gap: 2 },
+    cardAction: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cardGlyph: {
+      fontFamily: tokens.type.body.fontFamily,
+      fontSize: 13,
+      color: tokens.color.textGhost,
+    },
+    cardCount: {
+      ...tokens.type.labelTiny,
+      fontWeight: '400',
+      fontSize: 12,
+      color: tokens.color.textSupport,
+      paddingTop: 2,
+    },
+    leftover: {
+      backgroundColor: tokens.color.surfaceInset,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.dashedInset,
+      borderRadius: tokens.radius.md,
+      paddingVertical: tokens.space.sm,
+      paddingHorizontal: 10,
+    },
+    leftoverText: { ...tokens.type.meta, color: tokens.color.textMuted },
+    removeLeftover: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    removeLeftoverText: { ...tokens.type.labelTiny, fontSize: 12, color: tokens.color.textGhost },
+    leftoverWord: {
+      fontFamily: tokens.type.dayHeading.fontFamily,
+      fontStyle: 'italic',
+      fontSize: 15,
+    },
+  }),
+)
 
 const cardKey = (card: BoardCard): string =>
   card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id
@@ -149,6 +151,7 @@ export const WideDayColumn = ({
   onRemoveLeftover,
   onDropped,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (

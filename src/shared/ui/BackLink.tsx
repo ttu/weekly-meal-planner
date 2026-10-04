@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 
 /**
@@ -18,16 +18,19 @@ type Props = {
   readonly label?: string | undefined
 }
 
-const styles = StyleSheet.create({
-  link: {
-    alignSelf: 'flex-start',
-    paddingVertical: tokens.space.sm,
-    paddingRight: tokens.space.md,
-  },
-  text: { ...tokens.type.support, color: tokens.color.textMuted },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    link: {
+      alignSelf: 'flex-start',
+      paddingVertical: tokens.space.sm,
+      paddingRight: tokens.space.md,
+    },
+    text: { ...tokens.type.support, color: tokens.color.textMuted },
+  }),
+)
 
 export const BackLink = ({ onPress, label }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
   const text = label ?? t('nav.back')
 

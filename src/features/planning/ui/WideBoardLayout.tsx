@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 
 /**
@@ -11,37 +11,39 @@ import { useTranslation } from '@/shared/i18n'
  * sizes itself to its content, which made the board — the pane that matters
  * most — the narrowest of the three.
  */
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: tokens.color.surface },
-  panes: { flex: 1, flexDirection: 'row', minHeight: 0 },
-  libraryPane: {
-    width: 284,
-    borderRightWidth: 1,
-    borderRightColor: tokens.color.cardBorder,
-    backgroundColor: tokens.color.surfacePane,
-  },
-  backlogPane: {
-    width: 250,
-    borderRightWidth: 1,
-    borderRightColor: tokens.color.cardBorder,
-    backgroundColor: tokens.color.surface,
-  },
-  boardPane: { flex: 1, minWidth: 320, backgroundColor: tokens.color.surface },
-  scroll: { flex: 1 },
-  /** Seven columns, sized by the pane rather than by their contents. */
-  grid: { flex: 1, flexDirection: 'row', minHeight: 0 },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.space.md,
-    borderTopWidth: 1,
-    borderTopColor: tokens.color.cardBorder,
-    backgroundColor: tokens.color.surfacePane,
-    paddingVertical: 10,
-    paddingHorizontal: tokens.space.md,
-  },
-  hint: { ...tokens.type.meta, color: tokens.color.textSupport, flexShrink: 1 },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    page: { flex: 1, backgroundColor: tokens.color.surface },
+    panes: { flex: 1, flexDirection: 'row', minHeight: 0 },
+    libraryPane: {
+      width: 284,
+      borderRightWidth: 1,
+      borderRightColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfacePane,
+    },
+    backlogPane: {
+      width: 250,
+      borderRightWidth: 1,
+      borderRightColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surface,
+    },
+    boardPane: { flex: 1, minWidth: 320, backgroundColor: tokens.color.surface },
+    scroll: { flex: 1 },
+    /** Seven columns, sized by the pane rather than by their contents. */
+    grid: { flex: 1, flexDirection: 'row', minHeight: 0 },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.space.md,
+      borderTopWidth: 1,
+      borderTopColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfacePane,
+      paddingVertical: 10,
+      paddingHorizontal: tokens.space.md,
+    },
+    hint: { ...tokens.type.meta, color: tokens.color.textSupport, flexShrink: 1 },
+  }),
+)
 
 type Props = {
   /** The same header the phone layout shows. Without it, sign-out, sharing and
@@ -64,6 +66,7 @@ export const WideBoardLayout = ({
   overlays,
   style,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (

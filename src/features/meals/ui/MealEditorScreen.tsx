@@ -3,7 +3,8 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { isOk } from '@/shared/types/result'
 import { defaultAmountFor, parseQuantity } from '@/shared/units'
@@ -16,66 +17,68 @@ import type { MealDraft } from '../domain/meal-draft'
 import type { PhotoChange } from '../application/save-meal-photo'
 import type { EditorError } from './useSaveMeal'
 
-const styles = StyleSheet.create({
-  cancel: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.space.md,
-    marginBottom: tokens.space.lg,
-  },
-  stepper: {
-    borderWidth: 1,
-    borderColor: tokens.color.rule,
-    backgroundColor: tokens.color.surfaceRaised,
-    borderRadius: 8,
-    minHeight: 54,
-    minWidth: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperText: { ...tokens.type.body, color: tokens.color.textPrimary },
-  stepperValue: {
-    ...tokens.type.display,
-    color: tokens.color.textPrimary,
-    minWidth: 48,
-    textAlign: 'center',
-  },
-  save: {
-    backgroundColor: tokens.color.action,
-    borderRadius: 8,
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: tokens.space.lg,
-  },
-  saveText: { ...tokens.type.mealName, color: tokens.color.surfaceRaised },
-  photoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.space.md,
-    marginBottom: tokens.space.lg,
-  },
-  /** Bigger than the 46px chip on a card, because this is where you judge
-   *  whether the picture is the right one. */
-  photo: { width: 72, height: 72, borderRadius: tokens.radius.md },
-  photoEmpty: {
-    backgroundColor: tokens.color.surfaceInset,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoInitial: { ...tokens.type.display, color: tokens.color.textGhost },
-  photoActions: { flexDirection: 'row', gap: tokens.space.lg, flex: 1 },
-  photoAction: { minHeight: 54, justifyContent: 'center' },
-  noIngredients: { paddingVertical: tokens.space.sm },
-  addIngredient: { minHeight: 54, justifyContent: 'center', marginBottom: tokens.space.lg },
-  delete: {
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: tokens.space.lg,
-  },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    cancel: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
+    stepperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.space.md,
+      marginBottom: tokens.space.lg,
+    },
+    stepper: {
+      borderWidth: 1,
+      borderColor: tokens.color.rule,
+      backgroundColor: tokens.color.surfaceRaised,
+      borderRadius: 8,
+      minHeight: 54,
+      minWidth: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepperText: { ...tokens.type.body, color: tokens.color.textPrimary },
+    stepperValue: {
+      ...tokens.type.display,
+      color: tokens.color.textPrimary,
+      minWidth: 48,
+      textAlign: 'center',
+    },
+    save: {
+      backgroundColor: tokens.color.action,
+      borderRadius: 8,
+      minHeight: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: tokens.space.lg,
+    },
+    saveText: { ...tokens.type.mealName, color: tokens.color.onAction },
+    photoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.space.md,
+      marginBottom: tokens.space.lg,
+    },
+    /** Bigger than the 46px chip on a card, because this is where you judge
+     *  whether the picture is the right one. */
+    photo: { width: 72, height: 72, borderRadius: tokens.radius.md },
+    photoEmpty: {
+      backgroundColor: tokens.color.surfaceInset,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoInitial: { ...tokens.type.display, color: tokens.color.textGhost },
+    photoActions: { flexDirection: 'row', gap: tokens.space.lg, flex: 1 },
+    photoAction: { minHeight: 54, justifyContent: 'center' },
+    noIngredients: { paddingVertical: tokens.space.sm },
+    addIngredient: { minHeight: 54, justifyContent: 'center', marginBottom: tokens.space.lg },
+    delete: {
+      minHeight: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: tokens.space.lg,
+    },
+  }),
+)
 
 const errorKey = (error: EditorError): string => {
   if (error === 'name-required') return 'meal.nameRequired'
@@ -125,6 +128,8 @@ export const MealEditorScreen = ({
   onSave,
   onCancel,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [name, setName] = useState(initial?.name ?? '')

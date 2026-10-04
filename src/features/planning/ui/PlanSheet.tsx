@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation, type Locale } from '@/shared/i18n'
 import { slotName, type Slot, type SlotKey } from '@/features/household'
 import type { Servings } from '@/features/meals'
@@ -15,86 +16,88 @@ import type { BoardDay } from '../domain/board'
  * are planning into stays visible behind the choice, which is the whole reason
  * the canvas puts it here rather than on a page of its own.
  */
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(36, 33, 28, 0.34)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: tokens.color.surface,
-    borderTopLeftRadius: tokens.radius.sheet,
-    borderTopRightRadius: tokens.radius.sheet,
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    gap: 18,
-    maxHeight: '90%',
-  },
-  grip: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: tokens.color.dashed,
-    alignSelf: 'center',
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  title: { ...tokens.type.sheetTitle, color: tokens.color.textPrimary, flexShrink: 1 },
-  cancel: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
-  addedBy: { ...tokens.type.body, color: tokens.color.textSupport },
-  group: { gap: 9 },
-  label: { ...tokens.type.label, color: tokens.color.textSupport, textTransform: 'uppercase' },
-  /** Seven day chips in one row, so the week keeps its shape at a glance. */
-  dayRow: { flexDirection: 'row', gap: 6 },
-  slotRow: { flexDirection: 'row', gap: tokens.space.sm },
-  chip: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: tokens.color.cardBorder,
-    backgroundColor: tokens.color.surfaceRaised,
-    paddingVertical: 12,
-  },
-  slotChip: { paddingVertical: 14 },
-  /** Selection is a terracotta fill, not an outline: on a sheet of chips an
-   *  outline reads as "focused", and people tapped straight past it. */
-  chipSelected: { backgroundColor: tokens.color.action, borderColor: tokens.color.action },
-  chipToday: { borderColor: tokens.color.affirm },
-  chipText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.textPrimary },
-  slotChipText: { ...tokens.type.mealNameSmall, color: tokens.color.textPrimary },
-  chipTextSelected: { color: tokens.color.surfaceRaised },
-  note: { ...tokens.type.meta, color: tokens.color.textSupport },
-  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  stepper: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: tokens.color.cardBorder,
-    backgroundColor: tokens.color.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperSign: {
-    fontFamily: tokens.type.body.fontFamily,
-    fontSize: 22,
-    color: tokens.color.textPrimary,
-  },
-  stepperValue: {
-    fontFamily: tokens.type.mealName.fontFamily,
-    fontSize: 24,
-    fontWeight: '600',
-    color: tokens.color.textPrimary,
-    minWidth: 28,
-    textAlign: 'center',
-  },
-  submit: {
-    backgroundColor: tokens.color.action,
-    borderRadius: tokens.radius.card,
-    paddingVertical: 17,
-    alignItems: 'center',
-  },
-  submitPressed: { backgroundColor: tokens.color.actionPressed },
-  submitBusy: { opacity: 0.6 },
-  submitText: { ...tokens.type.mealNameLarge, color: tokens.color.surfaceRaised },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: tokens.color.scrim, justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: tokens.color.surface,
+      borderTopLeftRadius: tokens.radius.sheet,
+      borderTopRightRadius: tokens.radius.sheet,
+      paddingHorizontal: 22,
+      paddingTop: 22,
+      gap: 18,
+      maxHeight: '90%',
+    },
+    grip: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: tokens.color.dashed,
+      alignSelf: 'center',
+    },
+    headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+    title: { ...tokens.type.sheetTitle, color: tokens.color.textPrimary, flexShrink: 1 },
+    cancel: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
+    addedBy: { ...tokens.type.body, color: tokens.color.textSupport },
+    group: { gap: 9 },
+    label: { ...tokens.type.label, color: tokens.color.textSupport, textTransform: 'uppercase' },
+    /** Seven day chips in one row, so the week keeps its shape at a glance. */
+    dayRow: { flexDirection: 'row', gap: 6 },
+    slotRow: { flexDirection: 'row', gap: tokens.space.sm },
+    chip: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfaceRaised,
+      paddingVertical: 12,
+    },
+    slotChip: { paddingVertical: 14 },
+    /** Selection is a terracotta fill, not an outline: on a sheet of chips an
+     *  outline reads as "focused", and people tapped straight past it. */
+    chipSelected: { backgroundColor: tokens.color.action, borderColor: tokens.color.action },
+    chipToday: { borderColor: tokens.color.affirm },
+    chipText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.textPrimary },
+    slotChipText: { ...tokens.type.mealNameSmall, color: tokens.color.textPrimary },
+    chipTextSelected: { color: tokens.color.onAction },
+    note: { ...tokens.type.meta, color: tokens.color.textSupport },
+    stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    stepper: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepperSign: {
+      fontFamily: tokens.type.body.fontFamily,
+      fontSize: 22,
+      color: tokens.color.textPrimary,
+    },
+    stepperValue: {
+      fontFamily: tokens.type.mealName.fontFamily,
+      fontSize: 24,
+      fontWeight: '600',
+      color: tokens.color.textPrimary,
+      minWidth: 28,
+      textAlign: 'center',
+    },
+    submit: {
+      backgroundColor: tokens.color.action,
+      borderRadius: tokens.radius.card,
+      paddingVertical: 17,
+      alignItems: 'center',
+    },
+    submitPressed: { backgroundColor: tokens.color.actionPressed },
+    submitBusy: { opacity: 0.6 },
+    submitText: { ...tokens.type.mealNameLarge, color: tokens.color.onAction },
+  }),
+)
 
 export type PlanChoice = {
   readonly date: string
@@ -137,6 +140,7 @@ export const PlanSheet = ({
   onSubmit,
   onDismiss,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
 

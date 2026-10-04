@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { Field } from '@/shared/ui/Field'
 import { useTranslation } from '@/shared/i18n'
 
@@ -20,12 +20,14 @@ type Props = {
   readonly testID: string
 }
 
-const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center' },
-  field: { flex: 1, marginBottom: 0 },
-  toggle: { position: 'absolute', right: tokens.space.md, paddingVertical: tokens.space.sm },
-  toggleText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.textMuted },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    wrap: { flexDirection: 'row', alignItems: 'center' },
+    field: { flex: 1, marginBottom: 0 },
+    toggle: { position: 'absolute', right: tokens.space.md, paddingVertical: tokens.space.sm },
+    toggleText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.textMuted },
+  }),
+)
 
 export const PasswordField = ({
   value,
@@ -34,6 +36,7 @@ export const PasswordField = ({
   hasError = false,
   testID,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
   const [shown, setShown] = useState(false)
 

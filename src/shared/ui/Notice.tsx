@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 
 /**
  * Something went wrong, said where it can be seen.
@@ -15,34 +15,40 @@ type Props = {
   readonly testID?: string | undefined
 }
 
-const styles = StyleSheet.create({
-  layer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: tokens.space.lg,
-    alignItems: 'center',
-    pointerEvents: 'none',
-    zIndex: 900,
-  },
-  banner: {
-    backgroundColor: tokens.color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: tokens.color.action,
-    borderRadius: tokens.radius.md,
-    paddingVertical: 12,
-    paddingHorizontal: tokens.space.md,
-    marginHorizontal: tokens.space.md,
-    maxWidth: tokens.layout.readable,
-    boxShadow: tokens.shadow.lifted,
-  },
-  text: { ...tokens.type.body, color: tokens.color.action },
-})
-
-export const Notice = ({ message, testID }: Props): React.JSX.Element => (
-  <View style={styles.layer} accessibilityLiveRegion="polite">
-    <View style={styles.banner} testID={testID}>
-      <Text style={styles.text}>{message}</Text>
-    </View>
-  </View>
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    layer: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: tokens.space.lg,
+      alignItems: 'center',
+      pointerEvents: 'none',
+      zIndex: 900,
+    },
+    banner: {
+      backgroundColor: tokens.color.surfaceRaised,
+      borderWidth: 1,
+      borderColor: tokens.color.action,
+      borderRadius: tokens.radius.md,
+      paddingVertical: 12,
+      paddingHorizontal: tokens.space.md,
+      marginHorizontal: tokens.space.md,
+      maxWidth: tokens.layout.readable,
+      boxShadow: tokens.shadow.lifted,
+    },
+    text: { ...tokens.type.body, color: tokens.color.action },
+  }),
 )
+
+export const Notice = ({ message, testID }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+
+  return (
+    <View style={styles.layer} accessibilityLiveRegion="polite">
+      <View style={styles.banner} testID={testID}>
+        <Text style={styles.text}>{message}</Text>
+      </View>
+    </View>
+  )
+}

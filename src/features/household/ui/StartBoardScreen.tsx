@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { PasswordField } from '@/shared/ui/PasswordField'
 import { useTranslation } from '@/shared/i18n'
@@ -19,45 +20,47 @@ type Props = {
   readonly onJoinInstead?: (() => void) | undefined
 }
 
-const styles = StyleSheet.create({
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
-  /** Under a field, saying what it is for rather than what it must contain. */
-  hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
-  /**
-   * The one thing an anonymous board must say out loud: this device is the
-   * only key. Tinted rather than red — it is a fact to absorb, not a failure.
-   */
-  keyNote: {
-    flexDirection: 'row',
-    gap: tokens.space.sm,
-    backgroundColor: tokens.color.surfaceInset,
-    borderRadius: tokens.radius.md,
-    padding: tokens.space.md,
-    marginTop: tokens.space.lg,
-    marginBottom: tokens.space.md,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: tokens.color.backlog,
-    marginTop: 7,
-  },
-  keyNoteText: { ...tokens.type.meta, color: tokens.color.textMuted, flex: 1 },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: tokens.space.md,
-    flexWrap: 'wrap',
-    marginTop: tokens.space.md,
-    marginBottom: tokens.space.lg,
-  },
-  footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  muted: { ...tokens.type.meta, color: tokens.color.textSupport },
-  link: { ...tokens.type.meta, fontWeight: '600', color: tokens.color.action },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
+    /** Under a field, saying what it is for rather than what it must contain. */
+    hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
+    /**
+     * The one thing an anonymous board must say out loud: this device is the
+     * only key. Tinted rather than red — it is a fact to absorb, not a failure.
+     */
+    keyNote: {
+      flexDirection: 'row',
+      gap: tokens.space.sm,
+      backgroundColor: tokens.color.surfaceInset,
+      borderRadius: tokens.radius.md,
+      padding: tokens.space.md,
+      marginTop: tokens.space.lg,
+      marginBottom: tokens.space.md,
+    },
+    dot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: tokens.color.backlog,
+      marginTop: 7,
+    },
+    keyNoteText: { ...tokens.type.meta, color: tokens.color.textMuted, flex: 1 },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: tokens.space.md,
+      flexWrap: 'wrap',
+      marginTop: tokens.space.md,
+      marginBottom: tokens.space.lg,
+    },
+    footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    muted: { ...tokens.type.meta, color: tokens.color.textSupport },
+    link: { ...tokens.type.meta, fontWeight: '600', color: tokens.color.action },
+  }),
+)
 
 /**
  * The first screen for someone with no account. It asks for three things and
@@ -71,6 +74,8 @@ export const StartBoardScreen = ({
   onSignInInstead,
   onJoinInstead,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [boardName, setBoardName] = useState('')

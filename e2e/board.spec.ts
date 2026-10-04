@@ -99,6 +99,10 @@ test.describe('a family plans a week', () => {
     await page.getByTestId('open-shopping').click()
     await expect(page.getByTestId('shopping-screen')).toBeVisible()
 
+    // Two counts in one line, each pluralised on its own number — a single
+    // string pluralised on the first gave "7 to buy · 1 meals".
+    await expect(page.getByTestId('shopping-summary')).toHaveText(/^\d+ to buy · \d+ meals?$/)
+
     // count() does not retry, so wait for the list to arrive before counting.
     const lines = page.locator('[data-testid^="buy-"]')
     await expect(lines.first()).toBeVisible()

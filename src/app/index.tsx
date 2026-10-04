@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Redirect, router } from 'expo-router'
 import { Platform, Share, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
-import { tokens } from '@/shared/theme/tokens'
+import { useTheme } from '@/shared/theme/theme'
 import { NoHouseholdScreen, useSession } from '@/features/household'
 import { BoardScreen } from '@/features/planning'
 
 export default function Index(): React.JSX.Element {
+  const theme = useTheme()
   const { client, userId, household, householdChecked } = useSession()
   const [shared, setShared] = useState(false)
 
@@ -15,9 +16,7 @@ export default function Index(): React.JSX.Element {
   if (userId === undefined) return <Redirect href="/start" />
 
   if (!householdChecked) {
-    return (
-      <View style={{ flex: 1, backgroundColor: tokens.color.surface }} testID="board-loading" />
-    )
+    return <View style={{ flex: 1, backgroundColor: theme.color.surface }} testID="board-loading" />
   }
 
   if (household === undefined) return <NoHouseholdScreen client={client} />

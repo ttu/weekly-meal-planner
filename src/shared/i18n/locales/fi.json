@@ -197,12 +197,12 @@
     "copied": "Kopioitu",
     "share": "Jaa",
     "promptIntro": "Tilaa viikon ruokaostokset:",
-    "summaryMeals_one": "{{count}} ostettavaa · {{meals}} ateria",
-    "summaryMeals_other": "{{count}} ostettavaa · {{meals}} ateriaa",
     "listTitle": "Ostoslista",
     "addExtraAction": "Lisää",
     "keepInCupboard": "Tätä on aina kaapissa",
-    "stopKeeping": "Ei ole aina kaapissa"
+    "stopKeeping": "Ei ole aina kaapissa",
+    "sittings_one": "{{count}} ateria",
+    "sittings_other": "{{count}} ateriaa"
   },
   "presence": {
     "editing": "{{name}} on myös täällä",

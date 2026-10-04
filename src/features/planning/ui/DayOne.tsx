@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 
 /**
@@ -19,28 +19,31 @@ type Props = {
   readonly onInvite: () => void
 }
 
-const styles = StyleSheet.create({
-  panel: { paddingHorizontal: tokens.space.md, gap: tokens.space.sm },
-  title: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
-  body: { ...tokens.type.body, color: tokens.color.textSupport },
-  offers: { gap: tokens.space.sm, marginTop: tokens.space.sm },
-  offer: {
-    minHeight: 54,
-    justifyContent: 'center',
-    paddingHorizontal: tokens.space.md,
-    borderWidth: 1,
-    borderColor: tokens.color.rule,
-    backgroundColor: tokens.color.surfaceRaised,
-    borderRadius: tokens.radius.md,
-  },
-  /** Only the first offer wears the action colour: the other two are the same
-   *  invitation, further from where most people start. */
-  first: { backgroundColor: tokens.color.action, borderColor: tokens.color.action },
-  firstText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.surfaceRaised },
-  offerText: { ...tokens.type.body, color: tokens.color.textPrimary },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    panel: { paddingHorizontal: tokens.space.md, gap: tokens.space.sm },
+    title: { ...tokens.type.dayHeading, color: tokens.color.textPrimary },
+    body: { ...tokens.type.body, color: tokens.color.textSupport },
+    offers: { gap: tokens.space.sm, marginTop: tokens.space.sm },
+    offer: {
+      minHeight: 54,
+      justifyContent: 'center',
+      paddingHorizontal: tokens.space.md,
+      borderWidth: 1,
+      borderColor: tokens.color.rule,
+      backgroundColor: tokens.color.surfaceRaised,
+      borderRadius: tokens.radius.md,
+    },
+    /** Only the first offer wears the action colour: the other two are the same
+     *  invitation, further from where most people start. */
+    first: { backgroundColor: tokens.color.action, borderColor: tokens.color.action },
+    firstText: { ...tokens.type.body, fontWeight: '600', color: tokens.color.onAction },
+    offerText: { ...tokens.type.body, color: tokens.color.textPrimary },
+  }),
+)
 
 export const DayOne = ({ onBrowse, onWriteOwn, onInvite }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (

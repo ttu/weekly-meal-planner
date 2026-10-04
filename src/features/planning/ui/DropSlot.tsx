@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import type { SlotKey } from '@/features/household'
 import { isSameTarget, useDrag } from './DragContext'
 
@@ -16,14 +16,17 @@ type Props = {
   readonly children: React.ReactNode
 }
 
-const styles = StyleSheet.create({
-  slot: { borderRadius: tokens.radius.sm, borderWidth: 2, borderColor: 'transparent' },
-  /** The Slot the card will land in. A terracotta edge rather than a fill, so
-   *  the cards already there stay readable while deciding. */
-  hovered: { borderColor: tokens.color.action, backgroundColor: tokens.color.surfaceInset },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    slot: { borderRadius: tokens.radius.sm, borderWidth: 2, borderColor: 'transparent' },
+    /** The Slot the card will land in. A terracotta edge rather than a fill, so
+     *  the cards already there stay readable while deciding. */
+    hovered: { borderColor: tokens.color.action, backgroundColor: tokens.color.surfaceInset },
+  }),
+)
 
 export const DropSlot = ({ date, slotKey, style, children }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
   const { hovered, registerTarget } = useDrag()
   const ref = useRef<View>(null)
   const isHovered = isSameTarget(hovered, { kind: 'slot', date, slotKey })

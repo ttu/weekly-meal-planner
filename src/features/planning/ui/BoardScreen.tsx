@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
+import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
 import {
@@ -39,38 +40,40 @@ import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { Notice } from '@/shared/ui/Notice'
 import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: tokens.color.surface },
-  scroll: { flex: 1 },
-  /** Capped like every other column of text: between the phone and the 1024px
-   *  breakpoint sits the whole tablet range, and a stretched phone layout is
-   *  what a tablet got. */
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: tokens.space.xl,
-    gap: 18,
-    width: '100%',
-    maxWidth: tokens.layout.readable,
-    alignSelf: 'center',
-  },
-  /** The phone's own chrome: quiet links, then the title block the canvas
-   *  leads with. The one loud thing stays the Shopping List. */
-  links: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, flexWrap: 'wrap' },
-  link: { ...tokens.type.meta, color: tokens.color.textSupport },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  week: { ...tokens.type.support, color: tokens.color.textSupport },
-  presence: { flexDirection: 'row' },
-  overlap: { marginLeft: -9 },
-  shopping: {
-    backgroundColor: tokens.color.action,
-    borderRadius: 9,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  shoppingText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.surfaceRaised },
-  days: { gap: 18 },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: tokens.color.surface },
+    scroll: { flex: 1 },
+    /** Capped like every other column of text: between the phone and the 1024px
+     *  breakpoint sits the whole tablet range, and a stretched phone layout is
+     *  what a tablet got. */
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: tokens.space.xl,
+      gap: 18,
+      width: '100%',
+      maxWidth: tokens.layout.readable,
+      alignSelf: 'center',
+    },
+    /** The phone's own chrome: quiet links, then the title block the canvas
+     *  leads with. The one loud thing stays the Shopping List. */
+    links: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, flexWrap: 'wrap' },
+    link: { ...tokens.type.meta, color: tokens.color.textSupport },
+    titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    week: { ...tokens.type.support, color: tokens.color.textSupport },
+    presence: { flexDirection: 'row' },
+    overlap: { marginLeft: -9 },
+    shopping: {
+      backgroundColor: tokens.color.action,
+      borderRadius: 9,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    shoppingText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.onAction },
+    days: { gap: 18 },
+  }),
+)
 
 type Props = {
   readonly clock?: Clock
@@ -93,6 +96,8 @@ const Board = ({
   onShare: onShareUrl,
   shared = false,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const theme = useTheme()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const session = useSession()
@@ -237,22 +242,24 @@ const Board = ({
     />
   )
 
-  const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => (
-    <BacklogShelf
-      layout={layout}
-      onDropped={onDropped}
-      items={backlog}
-      {...(isDayOne ? { empty: dayOne } : {})}
-      onAdd={() => {
-        setPickerTarget(undefined)
-        setPickerOpen(true)
-      }}
-      onPlan={(id) => {
-        setPlanning(backlog.find((item) => item.id === id))
-      }}
-      onRemove={removeFromBacklog}
-    />
-  )
+  const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => {
+    return (
+      <BacklogShelf
+        layout={layout}
+        onDropped={onDropped}
+        items={backlog}
+        {...(isDayOne ? { empty: dayOne } : {})}
+        onAdd={() => {
+          setPickerTarget(undefined)
+          setPickerOpen(true)
+        }}
+        onPlan={(id) => {
+          setPlanning(backlog.find((item) => item.id === id))
+        }}
+        onRemove={removeFromBacklog}
+      />
+    )
+  }
 
   const overlays = (
     <>
@@ -485,7 +492,7 @@ const Board = ({
                         name={member.displayName}
                         colour={member.colour}
                         size="large"
-                        ringColour={tokens.color.surface}
+                        ringColour={theme.color.surface}
                       />
                     </View>
                   ))}
@@ -555,8 +562,10 @@ const Board = ({
  * Drag state wraps the whole board: the Backlog cards that start a drag and the
  * Slots that receive it are in different subtrees.
  */
-export const BoardScreen = (props: Props): React.JSX.Element => (
-  <DragProvider>
-    <Board {...props} />
-  </DragProvider>
-)
+export const BoardScreen = (props: Props): React.JSX.Element => {
+  return (
+    <DragProvider>
+      <Board {...props} />
+    </DragProvider>
+  )
+}

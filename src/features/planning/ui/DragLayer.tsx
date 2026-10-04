@@ -1,21 +1,23 @@
 import { StyleSheet } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
-import { tokens } from '@/shared/theme/tokens'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { LeftoverCard, MealCard } from '@/features/meals'
 import { useDrag } from './DragContext'
 
-const styles = StyleSheet.create({
-  layer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    /** Above every pane, and never in the way of the pointer. */
-    zIndex: 1000,
-    pointerEvents: 'none',
-    boxShadow: tokens.shadow.lifted,
-    borderRadius: tokens.radius.card,
-  },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    layer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      /** Above every pane, and never in the way of the pointer. */
+      zIndex: 1000,
+      pointerEvents: 'none',
+      boxShadow: tokens.shadow.lifted,
+      borderRadius: tokens.radius.card,
+    },
+  }),
+)
 
 /**
  * The card in your hand, drawn once at the root of the board.
@@ -26,6 +28,7 @@ const styles = StyleSheet.create({
  * disappears at its edge. Drawn at the root, it crosses the whole board.
  */
 export const DragLayer = (): React.JSX.Element | null => {
+  const styles = useThemed(sheets)
   const { dragging, pointer, grab, cardWidth } = useDrag()
 
   const style = useAnimatedStyle(() => ({

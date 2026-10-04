@@ -1,25 +1,27 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { unitsFor } from '@/shared/units'
 import type { Ingredient } from '../domain/types'
 
-const styles = StyleSheet.create({
-  row: {
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.rule,
-    paddingVertical: tokens.space.sm,
-    gap: tokens.space.xs,
-  },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  name: { ...tokens.type.body, color: tokens.color.textPrimary, flexShrink: 1 },
-  remove: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  quantity: { width: 110, marginBottom: 0 },
-  quantityInvalid: { borderColor: tokens.color.action },
-  error: { ...tokens.type.body, color: tokens.color.action },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    row: {
+      borderBottomWidth: 1,
+      borderBottomColor: tokens.color.rule,
+      paddingVertical: tokens.space.sm,
+      gap: tokens.space.xs,
+    },
+    topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    name: { ...tokens.type.body, color: tokens.color.textPrimary, flexShrink: 1 },
+    remove: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
+    controls: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+    quantity: { width: 110, marginBottom: 0 },
+    quantityInvalid: { borderColor: tokens.color.action },
+    error: { ...tokens.type.body, color: tokens.color.action },
+  }),
+)
 
 type Props = {
   readonly ingredient: Ingredient
@@ -45,6 +47,8 @@ export const IngredientRow = ({
   onUnitChange,
   onRemove,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
 
   return (

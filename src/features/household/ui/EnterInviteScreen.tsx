@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { BackLink } from '@/shared/ui/BackLink'
 import { useTranslation } from '@/shared/i18n'
@@ -13,11 +14,13 @@ type Props = {
   readonly onBack: () => void
 }
 
-const styles = StyleSheet.create({
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
-  hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
+    hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
+  }),
+)
 
 /**
  * For the invite that did not arrive as a tappable link — read out over the
@@ -27,6 +30,8 @@ const styles = StyleSheet.create({
  * token": whether it opens anything is the server's answer to give.
  */
 export const EnterInviteScreen = ({ onOpen, onBack }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [pasted, setPasted] = useState('')

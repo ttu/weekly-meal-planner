@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
-import { formStyles } from '@/shared/theme/form-styles'
+import { themed, useThemed } from '@/shared/theme/theme'
+import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { BackLink } from '@/shared/ui/BackLink'
 import { Notice } from '@/shared/ui/Notice'
@@ -36,34 +37,36 @@ type Props = {
   readonly onBack: () => void
 }
 
-const styles = StyleSheet.create({
-  title: { ...tokens.type.display, color: tokens.color.textPrimary },
-  body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.space.sm,
-    backgroundColor: tokens.color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: tokens.color.rule,
-    borderRadius: tokens.radius.md,
-    paddingLeft: tokens.space.md,
-    marginBottom: tokens.space.sm,
-    minHeight: 54,
-  },
-  name: { ...tokens.type.body, color: tokens.color.textPrimary, flex: 1 },
-  /** 44px of target around a glyph that is only a few pixels wide. */
-  glyph: { width: 44, minHeight: 54, alignItems: 'center', justifyContent: 'center' },
-  glyphText: { ...tokens.type.body, color: tokens.color.textMuted },
-  glyphSpent: { opacity: 0.25 },
-  removeText: { ...tokens.type.body, color: tokens.color.action },
-  presets: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
-  preset: { paddingHorizontal: tokens.space.md, minHeight: 44, paddingVertical: 10 },
-  addRow: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' },
-  addField: { flex: 1 },
-  addButton: { paddingHorizontal: tokens.space.lg, minHeight: 54 },
-  hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
-})
+const sheets = themed((tokens) =>
+  StyleSheet.create({
+    title: { ...tokens.type.display, color: tokens.color.textPrimary },
+    body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.space.sm,
+      backgroundColor: tokens.color.surfaceRaised,
+      borderWidth: 1,
+      borderColor: tokens.color.rule,
+      borderRadius: tokens.radius.md,
+      paddingLeft: tokens.space.md,
+      marginBottom: tokens.space.sm,
+      minHeight: 54,
+    },
+    name: { ...tokens.type.body, color: tokens.color.textPrimary, flex: 1 },
+    /** 44px of target around a glyph that is only a few pixels wide. */
+    glyph: { width: 44, minHeight: 54, alignItems: 'center', justifyContent: 'center' },
+    glyphText: { ...tokens.type.body, color: tokens.color.textMuted },
+    glyphSpent: { opacity: 0.25 },
+    removeText: { ...tokens.type.body, color: tokens.color.action },
+    presets: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
+    preset: { paddingHorizontal: tokens.space.md, minHeight: 44, paddingVertical: 10 },
+    addRow: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' },
+    addField: { flex: 1 },
+    addButton: { paddingHorizontal: tokens.space.lg, minHeight: 54 },
+    hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
+  }),
+)
 
 /**
  * The only settings there are: the Slots the board shows on every day.
@@ -84,6 +87,8 @@ export const SettingsScreen = ({
   onMove,
   onBack,
 }: Props): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [named, setNamed] = useState('')
