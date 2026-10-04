@@ -31,6 +31,46 @@ const UNITS: Record<string, readonly string[]> = {
   count: ['pcs', 'tin', 'pack', 'bunch'],
 }
 
+/** A unit belongs to a dimension, or the dimension is one we do not police. */
+const unitFits = (dimension: string, unit: string): boolean => {
+  const units = UNITS[dimension]
+  return units === undefined || units.includes(unit)
+}
+
+const baseUnitProblems = (ingredients: readonly CatalogueIngredient[]): readonly string[] =>
+  ingredients.flatMap((ingredient) =>
+    unitFits(ingredient.dimension, ingredient.baseUnit)
+      ? []
+      : [
+          `${ingredient.slug}: base unit ${ingredient.baseUnit} is not a ${ingredient.dimension} unit`,
+        ],
+  )
+
+const duplicateNameProblems = (meals: readonly CatalogueMeal[]): readonly string[] => {
+  const seen = new Set<string>()
+  const problems: string[] = []
+  for (const meal of meals) {
+    if (seen.has(meal.names.fi)) problems.push(`Duplicate Meal name: ${meal.names.fi}`)
+    seen.add(meal.names.fi)
+  }
+  return problems
+}
+
+const mealIngredientProblems = (
+  meal: CatalogueMeal,
+  bySlug: ReadonlyMap<string, CatalogueIngredient>,
+): readonly string[] =>
+  meal.ingredients.flatMap((row) => {
+    const ingredient = bySlug.get(row.slug)
+    if (ingredient === undefined) {
+      return [`${meal.names.en}: unknown Ingredient slug "${row.slug}"`]
+    }
+    if (unitFits(ingredient.dimension, row.unit)) return []
+    return [
+      `${meal.names.en}: ${row.slug} measured in ${row.unit}, which is not a ${ingredient.dimension} unit`,
+    ]
+  })
+
 /**
  * Validates the reference data as a whole, not row by row: a Meal naming an
  * Ingredient slug that does not exist, or measuring one in a unit from another
@@ -43,39 +83,12 @@ export const validateCatalogue = (
   ingredients: readonly CatalogueIngredient[],
   meals: readonly CatalogueMeal[],
 ): readonly string[] => {
-  const problems: string[] = []
-
   const bySlug = new Map(ingredients.map((i) => [i.slug, i]))
-  if (bySlug.size !== ingredients.length) problems.push('Duplicate Ingredient slug')
 
-  for (const ingredient of ingredients) {
-    const units = UNITS[ingredient.dimension]
-    if (units !== undefined && !units.includes(ingredient.baseUnit)) {
-      problems.push(
-        `${ingredient.slug}: base unit ${ingredient.baseUnit} is not a ${ingredient.dimension} unit`,
-      )
-    }
-  }
-
-  const names = new Set<string>()
-  for (const meal of meals) {
-    if (names.has(meal.names.fi)) problems.push(`Duplicate Meal name: ${meal.names.fi}`)
-    names.add(meal.names.fi)
-
-    for (const row of meal.ingredients) {
-      const ingredient = bySlug.get(row.slug)
-      if (ingredient === undefined) {
-        problems.push(`${meal.names.en}: unknown Ingredient slug "${row.slug}"`)
-        continue
-      }
-      const units = UNITS[ingredient.dimension]
-      if (units !== undefined && !units.includes(row.unit)) {
-        problems.push(
-          `${meal.names.en}: ${row.slug} measured in ${row.unit}, which is not a ${ingredient.dimension} unit`,
-        )
-      }
-    }
-  }
-
-  return problems
+  return [
+    ...(bySlug.size === ingredients.length ? [] : ['Duplicate Ingredient slug']),
+    ...baseUnitProblems(ingredients),
+    ...duplicateNameProblems(meals),
+    ...meals.flatMap((meal) => mealIngredientProblems(meal, bySlug)),
+  ]
 }

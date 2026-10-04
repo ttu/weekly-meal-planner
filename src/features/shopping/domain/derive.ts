@@ -60,20 +60,19 @@ const addAmount = (amounts: Amount[], quantity: Quantity, unit: string): void =>
 
 const round = (value: number): number => Math.round(value * 100) / 100
 
-export const deriveShoppingList = ({
-  plannedMeals,
-  mealIngredients,
-  ingredients,
-  staples,
-  overrides,
-  extras,
-  checkedIngredientIds,
-}: DeriveInput): ShoppingList => {
-  const infoById = new Map(ingredients.map((i) => [i.id, i]))
-  const stapleById = new Map(staples.map((s) => [s.ingredientId, s]))
-  const overrideById = new Map(overrides.map((o) => [o.ingredientId, o]))
-  const checked = new Set(checkedIngredientIds)
+type Totals = {
+  readonly byIngredient: ReadonlyMap<IngredientId, Accumulated>
+  readonly incomplete: readonly IncompleteMealLine[]
+}
 
+/**
+ * Sums what the week's Cook Events need, per Ingredient, and collects the
+ * Meals that could not contribute because nobody has listed their Ingredients.
+ */
+const accumulate = (
+  plannedMeals: readonly PlannedMeal[],
+  mealIngredients: readonly MealIngredient[],
+): Totals => {
   const byIngredient = new Map<IngredientId, Accumulated>()
   const incomplete: IncompleteMealLine[] = []
 
@@ -108,6 +107,37 @@ export const deriveShoppingList = ({
     }
   }
 
+  return { byIngredient, incomplete }
+}
+
+/** An Override replaces the derived amount outright — someone has decided what
+ *  to buy, and the arithmetic does not get a second opinion. */
+const buyAmounts = (entry: Accumulated, override: Override | undefined): readonly Amount[] =>
+  override === undefined
+    ? entry.amounts.map((a) => ({ ...a, quantity: brand<number, 'Quantity'>(round(a.quantity)) }))
+    : [{ quantity: override.quantity, unit: override.unit }]
+
+const byCategoryThenName = (
+  a: { readonly category: string; readonly name: string },
+  b: { readonly category: string; readonly name: string },
+): number => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
+
+export const deriveShoppingList = ({
+  plannedMeals,
+  mealIngredients,
+  ingredients,
+  staples,
+  overrides,
+  extras,
+  checkedIngredientIds,
+}: DeriveInput): ShoppingList => {
+  const infoById = new Map(ingredients.map((i) => [i.id, i]))
+  const stapleById = new Map(staples.map((s) => [s.ingredientId, s]))
+  const overrideById = new Map(overrides.map((o) => [o.ingredientId, o]))
+  const checked = new Set(checkedIngredientIds)
+
+  const { byIngredient, incomplete } = accumulate(plannedMeals, mealIngredients)
+
   const buy: BuyLine[] = []
   const cupboard: CupboardLine[] = []
 
@@ -131,13 +161,7 @@ export const deriveShoppingList = ({
       ingredientId: info.id,
       name: info.name,
       category: info.category,
-      amounts:
-        override === undefined
-          ? entry.amounts.map((a) => ({
-              ...a,
-              quantity: brand<number, 'Quantity'>(round(a.quantity)),
-            }))
-          : [{ quantity: override.quantity, unit: override.unit }],
+      amounts: buyAmounts(entry, override),
       contributions: entry.contributions,
       isOverridden: override !== undefined,
       ...(override?.reason === undefined ? {} : { overrideReason: override.reason }),
@@ -147,8 +171,8 @@ export const deriveShoppingList = ({
   }
 
   // Grouped by category so the list follows the shop, not the recipes.
-  buy.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
-  cupboard.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
+  buy.sort(byCategoryThenName)
+  cupboard.sort(byCategoryThenName)
 
   return { sittings: plannedMeals.length, buy, cupboard, extras, incomplete }
 }

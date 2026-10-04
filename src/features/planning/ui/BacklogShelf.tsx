@@ -160,6 +160,26 @@ export const BacklogShelf = ({
     </View>
   ))
 
+  // Three shapes, not a chain: nothing wanted yet, a shelf that scrolls
+  // sideways under the board, or a column down the side of a wide screen.
+  const list = ((): React.JSX.Element => {
+    if (items.length === 0) {
+      return (
+        <View style={[styles.empty, isShelf && styles.measure]} testID="backlog-empty">
+          {empty ?? <Text style={styles.emptyText}>{t('backlog.empty')}</Text>}
+        </View>
+      )
+    }
+    if (isShelf) {
+      return (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={[styles.row, styles.measure]}>{cards}</View>
+        </ScrollView>
+      )
+    }
+    return <View style={styles.column}>{cards}</View>
+  })()
+
   const content = (
     <>
       <View style={[styles.header, isShelf && styles.measure]}>
@@ -194,17 +214,7 @@ export const BacklogShelf = ({
         </View>
       )}
 
-      {items.length === 0 ? (
-        <View style={[styles.empty, isShelf && styles.measure]} testID="backlog-empty">
-          {empty ?? <Text style={styles.emptyText}>{t('backlog.empty')}</Text>}
-        </View>
-      ) : isShelf ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={[styles.row, styles.measure]}>{cards}</View>
-        </ScrollView>
-      ) : (
-        <View style={styles.column}>{cards}</View>
-      )}
+      {list}
     </>
   )
 

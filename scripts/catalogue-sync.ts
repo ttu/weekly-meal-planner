@@ -4,6 +4,7 @@ import type { Database } from '../src/shared/db/database.types'
 import ingredientData from '../data/catalogue/ingredients.json'
 import mealData from '../data/catalogue/meals.json'
 import { ingredientSchema, mealSchema, validateCatalogue } from './catalogue-schema'
+import type { CatalogueIngredient, CatalogueMeal } from './catalogue-schema'
 
 const env = z
   .object({
@@ -18,21 +19,15 @@ const admin = createClient<Database>(env.EXPO_PUBLIC_SUPABASE_URL, env.SUPABASE_
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 
-const sync = async (): Promise<void> => {
-  const ingredients = z.array(ingredientSchema).parse(ingredientData)
-  const meals = z.array(mealSchema).parse(mealData)
+type SlugToId = ReadonlyMap<string, string>
 
-  const problems = validateCatalogue(ingredients, meals)
-  if (problems.length > 0) {
-    process.stderr.write(`Catalogue is invalid:\n${problems.map((p) => `  - ${p}`).join('\n')}\n`)
-    process.exit(1)
-  }
-
-  // Idempotent: the Catalogue is reference data, so a re-run is a replace, not
-  // an append. Household Meals and Ingredients are untouched.
-  await admin.from('meal').delete().is('household_id', null)
-  await admin.from('ingredient').delete().is('household_id', null).neq('id', NIL_UUID)
-
+/**
+ * Replaces the Catalogue's Ingredients and returns where each slug landed, so
+ * the Meals that follow can reference them.
+ */
+const insertIngredients = async (
+  ingredients: readonly CatalogueIngredient[],
+): Promise<SlugToId> => {
   const slugToId = new Map<string, string>()
   for (const ingredient of ingredients) {
     const { data, error } = await admin
@@ -57,9 +52,36 @@ const sync = async (): Promise<void> => {
     if (nameError !== null)
       throw new Error(`Ingredient names ${ingredient.slug}: ${nameError.message}`)
   }
+  return slugToId
+}
 
-  // One Meal row per Locale: a Catalogue Meal carries its name in the file, and
-  // a Household copies the row matching its own Locale (ADR 0009).
+const insertMealIngredients = async (
+  mealId: string,
+  meal: CatalogueMeal,
+  slugToId: SlugToId,
+): Promise<void> => {
+  if (meal.ingredients.length === 0) return
+
+  const { error } = await admin.from('meal_ingredient').insert(
+    meal.ingredients.map((row) => {
+      const ingredientId = slugToId.get(row.slug)
+      if (ingredientId === undefined) throw new Error(`Unknown slug ${row.slug}`)
+      return {
+        meal_id: mealId,
+        ingredient_id: ingredientId,
+        quantity: row.quantity,
+        unit: row.unit,
+      }
+    }),
+  )
+  if (error !== null) throw new Error(`Meal Ingredients ${meal.names.en}: ${error.message}`)
+}
+
+/**
+ * One Meal row per Locale: a Catalogue Meal carries its name in the file, and a
+ * Household copies the row matching its own Locale (ADR 0009).
+ */
+const insertMeals = async (meals: readonly CatalogueMeal[], slugToId: SlugToId): Promise<void> => {
   for (const meal of meals) {
     for (const locale of ['fi', 'en'] as const) {
       const { data, error } = await admin
@@ -69,24 +91,29 @@ const sync = async (): Promise<void> => {
         .single()
       if (error !== null) throw new Error(`Meal ${meal.names.en}: ${error.message}`)
 
-      if (meal.ingredients.length === 0) continue
-
-      const { error: rowError } = await admin.from('meal_ingredient').insert(
-        meal.ingredients.map((row) => {
-          const ingredientId = slugToId.get(row.slug)
-          if (ingredientId === undefined) throw new Error(`Unknown slug ${row.slug}`)
-          return {
-            meal_id: data.id,
-            ingredient_id: ingredientId,
-            quantity: row.quantity,
-            unit: row.unit,
-          }
-        }),
-      )
-      if (rowError !== null)
-        throw new Error(`Meal Ingredients ${meal.names.en}: ${rowError.message}`)
+      await insertMealIngredients(data.id, meal, slugToId)
     }
   }
+}
+
+const sync = async (): Promise<void> => {
+  const ingredients = z.array(ingredientSchema).parse(ingredientData)
+  const meals = z.array(mealSchema).parse(mealData)
+
+  const problems = validateCatalogue(ingredients, meals)
+  if (problems.length > 0) {
+    const listed = problems.map((p) => `  - ${p}`).join('\n')
+    process.stderr.write(`Catalogue is invalid:\n${listed}\n`)
+    process.exit(1)
+  }
+
+  // Idempotent: the Catalogue is reference data, so a re-run is a replace, not
+  // an append. Household Meals and Ingredients are untouched.
+  await admin.from('meal').delete().is('household_id', null)
+  await admin.from('ingredient').delete().is('household_id', null).neq('id', NIL_UUID)
+
+  const slugToId = await insertIngredients(ingredients)
+  await insertMeals(meals, slugToId)
 
   process.stdout.write(
     `Synced ${String(ingredients.length)} Ingredients and ${String(meals.length)} Catalogue Meals in 2 Locales\n`,

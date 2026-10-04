@@ -18,4 +18,10 @@ you want to overturn one, change the spec first.
 
 ---
 
-_Nothing open._
+## Tests
+
+- The e2e suite waits out animations, navigation and the auto-scroll dwell with
+  `page.waitForTimeout` in six places, so `sonarjs/no-fixed-wait-in-tests` is
+  off for `e2e/**`. Found when the sonarjs rules were added. Replace each with
+  a wait on an observable condition and delete the exception from
+  `eslint.config.mjs`; doing it as its own pass so a flake is attributable.

@@ -56,7 +56,10 @@ describe('theme', () => {
   // Every colour the light theme names must exist in the dark one, or a
   // screen renders `undefined` and react-native-web quietly drops it.
   it('names the same colours in both schemes', () => {
-    expect(Object.keys(darkColours).sort()).toEqual(Object.keys(lightColours).sort())
+    const alphabetically = (a: string, b: string): number => a.localeCompare(b)
+    expect(Object.keys(darkColours).sort(alphabetically)).toEqual(
+      Object.keys(lightColours).sort(alphabetically),
+    )
   })
 
   it('ignores a dark device until someone chooses dark', async () => {

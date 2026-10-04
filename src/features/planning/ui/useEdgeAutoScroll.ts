@@ -19,6 +19,16 @@ const DWELL_MS = 200
 const MAX_SPEED = 18
 const TICK_MS = 16
 
+/**
+ * How fast the board should move, given how far the pointer is from each edge.
+ * Negative is up, positive is down, zero is "not near an edge".
+ */
+const edgeSpeed = (fromTop: number, fromBottom: number): number => {
+  if (fromTop < EDGE) return -MAX_SPEED * Math.min(1, (EDGE - fromTop) / EDGE)
+  if (fromBottom < EDGE) return MAX_SPEED * Math.min(1, (EDGE - fromBottom) / EDGE)
+  return 0
+}
+
 export type EdgeAutoScroll = {
   /** Put on the View wrapping the ScrollView, so its position can be measured. */
   readonly viewportRef: RefObject<View | null>
@@ -62,12 +72,7 @@ export const useEdgeAutoScroll = (scroll: RefObject<ScrollView | null>): EdgeAut
       const fromTop = pointerY - top
       const fromBottom = top + height - pointerY
 
-      const speed =
-        fromTop < EDGE
-          ? -MAX_SPEED * Math.min(1, (EDGE - fromTop) / EDGE)
-          : fromBottom < EDGE
-            ? MAX_SPEED * Math.min(1, (EDGE - fromBottom) / EDGE)
-            : 0
+      const speed = edgeSpeed(fromTop, fromBottom)
 
       if (speed === 0) {
         enteredAt.current = undefined

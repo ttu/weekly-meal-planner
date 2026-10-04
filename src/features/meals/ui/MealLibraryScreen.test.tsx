@@ -42,7 +42,7 @@ describe('MealLibraryScreen', () => {
   // us tonight", which is the question being asked while choosing.
   it('says how many a Meal serves', async () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={meals} />)
-    expect(view.getAllByText('Serves 4').length).toBe(2)
+    expect(view.getAllByText('Serves 4')).toHaveLength(2)
     expect(view.getByText('Serves 2')).toBeTruthy()
   })
 
@@ -50,7 +50,7 @@ describe('MealLibraryScreen', () => {
   // and finding that out after opening the editor is too late.
   it('marks a Catalogue Meal as one', async () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={meals} />)
-    expect(view.getAllByText('Catalogue').length).toBe(2)
+    expect(view.getAllByText('Catalogue')).toHaveLength(2)
   })
 
   it('filters by search, ignoring diacritics', async () => {

@@ -114,6 +114,14 @@ type Props = {
   readonly onCancel: () => void
 }
 
+/** What the editor shows: the picture just picked, nothing if it was cleared,
+ *  and otherwise whatever the Meal already had. */
+const shownPhotoFor = (photo: PhotoChange, saved: string | undefined): string | undefined => {
+  if (photo.kind === 'picked') return photo.uri
+  if (photo.kind === 'cleared') return undefined
+  return saved
+}
+
 export const MealEditorScreen = ({
   initial,
   ingredients,
@@ -145,8 +153,7 @@ export const MealEditorScreen = ({
   const [photo, setPhoto] = useState<PhotoChange>({ kind: 'unchanged' })
   const [isConfirmingDelete, setConfirmingDelete] = useState(false)
 
-  const shownPhoto =
-    photo.kind === 'picked' ? photo.uri : photo.kind === 'cleared' ? undefined : photoUrl
+  const shownPhoto = shownPhotoFor(photo, photoUrl)
 
   const byId = new Map(ingredients.map((i) => [i.id, i]))
   const unpicked = ingredients.filter((i) => !entries.some((e) => e.ingredientId === i.id))

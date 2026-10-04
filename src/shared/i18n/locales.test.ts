@@ -55,13 +55,10 @@ describe('translations', () => {
 
   it('no value is left empty', () => {
     const empty = (tree: Tree, prefix = ''): string[] =>
-      Object.entries(tree).flatMap(([key, value]) =>
-        typeof value === 'object'
-          ? empty(value, `${prefix}${key}.`)
-          : value.trim().length === 0
-            ? [`${prefix}${key}`]
-            : [],
-      )
+      Object.entries(tree).flatMap(([key, value]) => {
+        if (typeof value === 'object') return empty(value, `${prefix}${key}.`)
+        return value.trim().length === 0 ? [`${prefix}${key}`] : []
+      })
     expect(empty(en)).toEqual([])
     expect(empty(fi)).toEqual([])
   })

@@ -42,7 +42,7 @@ const keyFor = (label: string, taken: readonly SlotKey[]): SlotKey => {
     label
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+      .replace(/^-|-$/g, '')
       .slice(0, 16) || 'slot'
 
   let candidate = base

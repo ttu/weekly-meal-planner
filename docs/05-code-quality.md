@@ -57,6 +57,58 @@ modelled and rendered.
 Never swallow an error. An empty `catch {}` is a lint error. If an error really
 is ignorable, it is logged with the reason it is ignorable.
 
+## Lint
+
+Beyond `typescript-eslint`'s `strictTypeChecked` and the boundary rules,
+`eslint-plugin-sonarjs`' recommended set runs over everything: bug patterns,
+needless complexity (cognitive complexity capped at 15 per function), nested
+ternaries, nested template literals, and test smells like a generic
+`.length === n` where `toHaveLength(n)` reports what the length actually was.
+
+Prefer fixing a violation over disabling the rule. Where a disable is right it
+goes in `eslint.config.mjs` with a one-line reason next to it, scoped as
+narrowly as the problem. What is off today:
+
+| Rule                            | Scope               | Why                                           |
+| ------------------------------- | ------------------- | --------------------------------------------- |
+| `todo-tag`                      | everywhere          | `TODO.md` is the issue tracker; code names it |
+| `no-unused-vars`                | everywhere          | redundant with the type-aware rule            |
+| `no-hardcoded-secrets`          | tests, scripts, e2e | fixtures and demo logins are fake on purpose  |
+| `no-hardcoded-passwords`        | tests, scripts, e2e | same                                          |
+| `no-os-command-from-path`       | e2e                 | `docker` off the developer's PATH             |
+| `publicly-writable-directories` | e2e                 | throwaway screenshots under `/tmp`            |
+| `no-fixed-wait-in-tests`        | e2e                 | real debt, tracked in `TODO.md`               |
+
+The last one is different in kind from the others: it is deferred, not
+permanent. The e2e suite waits out animations and the auto-scroll dwell with
+fixed sleeps, and replacing them with observable conditions is a pass of its
+own.
+
+Eight rules sonarjs ships off are on here, each turned on only once the
+codebase was already clean of it — a ratchet, not a backlog:
+
+| Rule                       | Scope      | Why                                             |
+| -------------------------- | ---------- | ----------------------------------------------- |
+| `no-implicit-dependencies` | everywhere | hoisted `node_modules` hides undeclared imports |
+| `no-commented-code`        | everywhere | git history is the record of what was done      |
+| `no-return-type-any`       | everywhere | the return half of `no-explicit-any`            |
+| `prefer-immediate-return`  | everywhere | readability                                     |
+| `no-collapsible-if`        | everywhere | readability                                     |
+| `useless-string-operation` | everywhere | dead `.trim()` / `.toLowerCase()`               |
+| `no-nested-switch`         | everywhere | readability                                     |
+| `composite-assertions`     | tests, e2e | a failing composite says which half failed      |
+| `no-networkidle-wait`      | e2e        | a guess about timing dressed up as a wait       |
+
+`no-implicit-dependencies` earns its place: `.npmrc` sets
+`node-linker=hoisted`, so an import of a package nobody declared resolves
+happily until the tree is built some other way. It found `@storybook/react`
+being imported by the stories while only its framework package was declared.
+
+Rules deliberately left off: `no-undefined-assignment` contradicts rule 5,
+`no-inconsistent-returns` flags the standard `useEffect` cleanup, and
+`cyclomatic-complexity` says again what the cognitive-complexity cap already
+says. `no-redundant-parentheses` would argue with Prettier.
+
 ## Duplication
 
 `jscpd` with a threshold in `validate`. DRY is a build gate here, not a

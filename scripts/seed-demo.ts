@@ -279,9 +279,8 @@ const seed = async (): Promise<void> => {
   await seedMeals(householdId)
   await seedWeek(householdId, userId)
 
-  process.stdout.write(
-    `\nSign in as any of:\n${MEMBERS.map((m) => `  ${m.email} / ${DEMO_PASSWORD}`).join('\n')}\n`,
-  )
+  const logins = MEMBERS.map((m) => `  ${m.email} / ${DEMO_PASSWORD}`).join('\n')
+  process.stdout.write(`\nSign in as any of:\n${logins}\n`)
 }
 
 void seed()

@@ -14,6 +14,10 @@ export type { DragPayload, DropTarget }
 
 export type Bounds = { x: number; y: number; width: number; height: number }
 
+/** Sort rank, not an order in itself: on a phone the Backlog sits under the
+ *  board's last rows, and a Slot the pointer is genuinely over should win. */
+const checkedLast = (target: DropTarget): number => (target.kind === 'backlog' ? 1 : 0)
+
 type Measure = (report: (bounds: Bounds) => void) => void
 
 type DragValue = {
@@ -124,10 +128,8 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
   )
 
   const moveTo = useCallback((x: number, y: number) => {
-    // The Backlog is checked last: on a phone it sits under the board's last
-    // rows, and a Slot the pointer is genuinely over should win.
-    const entries = [...bounds.current.values()].sort((a, b) =>
-      a.target.kind === b.target.kind ? 0 : a.target.kind === 'backlog' ? 1 : -1,
+    const entries = [...bounds.current.values()].sort(
+      (a, b) => checkedLast(a.target) - checkedLast(b.target),
     )
 
     for (const { target, bounds: box } of entries) {

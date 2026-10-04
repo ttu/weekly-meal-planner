@@ -50,6 +50,7 @@ export const IngredientRow = ({
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
+  const unitName = (option: string): string => t(`unit.${option}`)
 
   return (
     <View style={styles.row} testID={`ingredient-row-${ingredient.slug}`}>
@@ -83,10 +84,10 @@ export const IngredientRow = ({
             }}
             accessibilityRole="button"
             accessibilityState={{ selected: option === unit }}
-            accessibilityLabel={`${t('ingredient.unit')} ${t(`unit.${option}`)}`}
+            accessibilityLabel={`${t('ingredient.unit')} ${unitName(option)}`}
             testID={`ingredient-unit-${ingredient.slug}-${option}`}
           >
-            <Text style={formStyles.chipText}>{t(`unit.${option}`)}</Text>
+            <Text style={formStyles.chipText}>{unitName(option)}</Text>
           </Pressable>
         ))}
       </View>
