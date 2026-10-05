@@ -16,6 +16,16 @@ const list: ShoppingList = {
       promotedFromCupboard: false,
       checked: false,
     },
+    {
+      ingredientId: 'beef' as IngredientId,
+      name: 'jauheliha',
+      category: 'meat',
+      amounts: [{ quantity: 400 as Quantity, unit: 'g' }],
+      contributions: [{ mealName: 'Chili con carne', quantity: 400 as Quantity, unit: 'g' }],
+      isOverridden: false,
+      promotedFromCupboard: false,
+      checked: true,
+    },
   ],
   cupboard: [{ ingredientId: 'cumin' as IngredientId, name: 'juustokumina', category: 'spices' }],
   extras: [
@@ -36,6 +46,12 @@ describe('buildAgentPrompt', () => {
 
   it('leaves out Extras already ticked off', () => {
     expect(buildAgentPrompt(list, 'Tilaa:')).not.toContain('Jo ostettu')
+  })
+
+  // A ticked line is already in the basket. Asking an agent to order it again
+  // is how a household ends up with two of everything they shopped for first.
+  it('leaves out Buy Lines already ticked off', () => {
+    expect(buildAgentPrompt(list, 'Tilaa:')).not.toContain('jauheliha')
   })
 
   // The Cupboard Check is a question for the family, not an order for a shop.
