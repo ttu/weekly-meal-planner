@@ -145,8 +145,12 @@ blank columns with nothing to click, since the Slot label being tappable is not
 something anyone can see.
 
 **Phone**: the title block, the week strip, then the days stacked. A day is a
-serif weekday and one row per Slot: a 56px labelled gutter on the left and the
-cards on the right. An empty Slot is one dashed line, not a hole. The Backlog is
+serif weekday and one row per Slot: an 80px labelled gutter on the left and the
+cards on the right. The canvas drew that gutter at 56px, which fits "LUNCH" and
+"DINNER" and nothing else — "PÄIVÄLLINEN" needs 78px and "BREAKFAST" 71px, and
+at 56px both broke mid-word into something that reads as a typo. The gutter is
+sized to the longest Slot name either Locale can put in it, and the label uses
+`labelTiny`, the same size the wide board gives a Slot label. An empty Slot is one dashed line, not a hole. The Backlog is
 docked to the bottom on white, above the board and visible at every scroll
 position.
 

@@ -21,6 +21,13 @@ export const cardStylesSheets = themed((tokens) =>
     /** The name and its supporting line, as one block beside the chip or avatar. */
     text: { flex: 1, gap: 2, minWidth: 0 },
     name: { ...tokens.type.mealName, color: tokens.color.textPrimary },
+    /**
+     * A Backlog card is 16px, not 17 (docs/07-design-system.md). The four
+     * pixels matter: at 17px a 168px shelf card cannot hold
+     * "Jauhelihakastike" on one line and breaks it mid-word, which reads as a
+     * typo. Finnish compounds are the normal case here, not the edge one.
+     */
+    nameBacklog: { ...tokens.type.mealNameSmall, color: tokens.color.textPrimary },
     nameLarge: { ...tokens.type.mealNameLarge, color: tokens.color.textPrimary },
     support: { ...tokens.type.support, color: tokens.color.textMuted },
     meta: { ...tokens.type.support, color: tokens.color.textSupport },

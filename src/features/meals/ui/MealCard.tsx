@@ -182,7 +182,7 @@ export const MealCard = ({
   if (variant === 'backlog') {
     return (
       <View style={[cardStyles.base, styles.backlog]} testID="meal-card-backlog">
-        <Text style={cardStyles.name}>{name}</Text>
+        <Text style={cardStyles.nameBacklog}>{name}</Text>
         {addedBy !== undefined && addedBy !== '' && (
           <View style={styles.addedBy}>
             <Avatar name={addedBy} colour={addedByColour ?? ''} size="small" />

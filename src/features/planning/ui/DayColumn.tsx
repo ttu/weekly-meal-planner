@@ -31,11 +31,19 @@ const sheets = themed((tokens) =>
     /** The Slot is a labelled gutter beside the cards, not a heading above them:
      *  a Household with five Slots just grows the column. */
     slotRow: { flexDirection: 'row', gap: 12 },
+    /**
+     * The gutter is as wide as the longest Slot name either Locale can put in
+     * it — "PÄIVÄLLINEN" is 78px at this size, "BREAKFAST" 71px. At the 56px
+     * the canvas drew for "LUNCH" and "DINNER" both of those broke mid-word,
+     * which reads as a typo rather than a label: AAMIAI / NEN.
+     *
+     * `labelTiny` is the design system's own size for a Slot label, and is
+     * what the wide board already uses.
+     */
     slotLabel: {
-      ...tokens.type.label,
-      letterSpacing: 1,
-      width: 56,
-      paddingTop: 14,
+      ...tokens.type.labelTiny,
+      width: 80,
+      paddingTop: 15,
       color: tokens.color.textSupport,
       textTransform: 'uppercase',
     },
@@ -193,7 +201,12 @@ export const DayColumn = ({
 
       {day.slots.map((slot) => (
         <View key={slot.slotKey} style={styles.slotRow}>
-          <Text style={styles.slotLabel}>{slotName(slot, t)}</Text>
+          {/* Two lines is the ceiling: a Household that names a Slot something
+              enormous gets it clipped rather than a gutter that eats the
+              cards. */}
+          <Text style={styles.slotLabel} numberOfLines={2}>
+            {slotName(slot, t)}
+          </Text>
           <DropSlot date={day.date} slotKey={slot.slotKey} style={styles.slotBody}>
             {slot.cards.length === 0 ? (
               <Pressable
