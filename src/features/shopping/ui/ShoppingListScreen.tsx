@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
+import { useIsOnline } from '@/shared/net/useIsOnline'
 import { BackLink } from '@/shared/ui/BackLink'
 import type { IngredientId } from '@/shared/types/ids'
 import { groupBuyLines } from '../domain/group'
@@ -180,6 +181,28 @@ const sheets = themed((tokens) =>
     copyDisabled: { opacity: 0.4 },
     copyText: { ...tokens.type.mealName, color: tokens.color.onAction },
     empty: { ...tokens.type.body, color: tokens.color.textSupport },
+    /** Said once, at the top, and never in place of the list itself: the rows
+     *  still work offline because the writes are optimistic. */
+    offline: {
+      backgroundColor: tokens.color.surfaceInset,
+      borderRadius: tokens.radius.md,
+      paddingVertical: tokens.space.sm,
+      paddingHorizontal: tokens.space.md,
+      marginBottom: tokens.space.md,
+    },
+    offlineText: { ...tokens.type.meta, color: tokens.color.textMuted },
+    /** A full-width target: this is pressed with a thumb, in a shop. */
+    tickedToggle: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingVertical: tokens.space.sm,
+      marginTop: tokens.space.sm,
+    },
+    tickedToggleText: {
+      ...tokens.type.label,
+      color: tokens.color.action,
+      textTransform: 'uppercase',
+    },
   }),
 )
 
@@ -286,9 +309,20 @@ export const ShoppingListScreen = ({
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
+  /**
+   * Ticked rows stay where they are by default, because the list must not
+   * reflow under a moving thumb. Once a shop is half done, though, scrolling
+   * past what is already in the trolley is the whole cost of the screen — so
+   * they can be folded away, and the count comes with them.
+   */
+  const [hideTicked, setHideTicked] = useState(false)
+  const isOnline = useIsOnline()
 
   const unitLabel = (unit: string): string => t(`unit.${unit}`)
-  const groups = useMemo(() => groupBuyLines(list.buy), [list.buy])
+  const tickedCount = list.buy.filter((line) => line.checked).length
+  const remaining = list.buy.length - tickedCount
+  const shown = hideTicked ? list.buy.filter((line) => !line.checked) : list.buy
+  const groups = useMemo(() => groupBuyLines(shown), [shown])
 
   const isEmpty =
     list.buy.length === 0 && list.cupboard.length === 0 && list.incomplete.length === 0
@@ -398,12 +432,20 @@ export const ShoppingListScreen = ({
             <Text style={styles.summary} testID="shopping-summary">
               {/* Two counts, two plurals: i18next pluralises on `count`, so a
                   single string gave "7 to buy · 1 meals". */}
-              {`${t('shopping.summary', { count: list.buy.length })} · ${t('shopping.sittings', {
+              {/* What is left, not what was derived: in a shop the only
+                  number worth having is how much further there is to go. */}
+              {`${t('shopping.summary', { count: remaining })} · ${t('shopping.sittings', {
                 count: list.sittings,
               })}`}
             </Text>
           </View>
         </View>
+
+        {!isOnline && (
+          <View style={styles.offline} testID="offline-notice">
+            <Text style={styles.offlineText}>{t('shopping.offline')}</Text>
+          </View>
+        )}
 
         {isEmpty && (
           <Text style={styles.empty} testID="shopping-empty">
@@ -426,6 +468,30 @@ export const ShoppingListScreen = ({
               </View>
             ))}
           </View>
+        )}
+
+        {tickedCount > 0 && (
+          <Pressable
+            style={styles.tickedToggle}
+            onPress={() => {
+              setHideTicked((hidden) => !hidden)
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: !hideTicked }}
+            testID="toggle-ticked"
+          >
+            <Text style={styles.tickedToggleText}>
+              {hideTicked
+                ? t('shopping.showTicked', { count: tickedCount })
+                : t('shopping.hideTicked')}
+            </Text>
+          </Pressable>
+        )}
+
+        {hideTicked && remaining === 0 && list.buy.length > 0 && (
+          <Text style={styles.empty} testID="shopping-all-ticked">
+            {t('shopping.allTicked')}
+          </Text>
         )}
 
         {list.incomplete.length > 0 && (

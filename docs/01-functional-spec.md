@@ -241,6 +241,18 @@ The week's data is cached locally; reads work offline, writes queue and flush on
 reconnect. Not CRDT sync — for a board whose realistic offline window is minutes
 and whose conflicts are additive, a queue is enough.
 
+## The week on screen
+
+The board opens on this week and the arrows either side of the heading move it
+a week at a time; the heading says which week is on screen and offers the way
+back. A household plans the week ahead at least as often as the one underway —
+on a Sunday evening "this week" is nearly over — and the board could previously
+only ever show the current seven days.
+
+The Shopping List follows the same week. They are two views of one Week Plan,
+and shopping for a week other than the one being looked at is not a thing
+anybody wants.
+
 ## Shopping list
 
 ### Derivation
@@ -292,7 +304,11 @@ the till.
 
 ### Shopping in progress
 
-Ticking items off is local-first and syncs. Ticked rows grey out and strike
+Ticking items off is local-first and syncs: the row changes on the tap, from
+the cache, and the write follows. A shop is where this screen is used and a
+shop is where the signal goes, so a tap that waited for the server looked
+ignored and got repeated. While the device is offline the list says so at the
+top and keeps taking taps. Ticked rows grey out and strike
 through but **stay in place**; the list never reflows under a moving thumb. A
 collapsed "show ticked items" control keeps the count. If someone edits the plan
 mid-shop, new items appear at the bottom flagged as added.
