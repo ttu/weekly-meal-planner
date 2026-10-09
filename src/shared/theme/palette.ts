@@ -19,6 +19,19 @@
  * - **Elevation inverts.** On paper a raised card is whiter than its ground;
  *   in the dark it is lighter than its ground. Shadows go nearly black, since
  *   a shadow on a dark surface is read from its edge, not its weight.
+ *
+ * The light palette was the canvas, taken unchanged, and it had never been
+ * measured. Seven of its colours failed the WCAG AA contrast the design system
+ * commits to (docs/07-design-system.md) and `contrast.test.ts` now holds every
+ * one of them to it. Amber was the one the design system predicted would fail,
+ * and at 1.75:1 on paper it failed worst: it is the sole carrier of
+ * "wanted but unplanned", so it is darkened to an ochre that keeps the hue and
+ * clears the 3:1 a meaningful graphic needs.
+ *
+ * One honest casualty: `textSupport` and `textGhost` used to be two visibly
+ * different tiers. AA leaves about a tenth of a contrast step between them on
+ * this paper, so they now read nearly alike, and the hierarchy they used to
+ * carry has to come from size and weight instead.
  */
 export type Colours = {
   readonly surface: string
@@ -73,21 +86,21 @@ export const lightColours: Colours = {
   surfacePane: '#FBF8F1',
   textPrimary: '#24211C',
   textMuted: '#6B6459',
-  textSupport: '#8A8172',
-  textGhost: '#A79C88',
+  textSupport: '#756C5E',
+  textGhost: '#776E60',
   rule: '#DBD2C1',
   cardBorder: '#E2D9C9',
   cardDivider: '#EFE8DA',
-  dashed: '#D3C9B6',
-  dashedInset: '#CFC3AC',
-  action: '#C05A38',
+  dashed: '#968970',
+  dashedInset: '#8E8170',
+  action: '#B04E2E',
   actionPressed: '#9C4529',
   affirm: '#5F7355',
-  backlog: '#E8B04B',
+  backlog: '#B07D1A',
   onAction: '#FFFFFF',
   onActionMuted: 'rgba(255, 255, 255, 0.75)',
   onAvatar: '#FFFFFF',
-  textDone: '#C0B7A4',
+  textDone: '#8F8674',
   scrim: 'rgba(36, 33, 28, 0.36)',
   dropTint: 'rgba(192, 90, 56, 0.06)',
   todayTint: 'rgba(95, 115, 85, 0.05)',
@@ -103,12 +116,12 @@ export const darkColours: Colours = {
   textPrimary: '#F2EDE3',
   textMuted: '#B6AD9D',
   textSupport: '#938A7B',
-  textGhost: '#6E6658',
+  textGhost: '#948B7B',
   rule: '#39352F',
   cardBorder: '#333029',
   cardDivider: '#2B2823',
-  dashed: '#454037',
-  dashedInset: '#4E4840',
+  dashed: '#767060',
+  dashedInset: '#7E7768',
   action: '#D97757',
   actionPressed: '#E89272',
   affirm: '#8FA885',
@@ -116,7 +129,7 @@ export const darkColours: Colours = {
   onAction: '#1A1613',
   onActionMuted: 'rgba(26, 22, 19, 0.7)',
   onAvatar: '#FFFFFF',
-  textDone: '#5C564B',
+  textDone: '#787160',
   scrim: 'rgba(0, 0, 0, 0.6)',
   dropTint: 'rgba(217, 119, 87, 0.14)',
   todayTint: 'rgba(143, 168, 133, 0.08)',

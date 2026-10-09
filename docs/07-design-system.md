@@ -86,6 +86,18 @@ column, and cannot be pushed out of sight by whatever is above it.
 
 ## Ergonomics that are requirements
 
+Every control answers to at least 44x44, whether or not it looks that big: the
+card's glyph buttons are 44 across, and the smaller marks — the × on a Backlog
+card, the nav links, the servings link — keep their drawn size and reach 44
+through `hitSlop`. Two 30px buttons six pixels apart, one of them destructive,
+is what the board used to offer a thumb.
+
+Contrast is measured, not eyeballed: `src/shared/theme/contrast.test.ts` holds
+every text colour to 4.5:1 on every ground it is used on, and the amber Backlog
+edge and the dashed empty-Slot outline to the 3:1 a meaningful graphic needs.
+The light palette failed seven of those when it was measured for the first
+time — amber worst, at 1.75:1, exactly as this document predicted.
+
 Shopping list rows: 19px text, 28px checkboxes, 54px minimum row height, whole
 row is the tap target. Used one-handed, in a shop, sometimes with gloves.
 
