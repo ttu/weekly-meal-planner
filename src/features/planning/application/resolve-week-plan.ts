@@ -26,9 +26,15 @@ export const resolveWeekPlanId = async (
       { onConflict: 'household_id,week_start', ignoreDuplicates: true },
     )
 
+  // Keyed by both halves of the unique constraint, not just the week. RLS
+  // already keeps one Household from seeing another's rows (ADR 0002), so the
+  // household_id is not the authorization here — it is the other half of the
+  // question. Asked with the week alone, a Member of two Households would
+  // match two rows and `maybeSingle` would fail the write rather than pick.
   const { data } = await client
     .from('week_plan')
     .select('id')
+    .eq('household_id', householdId)
     .eq('week_start', weekStart)
     .maybeSingle()
 
