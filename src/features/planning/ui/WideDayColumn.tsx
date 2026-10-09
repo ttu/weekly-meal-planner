@@ -90,6 +90,8 @@ const sheets = themed((tokens) =>
       fontSize: 13,
       color: tokens.color.textGhost,
     },
+    cardCountLink: { color: tokens.color.action, textDecorationLine: 'underline' },
+    countHit: { paddingVertical: 11, marginVertical: -11, paddingRight: 8, marginRight: -8 },
     cardCount: {
       ...tokens.type.labelTiny,
       fontWeight: '400',
@@ -212,12 +214,15 @@ const WideCardBody = ({
   cookEvent,
   onSelect,
   onAddLeftover,
+  onEditServings,
 }: {
   readonly cookEvent: CookEvent
   readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onEditServings?: ((cookEvent: CookEvent) => void) | undefined
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
+  const { t } = useTranslation()
 
   return (
     <View style={styles.card} testID="meal-card-planned">
@@ -228,7 +233,23 @@ const WideCardBody = ({
         {cookEvent.mealName}
       </Text>
       <View style={styles.cardFoot}>
-        <Text style={styles.cardCount}>{String(cookEvent.servingsCooked)}</Text>
+        {onEditServings === undefined ? (
+          <Text style={styles.cardCount}>{String(cookEvent.servingsCooked)}</Text>
+        ) : (
+          <Pressable
+            onPress={() => {
+              onEditServings(cookEvent)
+            }}
+            style={styles.countHit}
+            accessibilityRole="button"
+            accessibilityLabel={t('cookEvent.changeServings')}
+            testID="card-edit-servings"
+          >
+            <Text style={[styles.cardCount, styles.cardCountLink]}>
+              {String(cookEvent.servingsCooked)}
+            </Text>
+          </Pressable>
+        )}
         <WideCardActions
           cookEventId={cookEvent.id}
           onSelect={onSelect}
@@ -248,11 +269,13 @@ const WidePlannedCard = ({
   cookEvent,
   onSelect,
   onAddLeftover,
+  onEditServings,
   onDropped,
 }: {
   readonly cookEvent: CookEvent
   readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onEditServings?: ((cookEvent: CookEvent) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }): React.JSX.Element => (
   <AnimatedCard>
@@ -264,7 +287,12 @@ const WidePlannedCard = ({
         isTappable={false}
         testID={`planned-${cookEvent.id}`}
       >
-        <WideCardBody cookEvent={cookEvent} onSelect={onSelect} onAddLeftover={onAddLeftover} />
+        <WideCardBody
+          cookEvent={cookEvent}
+          onSelect={onSelect}
+          onAddLeftover={onAddLeftover}
+          onEditServings={onEditServings}
+        />
       </DraggableCard>
     </View>
   </AnimatedCard>
@@ -278,6 +306,7 @@ type Props = {
   readonly recentlyChanged?: boolean | undefined
   readonly onSelect?: ((cookEventId: CookEventId) => void) | undefined
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onEditServings?: ((cookEvent: CookEvent) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
   readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
@@ -291,6 +320,7 @@ export const WideDayColumn = ({
   recentlyChanged = false,
   onSelect,
   onAddLeftover,
+  onEditServings,
   onAddMeal,
   onRemoveLeftover,
   onDropped,
@@ -360,6 +390,7 @@ export const WideDayColumn = ({
                   cookEvent={card.cookEvent}
                   onSelect={onSelect}
                   onAddLeftover={onAddLeftover}
+                  onEditServings={onEditServings}
                   onDropped={onDropped}
                 />
               ),

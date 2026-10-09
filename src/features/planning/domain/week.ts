@@ -17,6 +17,18 @@ export const currentWeekStart = (clock: Clock): WeekStart => {
   return brand(toIsoDate(new Date(utcMidnight - daysSinceMonday * DAY_MS)))
 }
 
+/**
+ * The Monday `offset` weeks from this one. Zero is this week, 1 is next.
+ *
+ * Planning happens for the week ahead at least as often as for the one
+ * underway — on a Sunday evening "this week" is nearly over — and until this
+ * existed the board could only ever show the current seven days.
+ */
+export const weekStartFrom = (clock: Clock, offset: number): WeekStart => {
+  const start = Date.parse(`${currentWeekStart(clock)}T00:00:00.000Z`)
+  return brand(toIsoDate(new Date(start + offset * 7 * DAY_MS)))
+}
+
 export const weekDates = (weekStart: WeekStart): readonly string[] => {
   const start = Date.parse(`${weekStart}T00:00:00.000Z`)
   return Array.from({ length: 7 }, (_, i) => toIsoDate(new Date(start + i * DAY_MS)))

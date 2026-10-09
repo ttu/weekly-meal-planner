@@ -3,8 +3,8 @@ import { isErr } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession } from '@/features/household'
 import type { MealId } from '@/features/meals'
-import { currentWeekStart } from '../domain/week'
 import { addToBacklog } from '../application/add-to-backlog'
+import { useSelectedWeek } from './SelectedWeek'
 
 export type AddToBacklog = {
   readonly add: (mealId: MealId) => void
@@ -15,7 +15,7 @@ export type AddToBacklog = {
 export const useAddToBacklog = (clock: Clock = systemClock): AddToBacklog => {
   const { client, household, userId } = useSession()
   const queryClient = useQueryClient()
-  const weekStart = currentWeekStart(clock)
+  const { weekStart } = useSelectedWeek(clock)
 
   const mutation = useMutation({
     mutationFn: async (mealId: MealId) => {

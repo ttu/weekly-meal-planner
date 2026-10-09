@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { isErr } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession } from '@/features/household'
-import { currentWeekStart } from '../domain/week'
 import { buildBoard, type BoardDay } from '../domain/board'
 import { loadWeek } from '../infrastructure/board-repository'
 import { loadBacklog } from '../infrastructure/backlog-repository'
 import type { BacklogItem, WeekStart } from '../domain/types'
+import { useSelectedWeek } from './SelectedWeek'
 
 export type WeekBoard = {
   readonly board: readonly BoardDay[]
@@ -23,7 +23,7 @@ export type WeekBoard = {
  */
 export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
   const { client, household } = useSession()
-  const weekStart = currentWeekStart(clock)
+  const { weekStart } = useSelectedWeek(clock)
 
   const { data, isLoading } = useQuery({
     queryKey: ['week', household?.id, weekStart],

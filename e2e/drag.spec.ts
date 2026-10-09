@@ -109,11 +109,14 @@ test.describe('cards can be carried around the board', () => {
     await expect(dinner.locator('[data-testid="meal-card-leftover"]')).toBeVisible()
     await expect(beside).toHaveCount(0)
 
-    // And the × beside it takes it off the board.
+    // And the × beside it takes it off the board — after asking. Removing a
+    // Leftover cannot be undone, and the × is a few pixels from the card.
     await page
       .locator(`[data-testid="day-${wednesday}"] [data-testid^="remove-leftover-"]`)
       .first()
       .click()
+    await expect(page.getByTestId('confirm-sheet')).toBeVisible()
+    await page.getByTestId('confirm-yes').click()
     await expect(
       page.locator(`[data-testid="day-${wednesday}"] [data-testid="meal-card-leftover"]`),
     ).toHaveCount(0)

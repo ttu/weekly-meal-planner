@@ -52,7 +52,15 @@
     "invitePlaceholder": "https://…/join/…",
     "inviteHint": "The password comes separately — you'll be asked for it next.",
     "inviteOpen": "Open the board",
-    "inviteUnreadable": "No invite link in there. Check you copied the whole thing."
+    "inviteUnreadable": "No invite link in there. Check you copied the whole thing.",
+    "dropHintTouch": "Hold a Meal to carry it, or tap it to plan it.",
+    "nextWeek": "Next week",
+    "previousWeek": "Previous week",
+    "backToThisWeek": "Back to this week",
+    "weekAhead": "Next week",
+    "weekPast": "Last week",
+    "weeksAhead": "In {{count}} weeks",
+    "weeksPast": "{{count}} weeks ago"
   },
   "slot": {
     "lunch": "Lunch",
@@ -62,7 +70,10 @@
     "supper": "Supper"
   },
   "cookEvent": {
-    "cookingCount": "Cooking {{count}}"
+    "cookingCount": "Cooking {{count}}",
+    "changeServings": "Change how many you're cooking for",
+    "servingsTitle": "Cooking “{{meal}}” for",
+    "servingsSave": "Save"
   },
   "leftover": {
     "suffix": "{{meal}} — leftovers",
@@ -71,7 +82,10 @@
     "failed": "Could not add leftovers. Try again.",
     "parentPrefix": "{{meal}} — ",
     "word": "leftovers",
-    "remove": "Remove these leftovers"
+    "remove": "Remove these leftovers",
+    "removeConfirm": "Remove these leftovers?",
+    "removeConfirmYes": "Remove",
+    "removeConfirmNo": "Keep them"
   },
   "auth": {
     "title": "Sign in",
@@ -88,7 +102,10 @@
     "add": "Add",
     "addShort": "+ Add",
     "dropToRemove": "Drop here to take it off the week",
-    "dropToWant": "Drop here to want it this week"
+    "dropToWant": "Drop here to want it this week",
+    "removeConfirm": "Take “{{meal}}” off the list?",
+    "removeConfirmYes": "Take it off",
+    "removeConfirmNo": "Keep it"
   },
   "picker": {
     "title": "Add a Meal",
@@ -99,7 +116,8 @@
     "cancel": "Cancel",
     "addFailed": "Could not add that Meal. Try again.",
     "catalogueHint": "Copy to your library to edit",
-    "oursCount": "Ours · {{count}}"
+    "oursCount": "Ours · {{count}}",
+    "writeItDown": "Write down “{{name}}” as a new Meal"
   },
   "plan": {
     "title": "Plan “{{meal}}”",
@@ -188,8 +206,8 @@
     "extraPlaceholder": "Something else",
     "empty": "Nothing to buy yet — plan some Meals first.",
     "incomplete": "{{meal}} — no Ingredients yet",
-    "summary_one": "{{count}} to buy",
-    "summary_other": "{{count}} to buy",
+    "summary_one": "{{count}} still to buy",
+    "summary_other": "{{count}} still to buy",
     "why": "Why?",
     "overridden": "Amount set by you",
     "promoted": "Moved from the cupboard",
@@ -202,7 +220,12 @@
     "keepInCupboard": "We always have this in",
     "stopKeeping": "Don't keep this in",
     "sittings_one": "{{count}} meal",
-    "sittings_other": "{{count}} meals"
+    "sittings_other": "{{count}} meals",
+    "showTicked_one": "Show {{count}} ticked item",
+    "showTicked_other": "Show {{count}} ticked items",
+    "hideTicked": "Hide ticked items",
+    "allTicked": "Everything is ticked off.",
+    "offline": "Offline — your changes are saved here and sync when you're back."
   },
   "presence": {
     "editing": "{{name}} is here too",
@@ -280,7 +303,7 @@
   "dayOne": {
     "title": "Nothing on the board yet.",
     "body": "A week takes about two minutes. Start wherever is easiest.",
-    "browse": "Pick something from the catalogue",
+    "browse": "Add something you fancy this week",
     "writeOwn": "Write down a meal of your own",
     "invite": "Ask the family — share the board"
   }

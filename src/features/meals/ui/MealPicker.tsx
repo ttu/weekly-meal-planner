@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
-import { useTranslation } from '@/shared/i18n'
+import { useLocale, useTranslation } from '@/shared/i18n'
 import { partitionMeals } from '../domain/partition'
 import type { Meal, MealId } from '../domain/types'
 import { MealCard } from './MealCard'
@@ -47,6 +47,16 @@ const sheets = themed((tokens) =>
       paddingBottom: tokens.space.sm,
     },
     empty: { ...tokens.type.body, color: tokens.color.textMuted, paddingVertical: tokens.space.lg },
+    writeItDown: {
+      minHeight: 54,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: tokens.color.action,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: tokens.space.md,
+    },
+    writeItDownText: { ...tokens.type.mealName, color: tokens.color.action, textAlign: 'center' },
   }),
 )
 
@@ -55,18 +65,31 @@ type Props = {
   readonly meals: readonly Meal[]
   readonly onSelect: (mealId: MealId) => void
   readonly onDismiss: () => void
+  /** Offered when the search finds nothing. Someone who has typed a Meal name
+   *  has already said what they want; the picker used to answer with Cancel. */
+  readonly onWriteItDown?: ((name: string) => void) | undefined
 }
 
-export const MealPicker = ({ visible, meals, onSelect, onDismiss }: Props): React.JSX.Element => {
+export const MealPicker = ({
+  visible,
+  meals,
+  onSelect,
+  onDismiss,
+  onWriteItDown,
+}: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const theme = useTheme()
   const { t } = useTranslation()
+  const locale = useLocale()
   const insets = useSafeAreaInsets()
   const [query, setQuery] = useState('')
 
   // Own Meals first: a family reaches for what they already cook far more often
   // than for the Catalogue.
-  const { ours, catalogue } = useMemo(() => partitionMeals(meals, query), [meals, query])
+  const { ours, catalogue } = useMemo(
+    () => partitionMeals(meals, query, locale),
+    [meals, query, locale],
+  )
 
   const nothingMatches = ours.length === 0 && catalogue.length === 0
 
@@ -120,9 +143,26 @@ export const MealPicker = ({ visible, meals, onSelect, onDismiss }: Props): Reac
 
         <ScrollView>
           {nothingMatches ? (
-            <Text style={styles.empty} testID="picker-no-results">
-              {t('picker.noResults')}
-            </Text>
+            <>
+              <Text style={styles.empty} testID="picker-no-results">
+                {t('picker.noResults')}
+              </Text>
+              {onWriteItDown !== undefined && query.trim() !== '' && (
+                <Pressable
+                  style={styles.writeItDown}
+                  onPress={() => {
+                    onWriteItDown(query.trim())
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('picker.writeItDown', { name: query.trim() })}
+                  testID="picker-write-it-down"
+                >
+                  <Text style={styles.writeItDownText}>
+                    {t('picker.writeItDown', { name: query.trim() })}
+                  </Text>
+                </Pressable>
+              )}
+            </>
           ) : (
             <>
               {ours.length > 0 && (

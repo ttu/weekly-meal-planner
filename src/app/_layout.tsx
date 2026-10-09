@@ -10,6 +10,7 @@ import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
 import { DEFAULT_LOCALE, initI18n } from '@/shared/i18n'
 import { ThemeProvider, useTheme } from '@/shared/theme/theme'
+import { SelectedWeekProvider } from '@/features/planning'
 import {
   createSupabaseClient,
   SessionProvider,
@@ -47,7 +48,11 @@ const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.J
       pendingEmail={pendingEmail}
       householdChecked={checked}
     >
-      <Stack screenOptions={{ headerShown: false }} />
+      {/* Above the Stack: the board and the Shopping List are two views of
+          one Week Plan and must be looking at the same week. */}
+      <SelectedWeekProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </SelectedWeekProvider>
     </SessionProvider>
   )
 }

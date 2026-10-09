@@ -101,7 +101,7 @@ test.describe('a family plans a week', () => {
 
     // Two counts in one line, each pluralised on its own number — a single
     // string pluralised on the first gave "7 to buy · 1 meals".
-    await expect(page.getByTestId('shopping-summary')).toHaveText(/^\d+ to buy · \d+ meals?$/)
+    await expect(page.getByTestId('shopping-summary')).toHaveText(/^\d+ still to buy · \d+ meals?$/)
 
     // count() does not retry, so wait for the list to arrive before counting.
     const lines = page.locator('[data-testid^="buy-"]')
@@ -114,7 +114,19 @@ test.describe('a family plans a week', () => {
     await expect(lines.filter({ hasText: /^onion/ })).toHaveCount(1)
 
     // Ticking keeps the row in place; the list must not reflow under a thumb.
+    // The count in the heading is what moves, because in a shop the only
+    // number worth having is how much further there is to go.
     await lines.first().click()
+    await expect(lines).toHaveCount(before)
+    await expect(page.getByTestId('shopping-summary')).toHaveText(
+      new RegExp(`^${String(before - 1)} still to buy`),
+    )
+
+    // Once something is ticked it can be folded away, so a half-done shop is
+    // not mostly scrolling past what is already in the trolley.
+    await page.getByTestId('toggle-ticked').click()
+    await expect(lines).toHaveCount(before - 1)
+    await page.getByTestId('toggle-ticked').click()
     await expect(lines).toHaveCount(before)
   })
 

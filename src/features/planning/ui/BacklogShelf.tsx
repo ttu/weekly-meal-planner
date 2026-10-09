@@ -62,13 +62,22 @@ const sheets = themed((tokens) =>
       overflow: 'hidden',
     },
     add: { ...tokens.type.body, fontWeight: '600', color: tokens.color.action },
+    addHit: {
+      paddingVertical: 12,
+      marginVertical: -12,
+      paddingHorizontal: 8,
+      marginHorizontal: -8,
+    },
     row: { flexDirection: 'row', gap: 10, paddingHorizontal: tokens.space.md },
     column: { paddingHorizontal: 14, gap: 9 },
     shelfCard: { width: 168 },
     cardWrap: { position: 'relative' },
     /** Removal sits on the card as a corner affordance rather than a row of its
      *  own: a shelf card is 168px wide and cannot spare a line. */
-    remove: { position: 'absolute', top: 2, right: 4, padding: 6, zIndex: 1 },
+    /** Padded out to a thumb and positioned back so the glyph sits where it
+     *  always did. react-native-web ignores hitSlop, so the target has to be
+     *  real padding. */
+    remove: { position: 'absolute', top: -6, right: -4, padding: 14, zIndex: 1 },
     removeText: { ...tokens.type.meta, color: tokens.color.textGhost },
     empty: { paddingHorizontal: tokens.space.md },
     emptyText: { ...tokens.type.body, color: tokens.color.textSupport },
@@ -139,6 +148,7 @@ const AddButton = ({ onAdd }: { readonly onAdd?: (() => void) | undefined }): Re
 
   return (
     <Pressable
+      style={styles.addHit}
       onPress={onAdd}
       accessibilityRole="button"
       accessibilityLabel={t('backlog.add')}

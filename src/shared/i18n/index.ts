@@ -36,4 +36,18 @@ export const setLocale = async (locale: Locale): Promise<void> => {
   await i18next.changeLanguage(locale)
 }
 
+import { useTranslation } from 'react-i18next'
+
 export { useTranslation } from 'react-i18next'
+
+/**
+ * The Locale the board is speaking, narrowed from i18next's own `language`.
+ *
+ * Anything that sorts or formats by language needs this rather than the
+ * device's: the Locale belongs to the Household, not to whoever is holding
+ * the phone (ADR 0009).
+ */
+export const useLocale = (): Locale => {
+  const { i18n } = useTranslation()
+  return LOCALES.find((locale) => locale === i18n.language) ?? DEFAULT_LOCALE
+}

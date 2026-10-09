@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
-import { useTranslation } from '@/shared/i18n'
+import { useLocale, useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
 import { partitionMeals } from '../domain/partition'
 import { isCatalogueMeal, type Meal, type MealId } from '../domain/types'
@@ -101,11 +101,15 @@ export const MealLibraryScreen = ({
   const styles = useThemed(sheets)
   const theme = useTheme()
   const { t } = useTranslation()
+  const locale = useLocale()
   const insets = useSafeAreaInsets()
   const [query, setQuery] = useState('')
   const isPane = layout === 'pane'
 
-  const { ours, catalogue } = useMemo(() => partitionMeals(meals, query), [meals, query])
+  const { ours, catalogue } = useMemo(
+    () => partitionMeals(meals, query, locale),
+    [meals, query, locale],
+  )
 
   const detailFor = (meal: Meal): string =>
     isCatalogueMeal(meal) && meal.ingredientCount === 0

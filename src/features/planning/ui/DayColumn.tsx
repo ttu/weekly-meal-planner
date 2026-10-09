@@ -5,7 +5,7 @@ import { slotName, type SlotKey } from '@/features/household'
 import { formatWeekday } from '../domain/format-day'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { LeftoverCard, MealCard } from '@/features/meals'
-import type { BoardCard, CookEventId, LeftoverId } from '../domain/types'
+import type { BoardCard, CookEvent, CookEventId, LeftoverId } from '../domain/types'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
 import type { DragPayload, DropTarget } from './DragContext'
@@ -75,6 +75,7 @@ type CardProps = {
   readonly card: BoardCard
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onEditServings?: ((cookEvent: CookEvent) => void) | undefined
   readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
 }
@@ -83,6 +84,7 @@ const Card = ({
   card,
   onAddLeftover,
   onUnplan,
+  onEditServings,
   onRemoveLeftover,
   onDropped,
 }: CardProps): React.JSX.Element => {
@@ -152,6 +154,13 @@ const Card = ({
                 onUnplan(cookEvent.id)
               }
         }
+        onEditServings={
+          onEditServings === undefined
+            ? undefined
+            : () => {
+                onEditServings(cookEvent)
+              }
+        }
       />
     </DraggableCard>
   )
@@ -169,6 +178,7 @@ type Props = {
   readonly recentlyChanged?: boolean | undefined
   readonly onAddLeftover?: ((cookEventId: CookEventId) => void) | undefined
   readonly onUnplan?: ((cookEventId: CookEventId) => void) | undefined
+  readonly onEditServings?: ((cookEvent: CookEvent) => void) | undefined
   readonly onAddMeal?: ((date: string, slotKey: SlotKey) => void) | undefined
   readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
   readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
@@ -181,6 +191,7 @@ export const DayColumn = ({
   recentlyChanged = false,
   onAddLeftover,
   onUnplan,
+  onEditServings,
   onAddMeal,
   onRemoveLeftover,
   onDropped,
@@ -225,6 +236,7 @@ export const DayColumn = ({
                     card={card}
                     onAddLeftover={onAddLeftover}
                     onUnplan={onUnplan}
+                    onEditServings={onEditServings}
                     onRemoveLeftover={onRemoveLeftover}
                     onDropped={onDropped}
                   />

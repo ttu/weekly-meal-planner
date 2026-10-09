@@ -26,6 +26,7 @@ import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
 import { resolveDrop } from '../domain/drop'
 import { useWeekBoard } from './useWeekBoard'
+import { useSelectedWeek } from './SelectedWeek'
 import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
@@ -37,13 +38,32 @@ import { DragLayer } from './DragLayer'
 import { DraggableCard } from './DraggableCard'
 import { useEdgeAutoScroll } from './useEdgeAutoScroll'
 import { PlanSheet } from './PlanSheet'
+import { ServingsSheet } from './ServingsSheet'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { Notice } from '@/shared/ui/Notice'
-import type { BacklogItem, CookEvent, CookEventId } from '../domain/types'
+import type { BacklogItem, CookEvent, CookEventId, LeftoverId } from '../domain/types'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: tokens.color.surface },
+    dragHint: { ...tokens.type.meta, color: tokens.color.textSupport },
+    /**
+     * Padding out to 44 and then pulled back in by the same amount, so the
+     * target is a thumb's worth while the row keeps the height it was drawn
+     * at. `hitSlop` would say this more plainly but react-native-web ignores
+     * it, and the web build is the one in front of people today.
+     */
+    navHit: {
+      paddingVertical: 13,
+      marginVertical: -13,
+      paddingHorizontal: 6,
+      marginHorizontal: -6,
+    },
+    weekNav: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+    weekArrow: { ...tokens.type.dayHeading, color: tokens.color.action, lineHeight: 30 },
+    weekArrowHit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    weekBackHit: { paddingVertical: 11, marginVertical: -11, alignSelf: 'flex-start' },
+    weekBack: { ...tokens.type.meta, color: tokens.color.action },
     scroll: { flex: 1 },
     /** Capped like every other column of text: between the phone and the 1024px
      *  breakpoint sits the whole tablet range, and a stretched phone layout is
@@ -69,7 +89,8 @@ const sheets = themed((tokens) =>
       backgroundColor: tokens.color.action,
       borderRadius: 9,
       paddingHorizontal: 14,
-      paddingVertical: 8,
+      minHeight: 44,
+      justifyContent: 'center',
     },
     shoppingText: { ...tokens.type.support, fontWeight: '600', color: tokens.color.onAction },
     days: { gap: 18 },
@@ -82,7 +103,9 @@ type Props = {
   readonly onOpenLibrary?: (() => void) | undefined
   readonly onOpenShopping?: (() => void) | undefined
   readonly onOpenSettings?: (() => void) | undefined
-  readonly onWriteOwnMeal?: (() => void) | undefined
+  /** Opens the Meal editor. Given a name when it comes from a search that
+   *  found nothing, so the Meal starts with the words already typed. */
+  readonly onWriteOwnMeal?: ((name?: string) => void) | undefined
   readonly onShare?: ((url: string) => void) | undefined
   readonly shared?: boolean | undefined
 }
@@ -120,12 +143,22 @@ const Board = ({
     moveLeftoverTo,
     removeLeftoverCard,
     unplan,
+    setServings,
     removeFromBacklog,
     leftoverFailed,
     moveFailed,
     unplanFailed,
   } = usePlanningActions(clock)
   const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
+  /**
+   * The two × buttons that used to delete on the first tap. Both sit a few
+   * pixels from something else worth pressing, and neither can be undone —
+   * so both now ask, the same way unplanning does.
+   */
+  const [removingBacklog, setRemovingBacklog] = useState<BacklogItem | undefined>(undefined)
+  const [removingLeftover, setRemovingLeftover] = useState<LeftoverId | undefined>(undefined)
+  const [editingServings, setEditingServings] = useState<CookEvent | undefined>(undefined)
+  const { offset, goToWeek } = useSelectedWeek(clock)
   const [isSharing, setSharing] = useState(false)
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
@@ -191,7 +224,8 @@ const Board = ({
         add(action.mealId)
         return
       case 'plan':
-        if (weekPlanId === undefined) return
+        // weekPlanId may be undefined on a week nobody has planned into yet;
+        // the mutation makes the Week Plan when it is.
         plan({ weekPlanId, ...action })
         return
       case 'move':
@@ -256,7 +290,9 @@ const Board = ({
         onPlan={(id) => {
           setPlanning(backlog.find((item) => item.id === id))
         }}
-        onRemove={removeFromBacklog}
+        onRemove={(id) => {
+          setRemovingBacklog(backlog.find((item) => item.id === id))
+        }}
       />
     )
   }
@@ -285,6 +321,52 @@ const Board = ({
           }}
           onDismiss={() => {
             setPlanning(undefined)
+          }}
+        />
+      )}
+
+      {editingServings !== undefined && (
+        <ServingsSheet
+          mealName={editingServings.mealName}
+          servingsCooked={editingServings.servingsCooked}
+          onSave={(servings) => {
+            setServings(editingServings.id, servings)
+            setEditingServings(undefined)
+          }}
+          onDismiss={() => {
+            setEditingServings(undefined)
+          }}
+        />
+      )}
+
+      {removingBacklog !== undefined && (
+        <ConfirmSheet
+          visible
+          message={t('backlog.removeConfirm', { meal: removingBacklog.mealName })}
+          confirmLabel={t('backlog.removeConfirmYes')}
+          cancelLabel={t('backlog.removeConfirmNo')}
+          onConfirm={() => {
+            removeFromBacklog(removingBacklog.id)
+            setRemovingBacklog(undefined)
+          }}
+          onCancel={() => {
+            setRemovingBacklog(undefined)
+          }}
+        />
+      )}
+
+      {removingLeftover !== undefined && (
+        <ConfirmSheet
+          visible
+          message={t('leftover.removeConfirm')}
+          confirmLabel={t('leftover.removeConfirmYes')}
+          cancelLabel={t('leftover.removeConfirmNo')}
+          onConfirm={() => {
+            removeLeftoverCard(removingLeftover)
+            setRemovingLeftover(undefined)
+          }}
+          onCancel={() => {
+            setRemovingLeftover(undefined)
           }}
         />
       )}
@@ -325,15 +407,18 @@ const Board = ({
       <MealPicker
         visible={isPickerOpen}
         meals={meals}
+        {...(onWriteOwnMeal === undefined
+          ? {}
+          : {
+              onWriteItDown: (name: string) => {
+                setPickerOpen(false)
+                onWriteOwnMeal(name)
+              },
+            })}
         onSelect={(mealId) => {
           const target = pickerTarget
           const servings = meals.find((meal) => meal.id === mealId)?.servings
-          if (
-            target === undefined ||
-            target.kind !== 'slot' ||
-            weekPlanId === undefined ||
-            servings === undefined
-          ) {
+          if (target === undefined || target.kind !== 'slot' || servings === undefined) {
             add(mealId)
           } else {
             plan({
@@ -411,7 +496,8 @@ const Board = ({
                 }}
                 onAddLeftover={addSecondSitting}
                 onAddMeal={openPickerFor}
-                onRemoveLeftover={removeLeftoverCard}
+                onEditServings={setEditingServings}
+                onRemoveLeftover={setRemovingLeftover}
                 onDropped={onDropped}
               />
             ))}
@@ -451,7 +537,13 @@ const Board = ({
             }}
           />
 
-          <BoardTitleRow weekRange={weekRange} present={present} onOpenShopping={onOpenShopping} />
+          <BoardTitleRow
+            weekRange={weekRange}
+            present={present}
+            offset={offset}
+            onGoToWeek={goToWeek}
+            onOpenShopping={onOpenShopping}
+          />
 
           <WeekStrip
             dates={board.map((day) => day.date)}
@@ -462,6 +554,16 @@ const Board = ({
               scroll.current?.scrollTo({ y: dayOffsets.current.get(date) ?? 0, animated: true })
             }}
           />
+
+          {/* The phone is where carrying a card is least obvious — it needs a
+              deliberate hold, and nothing on screen says so. Shown only once
+              there is something to carry; an empty board has DayOne for
+              guidance and no room to spare. */}
+          {(backlog.length > 0 || plannedDates.size > 0) && (
+            <Text style={styles.dragHint} testID="drag-hint">
+              {t('board.dropHintTouch')}
+            </Text>
+          )}
 
           <View style={styles.days} testID="board">
             {board.map((day) => (
@@ -481,7 +583,8 @@ const Board = ({
                     setUnplanning(cookEventById(id))
                   }}
                   onAddMeal={openPickerFor}
-                  onRemoveLeftover={removeLeftoverCard}
+                  onEditServings={setEditingServings}
+                  onRemoveLeftover={setRemovingLeftover}
                   onDropped={onDropped}
                 />
               </View>
@@ -520,6 +623,7 @@ const NavLink = ({
 
   return (
     <Pressable
+      style={styles.navHit}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -589,13 +693,28 @@ const PresenceRow = ({
 
 /** The week being planned, who else is in it, and the way to the Shopping
  *  List - the one thing the week is for. */
+/** "This week", "Next week", "In 3 weeks" — the heading says which week is on
+ *  screen, because after one tap of an arrow it is no longer obvious. */
+const weekHeadingKey = (offset: number): { key: string; count: number } => {
+  if (offset === 0) return { key: 'board.thisWeek', count: 0 }
+  if (offset === 1) return { key: 'board.weekAhead', count: 1 }
+  if (offset === -1) return { key: 'board.weekPast', count: 1 }
+  return offset > 0
+    ? { key: 'board.weeksAhead', count: offset }
+    : { key: 'board.weeksPast', count: Math.abs(offset) }
+}
+
 const BoardTitleRow = ({
   weekRange,
   present,
+  offset,
+  onGoToWeek,
   onOpenShopping,
 }: {
   readonly weekRange: string
   readonly present: readonly PresentMember[]
+  readonly offset: number
+  readonly onGoToWeek: (offset: number) => void
   readonly onOpenShopping?: (() => void) | undefined
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
@@ -604,8 +723,47 @@ const BoardTitleRow = ({
   return (
     <View style={styles.titleRow}>
       <View>
-        <Text style={styles.title}>{t('board.thisWeek')}</Text>
+        <View style={styles.weekNav}>
+          <Pressable
+            style={styles.weekArrowHit}
+            onPress={() => {
+              onGoToWeek(offset - 1)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('board.previousWeek')}
+            testID="week-previous"
+          >
+            <Text style={styles.weekArrow}>‹</Text>
+          </Pressable>
+          <Text style={styles.title}>
+            {t(weekHeadingKey(offset).key, { count: weekHeadingKey(offset).count })}
+          </Text>
+          <Pressable
+            style={styles.weekArrowHit}
+            onPress={() => {
+              onGoToWeek(offset + 1)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('board.nextWeek')}
+            testID="week-next"
+          >
+            <Text style={styles.weekArrow}>›</Text>
+          </Pressable>
+        </View>
         <Text style={styles.week}>{weekRange}</Text>
+        {offset !== 0 && (
+          <Pressable
+            style={styles.weekBackHit}
+            onPress={() => {
+              onGoToWeek(0)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('board.backToThisWeek')}
+            testID="week-back-to-now"
+          >
+            <Text style={styles.weekBack}>{t('board.backToThisWeek')}</Text>
+          </Pressable>
+        )}
       </View>
       <View style={styles.links}>
         {present.length > 0 && <PresenceRow present={present} />}

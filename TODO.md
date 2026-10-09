@@ -12,7 +12,7 @@ roughly the order worth doing them in.
 was done, and a file full of struck-through text is a file nobody reads. Put
 the reasoning in the commit message instead.
 
-**What does not belong here:** anything in the "Deliberately not built" list in
+**What does not belong here:** anything in the "Non-goals for v1" list in
 `docs/01-functional-spec.md`. That list is a scope decision, not a backlog. If
 you want to overturn one, change the spec first.
 

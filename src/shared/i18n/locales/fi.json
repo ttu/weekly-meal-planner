@@ -52,7 +52,15 @@
     "invitePlaceholder": "https://…/join/…",
     "inviteHint": "Salasana tulee erikseen — sitä kysytään seuraavaksi.",
     "inviteOpen": "Avaa taulu",
-    "inviteUnreadable": "Tuossa ei ole kutsulinkkiä. Tarkista, että kopioit koko linkin."
+    "inviteUnreadable": "Tuossa ei ole kutsulinkkiä. Tarkista, että kopioit koko linkin.",
+    "dropHintTouch": "Pidä ateriaa pohjassa siirtääksesi, tai napauta suunnitellaksesi.",
+    "nextWeek": "Seuraava viikko",
+    "previousWeek": "Edellinen viikko",
+    "backToThisWeek": "Takaisin tähän viikkoon",
+    "weekAhead": "Ensi viikko",
+    "weekPast": "Viime viikko",
+    "weeksAhead": "{{count}} viikon päästä",
+    "weeksPast": "{{count}} viikkoa sitten"
   },
   "slot": {
     "lunch": "Lounas",
@@ -62,7 +70,10 @@
     "supper": "Iltapala"
   },
   "cookEvent": {
-    "cookingCount": "Valmistetaan {{count}}"
+    "cookingCount": "Valmistetaan {{count}}",
+    "changeServings": "Muuta annosmäärää",
+    "servingsTitle": "”{{meal}}” — montako syömässä",
+    "servingsSave": "Tallenna"
   },
   "leftover": {
     "suffix": "{{meal}} — tähteet",
@@ -71,7 +82,10 @@
     "failed": "Tähteiden lisääminen epäonnistui. Yritä uudelleen.",
     "parentPrefix": "{{meal}} — ",
     "word": "tähteet",
-    "remove": "Poista nämä tähteet"
+    "remove": "Poista nämä tähteet",
+    "removeConfirm": "Poistetaanko nämä tähteet?",
+    "removeConfirmYes": "Poista",
+    "removeConfirmNo": "Säilytä"
   },
   "auth": {
     "title": "Kirjaudu sisään",
@@ -88,7 +102,10 @@
     "add": "Lisää",
     "addShort": "+ Lisää",
     "dropToRemove": "Pudota tähän poistaaksesi viikosta",
-    "dropToWant": "Pudota tähän lisätäksesi viikolle"
+    "dropToWant": "Pudota tähän lisätäksesi viikolle",
+    "removeConfirm": "Poistetaanko ”{{meal}}” listalta?",
+    "removeConfirmYes": "Poista",
+    "removeConfirmNo": "Säilytä"
   },
   "picker": {
     "title": "Lisää ateria",
@@ -99,7 +116,8 @@
     "cancel": "Peruuta",
     "addFailed": "Aterian lisääminen epäonnistui. Yritä uudelleen.",
     "catalogueHint": "Kopioi omiin aterioihin muokataksesi",
-    "oursCount": "Omat · {{count}}"
+    "oursCount": "Omat · {{count}}",
+    "writeItDown": "Kirjoita ”{{name}}” uudeksi ateriaksi"
   },
   "plan": {
     "title": "Suunnittele “{{meal}}”",
@@ -188,8 +206,8 @@
     "extraPlaceholder": "Jotain muuta",
     "empty": "Ei vielä ostettavaa — suunnittele ensin aterioita.",
     "incomplete": "{{meal}} — ei vielä raaka-aineita",
-    "summary_one": "{{count}} ostettava",
-    "summary_other": "{{count}} ostettavaa",
+    "summary_one": "{{count}} vielä ostettavaa",
+    "summary_other": "{{count}} vielä ostettavaa",
     "why": "Miksi?",
     "overridden": "Määrä asettamasi",
     "promoted": "Siirretty kaapista",
@@ -202,7 +220,12 @@
     "keepInCupboard": "Tätä on aina kaapissa",
     "stopKeeping": "Ei ole aina kaapissa",
     "sittings_one": "{{count}} ateria",
-    "sittings_other": "{{count}} ateriaa"
+    "sittings_other": "{{count}} ateriaa",
+    "showTicked_one": "Näytä {{count}} merkitty",
+    "showTicked_other": "Näytä {{count}} merkittyä",
+    "hideTicked": "Piilota merkityt",
+    "allTicked": "Kaikki on merkitty ostetuiksi.",
+    "offline": "Ei verkkoa — muutokset tallentuvat tähän ja siirtyvät kun yhteys palaa."
   },
   "presence": {
     "editing": "{{name}} on myös täällä",
@@ -280,7 +303,7 @@
   "dayOne": {
     "title": "Taululla ei ole vielä mitään.",
     "body": "Viikko syntyy parissa minuutissa. Aloita mistä on helpointa.",
-    "browse": "Valitse jotain ruokalistasta",
+    "browse": "Lisää jotain mitä tekisi mieli",
     "writeOwn": "Kirjoita oma ruoka",
     "invite": "Kysy perheeltä — jaa taulu"
   }

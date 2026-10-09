@@ -28,6 +28,10 @@ type Props = {
   /** Planned cards carry their two actions as icon buttons on the card itself.
    *  Omitted, the card is a plain card — which is what the drag layer wants. */
   readonly onAddLeftover?: (() => void) | undefined
+  /** Makes the servings line the way to change it. Two more at the table on
+   *  Thursday is the commonest edit a week has, and it used to mean unplanning
+   *  the Meal and planning it again. */
+  readonly onEditServings?: (() => void) | undefined
   readonly onUnplan?: (() => void) | undefined
 }
 
@@ -53,23 +57,32 @@ const sheets = themed((tokens) =>
     /** The planned card reads name-then-servings on the left, then its actions,
      *  then the face of whoever put it there at the outside edge. */
     plannedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    actions: { flexDirection: 'row', gap: 6 },
+    actions: { flexDirection: 'row', gap: 10 },
     /**
      * Glyph buttons rather than an icon font. The app already speaks in glyphs —
      * × to remove, ✓ to tick, ⌄ to expand — and a whole icon package for two
      * marks would be the largest dependency here by some margin. Each carries a
      * real label for anyone listening rather than looking.
      */
+    /**
+     * 44 across, because this is a thumb on a phone and the one beside it
+     * unplans the Meal. The pair used to be 30px circles 6px apart, which is
+     * a mis-tap waiting for a moving bus.
+     */
     action: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       borderWidth: 1,
       borderColor: tokens.color.cardBorder,
       alignItems: 'center',
       justifyContent: 'center',
     },
     actionPressed: { backgroundColor: tokens.color.surfaceInset },
+    /** Underlined, because a line of supporting text that is secretly a button
+     *  is a line nobody presses. */
+    servingsLink: { color: tokens.color.action, textDecorationLine: 'underline' },
+    servingsHit: { paddingVertical: 11, marginVertical: -11, alignSelf: 'flex-start' },
     actionGlyph: {
       fontFamily: tokens.type.body.fontFamily,
       fontSize: 15,
@@ -127,6 +140,7 @@ export const MealCard = ({
   compact = false,
   onAddLeftover,
   onUnplan,
+  onEditServings,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const cardStyles = useCardStyles()
@@ -138,11 +152,27 @@ export const MealCard = ({
         <View style={styles.plannedRow}>
           <View style={cardStyles.text}>
             <Text style={cardStyles.nameLarge}>{name}</Text>
-            {servingsCooked !== undefined && (
-              <Text style={cardStyles.support} testID="meal-card-servings-cooked">
-                {t('cookEvent.cookingCount', { count: servingsCooked })}
-              </Text>
-            )}
+            {servingsCooked !== undefined &&
+              (onEditServings === undefined ? (
+                <Text style={cardStyles.support} testID="meal-card-servings-cooked">
+                  {t('cookEvent.cookingCount', { count: servingsCooked })}
+                </Text>
+              ) : (
+                <Pressable
+                  style={styles.servingsHit}
+                  onPress={onEditServings}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('cookEvent.changeServings')}
+                  testID="card-edit-servings"
+                >
+                  <Text
+                    style={[cardStyles.support, styles.servingsLink]}
+                    testID="meal-card-servings-cooked"
+                  >
+                    {t('cookEvent.cookingCount', { count: servingsCooked })}
+                  </Text>
+                </Pressable>
+              ))}
           </View>
           <View style={styles.actions}>
             {onAddLeftover !== undefined && (

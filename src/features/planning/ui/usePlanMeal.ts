@@ -3,12 +3,14 @@ import { isErr } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession, type SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/features/meals'
-import { currentWeekStart } from '../domain/week'
 import { planMeal } from '../application/plan-meal'
+import { resolveWeekPlanId } from '../application/resolve-week-plan'
 import type { BacklogItemId } from '../domain/types'
+import { useSelectedWeek } from './SelectedWeek'
 
 export type PlanRequest = {
-  readonly weekPlanId: string
+  /** Omitted for a week nobody has planned into yet; it is made on the spot. */
+  readonly weekPlanId?: string | undefined
   readonly mealId: MealId
   readonly backlogItemId?: BacklogItemId
   readonly date: string
@@ -25,13 +27,20 @@ export type PlanMeal = {
 export const usePlanMeal = (clock: Clock = systemClock): PlanMeal => {
   const { client, household, userId } = useSession()
   const queryClient = useQueryClient()
-  const weekStart = currentWeekStart(clock)
+  const { weekStart } = useSelectedWeek(clock)
 
   const mutation = useMutation({
     mutationFn: async (request: PlanRequest) => {
       if (userId === undefined) throw new Error('not-signed-in')
+      if (household === undefined) throw new Error('no-household')
 
-      const result = await planMeal(client, { ...request, addedBy: userId })
+      // The week ahead has no Week Plan until someone plans into it, and
+      // being planned into is exactly what is happening here.
+      const weekPlanId =
+        request.weekPlanId ?? (await resolveWeekPlanId(client, household.id, weekStart))
+      if (weekPlanId === undefined) throw new Error('no-week-plan')
+
+      const result = await planMeal(client, { ...request, weekPlanId, addedBy: userId })
       if (isErr(result)) throw new Error(result.error)
       return result.value
     },

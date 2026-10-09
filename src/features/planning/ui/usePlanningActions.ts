@@ -2,14 +2,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isErr } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession, type SlotKey } from '@/features/household'
-import { currentWeekStart } from '../domain/week'
 import { addLeftover } from '../application/add-leftover'
 import { moveCookEvent } from '../application/move-cook-event'
 import { moveLeftover } from '../application/move-leftover'
 import { removeLeftover } from '../application/remove-leftover'
 import { unplanMeal } from '../application/unplan-meal'
+import { setServingsCooked } from '../application/set-servings-cooked'
 import { removeBacklogItem } from '../application/remove-backlog-item'
+import type { Servings } from '@/features/meals'
 import type { BacklogItemId, CookEventId, LeftoverId } from '../domain/types'
+import { useSelectedWeek } from './SelectedWeek'
 
 export type LeftoverRequest = {
   readonly cookEventId: CookEventId
@@ -35,6 +37,7 @@ export type PlanningActions = {
   readonly moveLeftoverTo: (request: MoveLeftoverRequest) => void
   readonly removeLeftoverCard: (id: LeftoverId) => void
   readonly unplan: (cookEventId: CookEventId) => void
+  readonly setServings: (cookEventId: CookEventId, servingsCooked: Servings) => void
   readonly removeFromBacklog: (id: BacklogItemId) => void
   readonly leftoverFailed: boolean
   readonly moveFailed: boolean
@@ -48,7 +51,7 @@ export type PlanningActions = {
 export const usePlanningActions = (clock: Clock = systemClock): PlanningActions => {
   const { client, household } = useSession()
   const queryClient = useQueryClient()
-  const weekStart = currentWeekStart(clock)
+  const { weekStart } = useSelectedWeek(clock)
 
   const invalidate = (): void => {
     void queryClient.invalidateQueries({ queryKey: ['week', household?.id, weekStart] })
@@ -98,6 +101,15 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
     onSettled: invalidate,
   })
 
+  const servingsMutation = useMutation({
+    mutationFn: async ({ id, servings }: { id: CookEventId; servings: Servings }) => {
+      const result = await setServingsCooked(client, id, servings)
+      if (isErr(result)) throw new Error(result.error)
+      return result.value
+    },
+    onSettled: invalidate,
+  })
+
   const removeMutation = useMutation({
     mutationFn: async (id: BacklogItemId) => {
       const result = await removeBacklogItem(client, id)
@@ -121,6 +133,9 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
     },
     unplan: (cookEventId) => {
       unplanMutation.mutate(cookEventId)
+    },
+    setServings: (cookEventId, servingsCooked) => {
+      servingsMutation.mutate({ id: cookEventId, servings: servingsCooked })
     },
     removeFromBacklog: (id) => {
       removeMutation.mutate(id)
