@@ -26,3 +26,13 @@ no servings.
 - `servings_cooked` is retained on the cook event and displayed as "Cooking N",
   but never enforced against the number of dependent leftovers. A family may
   claim four dinners from one pot; the app is not the arbiter.
+- A leftover carries its own date and slot and moves independently of its cook
+  event — **with one constraint, added once the board allowed the nonsense it
+  prevents**: it may never sit earlier on the week than the cook event it came
+  from. You cannot eat on Wednesday the leftovers of a pot cooked on Friday.
+  The rule is checked from both ends, because both drops can break it: a
+  leftover carried back past its meal, and a meal carried forward past its
+  leftovers. `domain/leftover-order.ts` owns it, and a drop that would break it
+  is refused with a line saying why rather than silently dragging cards the
+  Member did not pick up. "Before" is by day and then by the household's own
+  slot order, so lunch precedes dinner because they put it there.

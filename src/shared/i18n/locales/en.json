@@ -60,7 +60,8 @@
     "weekAhead": "Next week",
     "weekPast": "Last week",
     "weeksAhead": "In {{count}} weeks",
-    "weeksPast": "{{count}} weeks ago"
+    "weeksPast": "{{count}} weeks ago",
+    "leftoverOrder": "Leftovers come after the Meal they are from. Move the Meal first."
   },
   "slot": {
     "lunch": "Lunch",

@@ -60,7 +60,8 @@
     "weekAhead": "Ensi viikko",
     "weekPast": "Viime viikko",
     "weeksAhead": "{{count}} viikon päästä",
-    "weeksPast": "{{count}} viikkoa sitten"
+    "weeksPast": "{{count}} viikkoa sitten",
+    "leftoverOrder": "Tähteet tulevat ruoan jälkeen, eivät ennen. Siirrä ensin itse ruoka."
   },
   "slot": {
     "lunch": "Lounas",

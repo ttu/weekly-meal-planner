@@ -26,6 +26,7 @@ import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
 import { resolveDrop } from '../domain/drop'
+import { breaksLeftoverOrder } from '../domain/leftover-order'
 import { useWeekBoard } from './useWeekBoard'
 import { useSelectedWeek } from './SelectedWeek'
 import { useAddToBacklog } from './useAddToBacklog'
@@ -35,6 +36,7 @@ import { useWeekRealtime } from './useWeekRealtime'
 import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
 import { DragProvider, type DragPayload, type DropTarget } from './DragContext'
+import type { DropAction } from '../domain/drop'
 import { DragLayer } from './DragLayer'
 import { DraggableCard } from './DraggableCard'
 import { useEdgeAutoScroll } from './useEdgeAutoScroll'
@@ -218,6 +220,7 @@ const Board = ({
   const [editingServings, setEditingServings] = useState<CookEvent | undefined>(undefined)
   const { offset, goToWeek } = useSelectedWeek(clock)
   const [isMenuOpen, setMenuOpen] = useState(false)
+  const [orderRefused, setOrderRefused] = useState(false)
   const [isSharing, setSharing] = useState(false)
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
@@ -234,6 +237,9 @@ const Board = ({
   }
 
   const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
+  /** The Household's own order of Slots, which is what "before" means within
+   *  a day: lunch precedes dinner because they put it there. */
+  const slotOrder = (board[0]?.slots ?? []).map((slot) => slot.slotKey)
 
   const leftoverCountFor = (id: CookEventId): number =>
     allCards.filter((card) => card.kind === 'leftover' && card.leftover.cookEventId === id).length
@@ -277,6 +283,19 @@ const Board = ({
    *  through the same mutations the tap path uses. */
   const onDropped = (payload: DragPayload, target: DropTarget): void => {
     const action = resolveDrop(payload, target)
+
+    // A Leftover is a second sitting of a pot already cooked, so it cannot be
+    // carried back past its Meal — nor the Meal forward past it. The card goes
+    // home and the board says why, rather than leaving Wednesday eating the
+    // leftovers of Friday's dinner.
+    const order = orderedMove(action, payload)
+    if (order !== undefined && breaksLeftoverOrder(order, allCards, slotOrder)) {
+      setOrderRefused(true)
+      setTimeout(() => {
+        setOrderRefused(false)
+      }, 4000)
+      return
+    }
 
     switch (action.kind) {
       case 'want':
@@ -533,6 +552,7 @@ const Board = ({
       {leftoverFailed && <Notice message={t('leftover.failed')} testID="leftover-error" />}
       {moveFailed && <Notice message={t('plan.moveFailed')} testID="move-error" />}
       {unplanFailed && <Notice message={t('unplan.failed')} testID="unplan-error" />}
+      {orderRefused && <Notice message={t('board.leftoverOrder')} testID="leftover-order-error" />}
     </>
   )
 
@@ -776,6 +796,20 @@ const PresenceRow = ({
  *  List - the one thing the week is for. */
 /** "This week", "Next week", "In 3 weeks" — the heading says which week is on
  *  screen, because after one tap of an arrow it is no longer obvious. */
+/** The two drops that can break the order, as the rule wants them. */
+const orderedMove = (
+  action: DropAction,
+  payload: DragPayload,
+): Parameters<typeof breaksLeftoverOrder>[0] | undefined => {
+  if (action.kind === 'move-leftover' && payload.kind === 'leftover') {
+    return { kind: 'leftover', cookEventId: payload.leftover.cookEventId, to: action }
+  }
+  if (action.kind === 'move') {
+    return { kind: 'cook-event', cookEventId: action.cookEventId, to: action }
+  }
+  return undefined
+}
+
 const weekHeadingKey = (offset: number): { key: string; count: number } => {
   if (offset === 0) return { key: 'board.thisWeek', count: 0 }
   if (offset === 1) return { key: 'board.weekAhead', count: 1 }
