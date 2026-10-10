@@ -35,33 +35,49 @@ const list: ShoppingList = {
   incomplete: [],
 }
 
+/** The same lookup the screen uses, standing in for i18next. */
+const fi = (unit: string): string =>
+  ({ pcs: 'kpl', tin: 'tlk', g: 'g', kg: 'kg', pack: 'pkt' })[unit] ?? unit
+
 describe('buildAgentPrompt', () => {
   it('lists Buy items with their amounts', () => {
-    expect(buildAgentPrompt(list, 'Tilaa:')).toContain('- 4 pcs sipuli')
+    expect(buildAgentPrompt(list, 'Tilaa:', fi)).toContain('- 4 kpl sipuli')
+  })
+
+  /**
+   * The whole text is in the Household's Locale (ADR 0009), so the agent is
+   * asked for groceries in the language of the shop. The Ingredient names
+   * were translated and the units were not, which left "3 tin kidneypavut"
+   * on a Finnish board.
+   */
+  it('translates the units, not just the names', () => {
+    const prompt = buildAgentPrompt(list, 'Tilaa:', fi)
+    expect(prompt).not.toMatch(/\bpcs\b/)
+    expect(prompt).not.toMatch(/\btin\b/)
   })
 
   it('includes unticked Extras', () => {
-    expect(buildAgentPrompt(list, 'Tilaa:')).toContain('- Roskapussit')
+    expect(buildAgentPrompt(list, 'Tilaa:', fi)).toContain('- Roskapussit')
   })
 
   it('leaves out Extras already ticked off', () => {
-    expect(buildAgentPrompt(list, 'Tilaa:')).not.toContain('Jo ostettu')
+    expect(buildAgentPrompt(list, 'Tilaa:', fi)).not.toContain('Jo ostettu')
   })
 
   // A ticked line is already in the basket. Asking an agent to order it again
   // is how a household ends up with two of everything they shopped for first.
   it('leaves out Buy Lines already ticked off', () => {
-    expect(buildAgentPrompt(list, 'Tilaa:')).not.toContain('jauheliha')
+    expect(buildAgentPrompt(list, 'Tilaa:', fi)).not.toContain('jauheliha')
   })
 
   // The Cupboard Check is a question for the family, not an order for a shop.
   it('leaves out the Cupboard Check', () => {
-    expect(buildAgentPrompt(list, 'Tilaa:')).not.toContain('juustokumina')
+    expect(buildAgentPrompt(list, 'Tilaa:', fi)).not.toContain('juustokumina')
   })
 
   // The clipboard is the least private place in the system.
   it('carries no Member names, Household id or URL', () => {
-    const prompt = buildAgentPrompt(list, 'Tilaa:')
+    const prompt = buildAgentPrompt(list, 'Tilaa:', fi)
     expect(prompt).not.toMatch(/https?:\/\//)
     expect(prompt).not.toContain('Aino')
   })

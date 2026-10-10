@@ -24,14 +24,14 @@ export default function Shopping(): React.JSX.Element {
         goBackTo('/')
       }}
       onCopyPrompt={() => {
-        void Clipboard.setStringAsync(buildAgentPrompt(list, t('shopping.promptIntro'))).then(
-          () => {
-            setJustCopied(true)
-            setTimeout(() => {
-              setJustCopied(false)
-            }, 2000)
-          },
-        )
+        void Clipboard.setStringAsync(
+          buildAgentPrompt(list, t('shopping.promptIntro'), (unit) => t(`unit.${unit}`)),
+        ).then(() => {
+          setJustCopied(true)
+          setTimeout(() => {
+            setJustCopied(false)
+          }, 2000)
+        })
       }}
     />
   )
