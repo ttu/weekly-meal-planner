@@ -5,11 +5,15 @@ import * as Clipboard from 'expo-clipboard'
 import { useTheme } from '@/shared/theme/theme'
 import { NoHouseholdScreen, useSession } from '@/features/household'
 import { BoardScreen } from '@/features/planning'
+import { useShoppingList } from '@/features/shopping'
 
 export default function Index(): React.JSX.Element {
   const theme = useTheme()
   const { client, userId, household, householdChecked } = useSession()
   const [shared, setShared] = useState(false)
+  // The badge on the Shopping destination: what is still to buy for the week
+  // on screen. Derived, like the list itself (ADR 0003).
+  const { list } = useShoppingList()
 
   // No identity at all: start a board. Signing in with an email is offered
   // there, rather than being the first thing anyone is asked for (ADR 0010).
@@ -48,6 +52,7 @@ export default function Index(): React.JSX.Element {
       onOpenSettings={() => {
         router.push('/settings')
       }}
+      shoppingCount={list.buy.filter((line) => !line.checked).length}
       onWriteOwnMeal={(name) => {
         router.push(
           name === undefined ? '/meals/new' : { pathname: '/meals/new', params: { name } },

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { darkColours, lightColours } from '../src/shared/theme/palette'
-import { asNewVisitor, createBoard, openSharedPage, resetDatabase } from './fixtures'
+import { asNewVisitor, createBoard, openSharedPage, resetDatabase, openSettings } from './fixtures'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -47,7 +47,7 @@ test.describe('appearance', () => {
   })
 
   test('Settings turns the board dark', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await expect(page.getByTestId('settings-screen')).toBeVisible()
 
     await page.getByTestId('settings-appearance-dark').click()
@@ -65,7 +65,7 @@ test.describe('appearance', () => {
   })
 
   test('and can be handed back to the device', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await page.getByTestId('settings-appearance-system').click()
     // The context prefers dark, so "match device" keeps it dark.
     await expect.poll(async () => groundOf(page, 'settings-screen')).toBe(rgb(darkColours.surface))

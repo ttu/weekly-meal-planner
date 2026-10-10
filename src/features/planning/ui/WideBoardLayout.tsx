@@ -53,6 +53,9 @@ type Props = {
   /** The seven day columns. Laid out as a row here, not scrolled: the week is
    *  the unit of the wide board and must be visible at once. */
   readonly board: React.ReactNode
+  /** Which week, and the way to another one. Above the board rather than in
+   *  the bar, so the bar reads the same on every destination. */
+  readonly weekHeading?: React.ReactNode
   readonly overlays?: React.ReactNode
   readonly style?: ViewStyle | undefined
 }
@@ -62,6 +65,7 @@ export const WideBoardLayout = ({
   library,
   backlog,
   board,
+  weekHeading,
   overlays,
   style,
 }: Props): React.JSX.Element => {
@@ -79,6 +83,7 @@ export const WideBoardLayout = ({
           {backlog}
         </View>
         <View style={styles.boardPane} testID="pane-board">
+          {weekHeading}
           <View style={styles.grid}>{board}</View>
           <View style={styles.footer}>
             <Text style={styles.hint}>{t('board.dropHint')}</Text>

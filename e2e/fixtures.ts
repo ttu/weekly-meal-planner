@@ -226,3 +226,13 @@ export const confirmationLink = async (): Promise<string> => {
 
   return found[0].replace(/&amp;/g, '&')
 }
+
+/**
+ * Settings sits behind the board's name now, not in a row of top-level links
+ * (Navigation, design direction). One helper rather than the same two clicks
+ * in six specs.
+ */
+export const openSettings = async (page: Page): Promise<void> => {
+  await page.getByTestId('open-board-menu').first().click()
+  await page.getByTestId('menu-settings').click()
+}

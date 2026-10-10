@@ -261,7 +261,17 @@
   "nav": {
     "back": "← Takaisin taululle",
     "backPlain": "← Takaisin",
-    "settings": "Asetukset"
+    "settings": "Asetukset",
+    "week": "Viikko",
+    "meals": "Ateriat",
+    "shopping": "Ostokset",
+    "boardMenu": "Taulun valikko",
+    "invite": "Kutsu perhe",
+    "inviteHint": "Lähetä linkki ja kerro salasana",
+    "mealTimes": "Ateria-ajat",
+    "leave": "Poistu taulusta tällä laitteella",
+    "leaveHint": "Tarvitset salasanan päästäksesi takaisin. Taulu ja ateriat säilyvät muille.",
+    "members": "{{names}} ja sinä"
   },
   "settings": {
     "title": "Asetukset",

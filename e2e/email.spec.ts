@@ -6,6 +6,7 @@ import {
   emptyInbox,
   openSharedPage,
   resetDatabase,
+  openSettings,
 } from './fixtures'
 
 test.describe.configure({ mode: 'serial' })
@@ -33,7 +34,7 @@ test.describe('adding an email to an anonymous board', () => {
   })
 
   test('an obvious typo is refused before anything is sent', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await expect(page.getByTestId('settings-screen')).toBeVisible()
 
     await page.getByTestId('settings-email-field').fill('aino')

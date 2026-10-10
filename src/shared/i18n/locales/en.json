@@ -261,7 +261,17 @@
   "nav": {
     "back": "← Back to the board",
     "backPlain": "← Back",
-    "settings": "Settings"
+    "settings": "Settings",
+    "week": "Week",
+    "meals": "Meals",
+    "shopping": "Shopping",
+    "boardMenu": "Board menu",
+    "invite": "Invite the family",
+    "inviteHint": "Send a link and tell them the password",
+    "mealTimes": "Meal times",
+    "leave": "Leave this board on this device",
+    "leaveHint": "You will need the password to get back in. The board and its Meals stay for everyone else.",
+    "members": "{{names}} and you"
   },
   "settings": {
     "title": "Settings",

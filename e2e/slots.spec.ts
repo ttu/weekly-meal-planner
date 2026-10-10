@@ -7,6 +7,7 @@ import {
   planFirstBacklogItem,
   resetDatabase,
   weekDates,
+  openSettings,
 } from './fixtures'
 
 test.describe.configure({ mode: 'serial' })
@@ -45,7 +46,7 @@ test.describe('a household changes its Slots', () => {
   })
 
   test('adding breakfast puts a row on every day', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await expect(page.getByTestId('settings-screen')).toBeVisible()
 
     await page.getByTestId('settings-add-breakfast').click()
@@ -57,7 +58,7 @@ test.describe('a household changes its Slots', () => {
   })
 
   test('a Slot the household names itself keeps their own word', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await page.getByTestId('settings-own-name').fill('Eväät')
     await page.getByTestId('settings-add-own').click()
 
@@ -70,7 +71,7 @@ test.describe('a household changes its Slots', () => {
 
   // The order of the rows is the order the household eats in.
   test('a Slot can be moved later in the day', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await page.getByTestId('settings-down-breakfast').click()
 
     await expect
@@ -98,7 +99,7 @@ test.describe('a household changes its Slots', () => {
     const day = page.locator(`[data-testid="day-${firstDay()}"]`)
     await expect(day.locator('[data-testid="meal-card-planned"]')).toHaveCount(1)
 
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await page.getByTestId('settings-remove-lunch').click()
     await expect(page.getByTestId('settings-slot-lunch')).toBeHidden()
 
@@ -106,14 +107,14 @@ test.describe('a household changes its Slots', () => {
     await expect(day.getByText('Lunch', { exact: true })).toBeHidden()
     await expect(day.locator('[data-testid="meal-card-planned"]')).toHaveCount(0)
 
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await page.getByTestId('settings-add-lunch').click()
     await page.goBack()
     await expect(day.locator('[data-testid="meal-card-planned"]')).toHaveCount(1)
   })
 
   test('the last Slot cannot be removed', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     for (const key of ['breakfast', 'ev-t', 'dinner']) {
       await page.getByTestId(`settings-remove-${key}`).click()
       await expect(page.getByTestId(`settings-slot-${key}`)).toBeHidden()

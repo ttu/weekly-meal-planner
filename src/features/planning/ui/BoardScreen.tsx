@@ -6,6 +6,7 @@ import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
 import {
+  BoardMenu,
   ShareSheet,
   boardUrl,
   signOut,
@@ -39,6 +40,7 @@ import { DraggableCard } from './DraggableCard'
 import { useEdgeAutoScroll } from './useEdgeAutoScroll'
 import { PlanSheet } from './PlanSheet'
 import { ServingsSheet } from './ServingsSheet'
+import { AppNav } from '@/shared/ui/AppNav'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { Notice } from '@/shared/ui/Notice'
 import type { BacklogItem, CookEvent, CookEventId, LeftoverId } from '../domain/types'
@@ -59,9 +61,54 @@ const sheets = themed((tokens) =>
       paddingHorizontal: 6,
       marginHorizontal: -6,
     },
-    weekNav: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+    boardNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: tokens.space.sm,
+    },
+    boardNameHit: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      minHeight: 44,
+      flexShrink: 1,
+    },
+    boardName: { ...tokens.type.support, fontWeight: '600', color: tokens.color.textMuted },
+    boardNameCaret: { ...tokens.type.meta, color: tokens.color.textSupport },
+    titleBlock: { flexShrink: 1 },
+    /** The week, over the seven columns it names. */
+    wideWeekHeading: {
+      paddingHorizontal: tokens.space.md,
+      paddingTop: tokens.space.md,
+      paddingBottom: tokens.space.sm,
+    },
+    /** A dashed seat at the end of the row of faces: the empty chair is the
+     *  invitation. */
+    invitePlus: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: tokens.color.textGhost,
+      backgroundColor: tokens.color.surfaceInset,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    invitePlusGlyph: { ...tokens.type.support, color: tokens.color.textMuted },
+    weekNav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     weekArrow: { ...tokens.type.dayHeading, color: tokens.color.action, lineHeight: 30 },
-    weekArrowHit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    weekArrowHit: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     weekBackHit: { paddingVertical: 11, marginVertical: -11, alignSelf: 'flex-start' },
     weekBack: { ...tokens.type.meta, color: tokens.color.action },
     scroll: { flex: 1 },
@@ -114,6 +161,8 @@ type Props = {
   /** Opens the Meal editor. Given a name when it comes from a search that
    *  found nothing, so the Meal starts with the words already typed. */
   readonly onWriteOwnMeal?: ((name?: string) => void) | undefined
+  /** Buy Lines still unticked, for the badge on the Shopping destination. */
+  readonly shoppingCount?: number | undefined
   readonly onShare?: ((url: string) => void) | undefined
   readonly shared?: boolean | undefined
 }
@@ -125,6 +174,7 @@ const Board = ({
   onOpenShopping,
   onOpenSettings,
   onWriteOwnMeal,
+  shoppingCount,
   onShare: onShareUrl,
   shared = false,
 }: Props): React.JSX.Element => {
@@ -167,6 +217,7 @@ const Board = ({
   const [removingLeftover, setRemovingLeftover] = useState<LeftoverId | undefined>(undefined)
   const [editingServings, setEditingServings] = useState<CookEvent | undefined>(undefined)
   const { offset, goToWeek } = useSelectedWeek(clock)
+  const [isMenuOpen, setMenuOpen] = useState(false)
   const [isSharing, setSharing] = useState(false)
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
@@ -253,16 +304,17 @@ const Board = ({
   const header = (
     <BoardHeader
       householdName={householdName}
-      weekRange={weekRange}
       present={present}
-      shared={shared}
-      onShare={onShare}
-      onOpenShopping={onOpenShopping}
-      onOpenLibrary={onOpenLibrary}
-      onOpenSettings={onOpenSettings}
-      onSignOut={() => {
-        void signOut(session.client)
+      active="week"
+      shoppingCount={shoppingCount}
+      onGo={(destination) => {
+        if (destination === 'meals') onOpenLibrary?.()
+        if (destination === 'shopping') onOpenShopping?.()
       }}
+      onOpenMenu={() => {
+        setMenuOpen(true)
+      }}
+      onShare={onShare}
     />
   )
 
@@ -329,6 +381,32 @@ const Board = ({
           }}
           onDismiss={() => {
             setPlanning(undefined)
+          }}
+        />
+      )}
+
+      {isMenuOpen && (
+        <BoardMenu
+          boardName={session.household?.name ?? ''}
+          otherMembers={present.map((member) => member.displayName)}
+          onInvite={() => {
+            setMenuOpen(false)
+            onShare()
+          }}
+          onMealTimes={() => {
+            setMenuOpen(false)
+            onOpenSettings?.()
+          }}
+          onSettings={() => {
+            setMenuOpen(false)
+            onOpenSettings?.()
+          }}
+          onLeave={() => {
+            setMenuOpen(false)
+            void signOut(session.client)
+          }}
+          onDismiss={() => {
+            setMenuOpen(false)
           }}
         />
       )}
@@ -463,6 +541,11 @@ const Board = ({
       <WideBoardLayout
         style={{ paddingTop: insets.top }}
         header={header}
+        weekHeading={
+          <View style={styles.wideWeekHeading}>
+            <BoardTitleRow weekRange={weekRange} offset={offset} onGoToWeek={goToWeek} />
+          </View>
+        }
         library={
           <MealLibraryScreen
             layout="pane"
@@ -535,23 +618,17 @@ const Board = ({
           onContentSizeChange={autoScroll.onContentSizeChange}
           contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
         >
-          <BoardLinks
-            shared={shared}
-            onOpenLibrary={onOpenLibrary}
-            onShare={onShare}
-            onOpenSettings={onOpenSettings}
-            onSignOut={() => {
-              void signOut(session.client)
-            }}
-          />
+          <View style={styles.boardNameRow}>
+            <BoardNameButton
+              boardName={session.household?.name ?? ''}
+              onPress={() => {
+                setMenuOpen(true)
+              }}
+            />
+            <PresenceRow present={present} onInvite={onShare} />
+          </View>
 
-          <BoardTitleRow
-            weekRange={weekRange}
-            present={present}
-            offset={offset}
-            onGoToWeek={goToWeek}
-            onOpenShopping={onOpenShopping}
-          />
+          <BoardTitleRow weekRange={weekRange} offset={offset} onGoToWeek={goToWeek} />
 
           <WeekStrip
             dates={board.map((day) => day.date)}
@@ -605,6 +682,16 @@ const Board = ({
 
       {shelf('shelf')}
 
+      {/* Under the thumb, below the shelf: the three places a Member goes. */}
+      <AppNav
+        active="week"
+        shoppingCount={shoppingCount}
+        onGo={(destination) => {
+          if (destination === 'meals') onOpenLibrary?.()
+          if (destination === 'shopping') onOpenShopping?.()
+        }}
+      />
+
       {overlays}
 
       <DragLayer />
@@ -616,72 +703,47 @@ const Board = ({
  * Drag state wraps the whole board: the Backlog cards that start a drag and the
  * Slots that receive it are in different subtrees.
  */
-/** One of the board's top-row destinations. Four of them, identical but for
- *  their words, so they are one component used four times. */
-const NavLink = ({
-  label,
+/**
+ * The board's name, and the way into everything that is not a destination.
+ * Four equal-weight text links used to sit here, one of which signed you out.
+ */
+const BoardNameButton = ({
+  boardName,
   onPress,
-  testID,
 }: {
-  readonly label: string
-  readonly onPress?: (() => void) | undefined
-  readonly testID: string
-}): React.JSX.Element => {
-  const styles = useThemed(sheets)
-
-  return (
-    <Pressable
-      style={styles.navHit}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      testID={testID}
-    >
-      <Text style={styles.link}>{label}</Text>
-    </Pressable>
-  )
-}
-
-/** Everything the board is not: the library, the share link, settings, and the
- *  way out. */
-const BoardLinks = ({
-  shared,
-  onOpenLibrary,
-  onShare,
-  onOpenSettings,
-  onSignOut,
-}: {
-  readonly shared: boolean
-  readonly onOpenLibrary?: (() => void) | undefined
-  readonly onShare?: (() => void) | undefined
-  readonly onOpenSettings?: (() => void) | undefined
-  readonly onSignOut: () => void
+  readonly boardName: string
+  readonly onPress: () => void
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (
-    <View style={styles.links}>
-      <NavLink label={t('meal.library')} onPress={onOpenLibrary} testID="open-library" />
-      <NavLink
-        label={shared ? t('board.shareCopied') : t('board.share')}
-        onPress={onShare}
-        testID="share-board"
-      />
-      <NavLink label={t('nav.settings')} onPress={onOpenSettings} testID="open-settings" />
-      <NavLink label={t('auth.signOut')} onPress={onSignOut} testID="sign-out" />
-    </View>
+    <Pressable
+      style={styles.boardNameHit}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('nav.boardMenu')}
+      testID="open-board-menu"
+    >
+      <Text style={styles.boardName}>{boardName}</Text>
+      <Text style={styles.boardNameCaret}>▾</Text>
+    </Pressable>
   )
 }
 
 /** Who else is looking at this week, overlapped like a stack of faces. */
 const PresenceRow = ({
   present,
+  onInvite,
 }: {
   readonly present: readonly PresentMember[]
+  /** The dashed "+" at the end of the faces. Sharing belongs where you see
+   *  who is already here. */
+  readonly onInvite?: (() => void) | undefined
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
   const theme = useTheme()
+  const { t } = useTranslation()
 
   return (
     <View style={styles.presence} testID="presence">
@@ -695,6 +757,17 @@ const PresenceRow = ({
           />
         </View>
       ))}
+      {onInvite !== undefined && (
+        <Pressable
+          style={[styles.invitePlus, present.length > 0 && styles.overlap]}
+          onPress={onInvite}
+          accessibilityRole="button"
+          accessibilityLabel={t('nav.invite')}
+          testID="invite-plus"
+        >
+          <Text style={styles.invitePlusGlyph}>+</Text>
+        </Pressable>
+      )}
     </View>
   )
 }
@@ -714,50 +787,22 @@ const weekHeadingKey = (offset: number): { key: string; count: number } => {
 
 const BoardTitleRow = ({
   weekRange,
-  present,
   offset,
   onGoToWeek,
-  onOpenShopping,
 }: {
   readonly weekRange: string
-  readonly present: readonly PresentMember[]
   readonly offset: number
   readonly onGoToWeek: (offset: number) => void
-  readonly onOpenShopping?: (() => void) | undefined
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
 
   return (
     <View style={styles.titleRow}>
-      <View>
-        <View style={styles.weekNav}>
-          <Pressable
-            style={styles.weekArrowHit}
-            onPress={() => {
-              onGoToWeek(offset - 1)
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('board.previousWeek')}
-            testID="week-previous"
-          >
-            <Text style={styles.weekArrow}>‹</Text>
-          </Pressable>
-          <Text style={styles.title}>
-            {t(weekHeadingKey(offset).key, { count: weekHeadingKey(offset).count })}
-          </Text>
-          <Pressable
-            style={styles.weekArrowHit}
-            onPress={() => {
-              onGoToWeek(offset + 1)
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('board.nextWeek')}
-            testID="week-next"
-          >
-            <Text style={styles.weekArrow}>›</Text>
-          </Pressable>
-        </View>
+      <View style={styles.titleBlock}>
+        <Text style={styles.title}>
+          {t(weekHeadingKey(offset).key, { count: weekHeadingKey(offset).count })}
+        </Text>
         <Text style={styles.week}>{weekRange}</Text>
         {offset !== 0 && (
           <Pressable
@@ -773,16 +818,32 @@ const BoardTitleRow = ({
           </Pressable>
         )}
       </View>
-      <View style={styles.links}>
-        {present.length > 0 && <PresenceRow present={present} />}
+
+      {/* Side by side on the right, as 44px buttons. Either side of the title
+          they moved the title whenever the week's words changed length, and
+          they were hard to hit. */}
+      <View style={styles.weekNav}>
         <Pressable
-          style={styles.shopping}
-          onPress={onOpenShopping}
+          style={styles.weekArrowHit}
+          onPress={() => {
+            onGoToWeek(offset - 1)
+          }}
           accessibilityRole="button"
-          accessibilityLabel={t('shopping.title')}
-          testID="open-shopping"
+          accessibilityLabel={t('board.previousWeek')}
+          testID="week-previous"
         >
-          <Text style={styles.shoppingText}>{t('shopping.title')}</Text>
+          <Text style={styles.weekArrow}>‹</Text>
+        </Pressable>
+        <Pressable
+          style={styles.weekArrowHit}
+          onPress={() => {
+            onGoToWeek(offset + 1)
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('board.nextWeek')}
+          testID="week-next"
+        >
+          <Text style={styles.weekArrow}>›</Text>
         </Pressable>
       </View>
     </View>

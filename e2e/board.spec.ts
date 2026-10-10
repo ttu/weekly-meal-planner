@@ -96,7 +96,7 @@ test.describe('a family plans a week', () => {
   })
 
   test('the Shopping List adds up what the week needs', async () => {
-    await page.getByTestId('open-shopping').click()
+    await page.getByTestId('nav-shopping').first().click()
     await expect(page.getByTestId('shopping-screen')).toBeVisible()
 
     // Two counts in one line, each pluralised on its own number — a single

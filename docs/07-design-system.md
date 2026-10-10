@@ -156,6 +156,32 @@ Every empty Slot invites a tap in both layouts — a new board is otherwise seve
 blank columns with nothing to click, since the Slot label being tappable is not
 something anyone can see.
 
+## Navigation
+
+Three destinations, and everything else behind the board's name.
+
+**Week · Meals · Shopping** are the places a Member goes several times a visit,
+so they are a bottom tab bar on a phone and a segmented control beside the
+board name on a wide screen — the same three, placed where the hand is.
+Shopping is a destination carrying a count of what is still to buy, not a
+terracotta button; as a button it was wide enough to be clipped off the edge
+of a 390px phone.
+
+**The board name opens the rest**: who is here, inviting them, the Slots,
+Settings, and leaving. A bottom sheet on a phone, a dropdown under the name on
+a wide screen, same items in the same order. Sharing is in two places, because
+both are where you look for it: the dashed "+" at the end of the row of faces,
+and the top of that sheet.
+
+**Leaving is last and set apart**, written as text rather than a button, with a
+line saying what it costs. On an anonymous board "sign out" can lose the board,
+and it used to sit next to "Meals" at equal weight.
+
+**The week arrows sit together** on the right of the week title, as 44px
+buttons — never either side of it, where they shift the title whenever the
+week's words change length. They belong with the title above the board, not in
+the bar, so the bar reads the same on every destination.
+
 **Phone**: the title block, the week strip, then the days stacked. A day is a
 serif weekday and one row per Slot: an 80px labelled gutter on the left and the
 cards on the right. The canvas drew that gutter at 56px, which fits "LUNCH" and

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { asNewVisitor, createBoard, openSharedPage, resetDatabase } from './fixtures'
+import { asNewVisitor, createBoard, openSharedPage, resetDatabase, openSettings } from './fixtures'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -34,7 +34,7 @@ test.describe('the language of a board', () => {
   })
 
   test('Settings switches the whole board to Finnish', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await expect(page.getByTestId('settings-screen')).toBeVisible()
 
     await page.getByTestId('settings-language-fi').click()
@@ -59,7 +59,7 @@ test.describe('the language of a board', () => {
   })
 
   test('and can be put back', async () => {
-    await page.getByTestId('open-settings').first().click()
+    await openSettings(page)
     await page.getByTestId('settings-language-en').click()
     await expect(page.getByTestId('settings-screen').getByText('Settings')).toBeVisible()
   })
