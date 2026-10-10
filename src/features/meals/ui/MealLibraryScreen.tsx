@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useLocale, useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
@@ -20,7 +19,18 @@ const sheets = themed((tokens) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: tokens.color.surface },
     pane: { flex: 1, backgroundColor: tokens.color.surfacePane },
-    head: { paddingHorizontal: tokens.space.md, paddingBottom: 12, gap: 11 },
+    /**
+     * The top padding belongs here, not on the screen wrapper: as a full
+     * screen the wrapper adds the safe-area inset, but as the board's leftmost
+     * pane nothing did, and "Ateriakirjasto" sat flush against the pane's top
+     * edge while the two panes beside it had room to breathe.
+     */
+    head: {
+      paddingTop: tokens.space.md,
+      paddingHorizontal: tokens.space.md,
+      paddingBottom: 12,
+      gap: 11,
+    },
     headScreen: { width: '100%', maxWidth: tokens.layout.readable, alignSelf: 'center' },
     headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     title: { ...tokens.type.display, color: tokens.color.textPrimary, flexShrink: 1 },
@@ -146,10 +156,7 @@ export const MealLibraryScreen = ({
 
   return (
     <View
-      style={[
-        isPane ? styles.pane : styles.screen,
-        !isPane && { paddingTop: insets.top + tokens.space.md },
-      ]}
+      style={[isPane ? styles.pane : styles.screen, !isPane && { paddingTop: insets.top }]}
       testID="meal-library-screen"
     >
       {!isPane && onBack !== undefined && (

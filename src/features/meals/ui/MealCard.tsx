@@ -56,7 +56,10 @@ const sheets = themed((tokens) =>
     },
     /** The planned card reads name-then-servings on the left, then its actions,
      *  then the face of whoever put it there at the outside edge. */
+    /** The second line of a planned card: servings on the left, the two
+     *  actions and the face at the outside edge. */
     plannedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    plannedSpacer: { flex: 1 },
     actions: { flexDirection: 'row', gap: 10 },
     /**
      * Glyph buttons rather than an icon font. The app already speaks in glyphs —
@@ -149,31 +152,37 @@ export const MealCard = ({
   if (variant === 'planned') {
     return (
       <View style={[cardStyles.base, styles.planned]} testID="meal-card-planned">
+        {/* The name owns a line of its own. Sharing one row with two 44px
+            buttons and a face left it 74px on a 390px phone, which breaks
+            "Munavoileivät" in half — and a Finnish compound is the normal
+            case here, not the edge one. */}
+        <Text style={cardStyles.nameLarge}>{name}</Text>
+
         <View style={styles.plannedRow}>
-          <View style={cardStyles.text}>
-            <Text style={cardStyles.nameLarge}>{name}</Text>
-            {servingsCooked !== undefined &&
-              (onEditServings === undefined ? (
-                <Text style={cardStyles.support} testID="meal-card-servings-cooked">
+          {servingsCooked !== undefined &&
+            (onEditServings === undefined ? (
+              <Text style={cardStyles.support} testID="meal-card-servings-cooked">
+                {t('cookEvent.cookingCount', { count: servingsCooked })}
+              </Text>
+            ) : (
+              <Pressable
+                style={styles.servingsHit}
+                onPress={onEditServings}
+                accessibilityRole="button"
+                accessibilityLabel={t('cookEvent.changeServings')}
+                testID="card-edit-servings"
+              >
+                <Text
+                  style={[cardStyles.support, styles.servingsLink]}
+                  testID="meal-card-servings-cooked"
+                >
                   {t('cookEvent.cookingCount', { count: servingsCooked })}
                 </Text>
-              ) : (
-                <Pressable
-                  style={styles.servingsHit}
-                  onPress={onEditServings}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('cookEvent.changeServings')}
-                  testID="card-edit-servings"
-                >
-                  <Text
-                    style={[cardStyles.support, styles.servingsLink]}
-                    testID="meal-card-servings-cooked"
-                  >
-                    {t('cookEvent.cookingCount', { count: servingsCooked })}
-                  </Text>
-                </Pressable>
-              ))}
-          </View>
+              </Pressable>
+            ))}
+
+          <View style={styles.plannedSpacer} />
+
           <View style={styles.actions}>
             {onAddLeftover !== undefined && (
               <Pressable

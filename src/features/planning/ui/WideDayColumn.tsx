@@ -41,7 +41,7 @@ const sheets = themed((tokens) =>
     headingToday: { color: tokens.color.affirm },
     today: { ...tokens.type.labelSmall, fontWeight: '400', color: tokens.color.affirm },
     body: { flex: 1 },
-    slot: { flex: 1, paddingVertical: 9, paddingHorizontal: 6, gap: 6 },
+    slot: { flex: 1, paddingVertical: 9, paddingHorizontal: 5, gap: 6 },
     slotDivided: {
       borderBottomWidth: 1,
       borderStyle: 'dashed',
@@ -61,13 +61,19 @@ const sheets = themed((tokens) =>
       paddingHorizontal: tokens.space.sm,
     },
     emptyText: { ...tokens.type.mealNameTight, fontWeight: '400', color: tokens.color.textGhost },
+    /**
+     * Tight on purpose. Every pixel of horizontal padding here comes straight
+     * off the Meal name, and the name has 89px to work with in a seven-column
+     * week: at 8px padding "Munavoileivät" missed by three pixels and broke in
+     * half. Finnish compounds are the normal case on this board.
+     */
     card: {
       backgroundColor: tokens.color.surfaceRaised,
       borderWidth: 1,
       borderColor: tokens.color.cardBorder,
       borderRadius: tokens.radius.md,
       paddingVertical: 9,
-      paddingHorizontal: 8,
+      paddingHorizontal: 6,
       boxShadow: tokens.shadow.subtle,
     },
     cardName: { ...tokens.type.mealNameTight, color: tokens.color.textPrimary },

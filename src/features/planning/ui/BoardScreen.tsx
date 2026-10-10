@@ -80,7 +80,15 @@ const sheets = themed((tokens) =>
      *  leads with. The one loud thing stays the Shopping List. */
     links: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, flexWrap: 'wrap' },
     link: { ...tokens.type.meta, color: tokens.color.textSupport },
-    titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    /** Wraps rather than overflows: the week arrows, the faces and the
+     *  Shopping button together are wider than a 390px phone. */
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: tokens.space.sm,
+    },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     week: { ...tokens.type.support, color: tokens.color.textSupport },
     presence: { flexDirection: 'row' },
