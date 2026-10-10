@@ -94,7 +94,11 @@
     "submit": "Kirjaudu",
     "invalid": "Sähköposti ja salasana eivät täsmää.",
     "unavailable": "Palvelimeen ei saatu yhteyttä. Yritä uudelleen.",
-    "signOut": "Kirjaudu ulos"
+    "signOut": "Kirjaudu ulos",
+    "back": "← Takaisin alkuun",
+    "demoTitle": "Siemennetyt tunnukset",
+    "demoHint": "Vain kehityksessä. Napauta täyttääksesi lomakkeen.",
+    "demoOwner": "omistaja"
   },
   "backlog": {
     "count": "Toivelista",

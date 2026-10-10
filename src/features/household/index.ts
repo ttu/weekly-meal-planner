@@ -49,3 +49,4 @@ export {
   useRefreshHousehold,
   type HouseholdSession,
 } from './ui/useHouseholdSession'
+export { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoAccount } from './domain/demo-accounts'

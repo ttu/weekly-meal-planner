@@ -94,7 +94,11 @@
     "submit": "Sign in",
     "invalid": "That email and password do not match.",
     "unavailable": "Could not reach the server. Try again.",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "back": "← Back to the start",
+    "demoTitle": "Seeded logins",
+    "demoHint": "Development only. Tap one to fill the form.",
+    "demoOwner": "owner"
   },
   "backlog": {
     "count": "Backlog",

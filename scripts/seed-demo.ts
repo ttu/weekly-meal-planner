@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import type { Database } from '../src/shared/db/database.types'
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../src/features/household/domain/demo-accounts'
 
 // Validated at the edge like every other external input. The service role key
 // is deliberately not EXPO_PUBLIC_: it must never reach the app bundle.
@@ -18,16 +19,13 @@ const admin = createClient<Database>(env.EXPO_PUBLIC_SUPABASE_URL, env.SUPABASE_
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 
 /**
- * Member colours exclude backlog amber, which means "wanted but unplanned" and
- * must not be diluted by appearing on a person (docs/07-design-system.md).
+ * Named in the app, not here: the sign-in screen offers these same logins in a
+ * dev build, and a second copy of the list is a second thing to forget to
+ * change. Member colours exclude backlog amber, which means "wanted but
+ * unplanned" and must not be diluted by appearing on a person
+ * (docs/07-design-system.md).
  */
-const DEMO_PASSWORD = 'meal-planner-demo'
-
-const MEMBERS = [
-  { email: 'aino@example.test', displayName: 'Aino', colour: '#5F7355', role: 'owner' },
-  { email: 'sanni@example.test', displayName: 'Sanni', colour: '#C05A38', role: 'member' },
-  { email: 'mikko@example.test', displayName: 'Mikko', colour: '#4A6670', role: 'member' },
-]
+const MEMBERS = DEMO_ACCOUNTS
 
 /**
  * Real auth users, so the demo Household can actually be signed into. Local

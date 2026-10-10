@@ -6,11 +6,48 @@ import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { isErr } from '@/shared/types/result'
+import { Avatar } from '@/shared/ui/Avatar'
+import { BackLink } from '@/shared/ui/BackLink'
+import type { DemoAccount } from '../domain/demo-accounts'
 import { signIn, type SignInError } from '../application/sign-in'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** Set apart from the form: a developer convenience sitting below the
+     *  real thing, never mistakable for part of it. */
+    demo: {
+      marginTop: tokens.space.xl,
+      paddingTop: tokens.space.md,
+      borderTopWidth: 1,
+      borderTopColor: tokens.color.rule,
+      gap: tokens.space.xs,
+    },
+    demoTitle: {
+      ...tokens.type.label,
+      color: tokens.color.textSupport,
+      textTransform: 'uppercase',
+    },
+    demoHint: {
+      ...tokens.type.meta,
+      color: tokens.color.textSupport,
+      marginBottom: tokens.space.xs,
+    },
+    demoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.space.sm,
+      minHeight: 54,
+      paddingHorizontal: tokens.space.sm,
+      borderRadius: tokens.radius.md,
+      borderWidth: 1,
+      borderColor: tokens.color.cardBorder,
+      backgroundColor: tokens.color.surfaceRaised,
+    },
+    demoRowPressed: { backgroundColor: tokens.color.surfaceInset },
+    demoText: { flex: 1 },
+    demoName: { ...tokens.type.support, fontWeight: '600', color: tokens.color.textPrimary },
+    demoEmail: { ...tokens.type.meta, color: tokens.color.textSupport },
     title: {
       ...tokens.type.display,
       color: tokens.color.textPrimary,
@@ -31,9 +68,56 @@ const sheets = themed((tokens) =>
 const errorKey = (error: SignInError): string =>
   error === 'invalid-credentials' ? 'auth.invalid' : 'auth.unavailable'
 
-type Props = { readonly client: AppSupabaseClient }
+/** The list the seed writes, handed in by the route only when `__DEV__`. The
+ *  screen itself knows nothing about which build it is in. */
+const DemoLogins = ({
+  accounts,
+  onPick,
+}: {
+  readonly accounts: readonly DemoAccount[]
+  readonly onPick: (account: DemoAccount) => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
 
-export const SignInScreen = ({ client }: Props): React.JSX.Element => {
+  return (
+    <View style={styles.demo} testID="demo-logins">
+      <Text style={styles.demoTitle}>{t('auth.demoTitle')}</Text>
+      <Text style={styles.demoHint}>{t('auth.demoHint')}</Text>
+      {accounts.map((account) => (
+        <Pressable
+          key={account.email}
+          style={({ pressed }) => [styles.demoRow, pressed && styles.demoRowPressed]}
+          onPress={() => {
+            onPick(account)
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${account.displayName} — ${account.email}`}
+          testID={`demo-login-${account.displayName.toLowerCase()}`}
+        >
+          <Avatar name={account.displayName} colour={account.colour} size="small" />
+          <View style={styles.demoText}>
+            <Text style={styles.demoName}>
+              {account.role === 'owner'
+                ? `${account.displayName} · ${t('auth.demoOwner')}`
+                : account.displayName}
+            </Text>
+            <Text style={styles.demoEmail}>{account.email}</Text>
+          </View>
+        </Pressable>
+      ))}
+    </View>
+  )
+}
+
+type Props = {
+  readonly client: AppSupabaseClient
+  /** Omitted in a production build, which is what keeps the list out of it. */
+  readonly demoAccounts?: readonly DemoAccount[] | undefined
+  readonly onBack?: (() => void) | undefined
+}
+
+export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
@@ -55,6 +139,8 @@ export const SignInScreen = ({ client }: Props): React.JSX.Element => {
   return (
     <View style={formStyles.screen} testID="sign-in-screen">
       <View style={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}>
+        {onBack !== undefined && <BackLink onPress={onBack} label={t('auth.back')} />}
+
         <Text style={[formStyles.title, { marginBottom: tokens.space.lg }]}>{t('auth.title')}</Text>
 
         <Text style={formStyles.label}>{t('auth.email')}</Text>
@@ -96,6 +182,17 @@ export const SignInScreen = ({ client }: Props): React.JSX.Element => {
         >
           <Text style={styles.submitText}>{t('auth.submit')}</Text>
         </Pressable>
+
+        {demoAccounts !== undefined && demoAccounts.length > 0 && (
+          <DemoLogins
+            accounts={demoAccounts}
+            onPick={(account) => {
+              setEmail(account.email)
+              setPassword(account.password)
+              setError(undefined)
+            }}
+          />
+        )}
       </View>
     </View>
   )
