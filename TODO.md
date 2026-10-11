@@ -18,6 +18,16 @@ you want to overturn one, change the spec first.
 
 ---
 
+## Security
+
+- `pnpm audit` reports 3 critical and 8 high advisories, every one of them in a
+  dev-only dependency path: `shell-quote` via `react-devtools-core`,
+  `handlebars` via `eslint-plugin-boundaries`, and `node-forge`, `compression`
+  and `braces` via `@expo/cli`. None reach the shipped bundle and the highs are
+  mostly DoS in build tooling, so this is debt for developer machines and CI
+  rather than for a household. Found in the security review of 11 October 2026.
+  Needs a deliberate dependency bump pass with `validate` after each step.
+
 ## Tests
 
 - The e2e suite waits out animations, navigation and the auto-scroll dwell with

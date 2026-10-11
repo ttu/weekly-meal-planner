@@ -105,7 +105,12 @@ create function public.join_board(
 ) returns table (out_household_id uuid, out_status join_board_status)
 language plpgsql
 security definer
-set search_path = public, extensions
+-- pg_temp last, always. Left out, Postgres searches the caller's temp schema
+-- *first*, and every unqualified name in here becomes theirs to redefine: a
+-- temp table called household_join_attempt made this function's own rate limit
+-- count nothing, which is all that stands between a family's board password
+-- and unlimited guessing.
+set search_path = public, extensions, pg_temp
 as $fn$
 declare
   target record;
@@ -181,7 +186,8 @@ create or replace function public.board_preview(p_share_token text)
 returns table (out_name text, out_member_names text[], out_member_colours text[])
 language plpgsql
 security definer
-set search_path = public
+-- pg_temp last; see join_board above.
+set search_path = public, pg_temp
 as $fn$
 begin
   return query
