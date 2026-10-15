@@ -20,13 +20,12 @@ you want to overturn one, change the spec first.
 
 ## Security
 
-- `pnpm audit` reports 3 critical and 8 high advisories, every one of them in a
-  dev-only dependency path: `shell-quote` via `react-devtools-core`,
-  `handlebars` via `eslint-plugin-boundaries`, and `node-forge`, `compression`
-  and `braces` via `@expo/cli`. None reach the shipped bundle and the highs are
-  mostly DoS in build tooling, so this is debt for developer machines and CI
-  rather than for a household. Found in the security review of 11 October 2026.
-  Needs a deliberate dependency bump pass with `validate` after each step.
+- Two advisories are ignored in `package.json` (`pnpm.auditConfig.ignoreGhsas`)
+  because no patched release exists: `node-forge` (GHSA-86w9-cpqp-85rv) via
+  `@expo/cli`, and `braces` (GHSA-vfj7-8cjw-p6xm) via
+  `vite-plugin-commonjs`. Both are dev-tooling only and never reach the
+  shipped bundle. When a fixed version is published, add an override for it and
+  delete the ignore.
 
 ## Tests
 
