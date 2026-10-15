@@ -44,6 +44,7 @@ export { EnterInviteScreen } from './ui/EnterInviteScreen'
 export { SettingsScreen } from './ui/SettingsScreen'
 export { inviteToken } from './domain/invite'
 export { JoinBoardScreen } from './ui/JoinBoardScreen'
+export { useBetaKeyRequired } from './ui/useBetaKeyRequired'
 export {
   useHouseholdSession,
   useRefreshHousehold,

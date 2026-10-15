@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { DEMO_PASSWORD, resetDatabase, shareTokenFor } from './fixtures'
+import { DEMO_PASSWORD, fillBetaKey, resetDatabase, shareTokenFor } from './fixtures'
 
 const OUT = '/tmp/vv10'
 
@@ -26,6 +26,7 @@ test('the two entry screens', async ({ browser }) => {
   await page.waitForTimeout(400)
   await page.screenshot({ path: `${OUT}/03-start-password-shown.png` })
 
+  await fillBetaKey(page, 'start')
   await page.getByTestId('start-create').click()
   await expect(page.getByTestId('board-screen')).toBeVisible()
 
@@ -37,6 +38,7 @@ test('the two entry screens', async ({ browser }) => {
   await expect(mum.getByTestId('join-board-screen')).toBeVisible()
   await mum.getByTestId('join-your-name').fill('Mum')
   await mum.getByTestId('join-password').fill(DEMO_PASSWORD)
+  await fillBetaKey(mum, 'join')
   await mum.getByTestId('join-submit').click()
   await expect(mum.getByTestId('board-screen')).toBeVisible()
 
@@ -51,6 +53,7 @@ test('the two entry screens', async ({ browser }) => {
 
   await sanni.getByTestId('join-your-name').fill('Aino')
   await sanni.getByTestId('join-password').fill('not-the-password')
+  await fillBetaKey(sanni, 'join')
   await sanni.getByTestId('join-submit').click()
   await expect(sanni.getByTestId('join-error')).toBeVisible()
   await sanni.waitForTimeout(600)

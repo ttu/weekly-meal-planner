@@ -18,6 +18,10 @@ export type TestDb = {
 const SCHEMA_FILES = [
   'supabase/schemas/00_extensions.sql',
   'supabase/schemas/05_extensions_crypto.sql',
+  // Before anything that reads a secret: SQL function bodies are checked on
+  // creation, so vault.decrypted_secrets must already exist.
+  'src/test/db/vault-shim.sql',
+  'supabase/schemas/12_beta_key.sql',
   'supabase/schemas/10_household.sql',
   'supabase/schemas/11_household_sharing.sql',
   'supabase/schemas/20_meals.sql',

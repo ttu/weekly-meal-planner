@@ -10,7 +10,8 @@ create or replace function public.create_board(
   p_display_name text,
   p_colour text,
   p_locale text,
-  p_password text
+  p_password text,
+  p_beta_key text default null
 ) returns table (out_household_id uuid, out_share_token text)
 language plpgsql
 security definer
@@ -27,6 +28,12 @@ declare
 begin
   if auth.uid() is null then
     raise exception 'Not signed in';
+  end if;
+
+  -- 12_beta_key.sql. Raised with invalid_password so the app can tell this
+  -- refusal from every other one without matching on the message.
+  if not app.beta_key_accepted(p_beta_key) then
+    raise exception 'Invalid beta key' using errcode = 'invalid_password';
   end if;
 
   if length(coalesce(p_password, '')) < 6 then
@@ -80,7 +87,7 @@ begin
 end;
 $fn$;
 
-grant execute on function public.create_board(text, text, text, text, text) to authenticated;
+grant execute on function public.create_board(text, text, text, text, text, text) to authenticated;
 
 -- Joining a board.
 --
@@ -96,12 +103,16 @@ grant execute on function public.create_board(text, text, text, text, text) to a
 --
 -- 'rejected' is returned for a wrong token and a wrong password alike. Telling
 -- them apart would turn this into an oracle for valid tokens.
-create type join_board_status as enum ('joined', 'rejected', 'rate-limited');
+--
+-- 'invalid-beta-key' is checked before the token is looked at, so it says
+-- nothing about whether the link is real (12_beta_key.sql).
+create type join_board_status as enum ('joined', 'rejected', 'rate-limited', 'invalid-beta-key');
 
 create function public.join_board(
   p_share_token text,
   p_password text,
-  p_display_name text default 'Member'
+  p_display_name text default 'Member',
+  p_beta_key text default null
 ) returns table (out_household_id uuid, out_status join_board_status)
 language plpgsql
 security definer
@@ -125,6 +136,14 @@ begin
 
   if recent >= 10 then
     return query select null::uuid, 'rate-limited'::join_board_status;
+    return;
+  end if;
+
+  -- After the rate limit and recorded like a wrong password: a wrong key is a
+  -- guess too, and must not be a second door with no limit on it.
+  if not app.beta_key_accepted(p_beta_key) then
+    insert into household_join_attempt (share_token) values (p_share_token);
+    return query select null::uuid, 'invalid-beta-key'::join_board_status;
     return;
   end if;
 
@@ -158,7 +177,7 @@ begin
 end;
 $fn$;
 
-grant execute on function public.join_board(text, text, text) to authenticated;
+grant execute on function public.join_board(text, text, text, text) to authenticated;
 
 -- The attempt table is written only by the definer function; nobody reads it
 -- through the client.

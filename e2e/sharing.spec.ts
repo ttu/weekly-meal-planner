@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import {
+  fillBetaKey,
   DEMO_PASSWORD,
   addToBacklog,
   asNewVisitor,
@@ -47,6 +48,7 @@ test.describe('a second Member joins the board', () => {
 
     await mum.getByTestId('join-your-name').fill('Mum')
     await mum.getByTestId('join-password').fill('not-the-password')
+    await fillBetaKey(mum, 'join')
     await mum.getByTestId('join-submit').click()
 
     await expect(mum.getByTestId('join-error')).toBeVisible()
@@ -55,6 +57,7 @@ test.describe('a second Member joins the board', () => {
 
   test('the link and the password together let someone in', async () => {
     await mum.getByTestId('join-password').fill(DEMO_PASSWORD)
+    await fillBetaKey(mum, 'join')
     await mum.getByTestId('join-submit').click()
 
     await expect(
@@ -94,6 +97,7 @@ test.describe('a second Member joins the board', () => {
 
     await page.getByTestId('join-your-name').fill('Nobody')
     await page.getByTestId('join-password').fill(DEMO_PASSWORD)
+    await fillBetaKey(page, 'join')
     await page.getByTestId('join-submit').click()
 
     // The same message as a wrong password: the board's existence must not be
@@ -129,6 +133,7 @@ test.describe('an invite pasted by hand', () => {
 
     await page.getByTestId('join-your-name').fill('Mum')
     await page.getByTestId('join-password').fill(DEMO_PASSWORD)
+    await fillBetaKey(page, 'join')
     await page.getByTestId('join-submit').click()
     await expect(
       page.getByTestId('board-screen').or(page.getByTestId('wide-board-layout')),

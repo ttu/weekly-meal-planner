@@ -1,9 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  DEMO_PASSWORD,
   addToBacklog,
   asNewVisitor,
   createBoard,
   dragOnto,
+  fillBetaKey,
   openSharedPage,
   planFirstBacklogItem,
   resetDatabase,
@@ -32,8 +34,22 @@ test.describe('a family plans a week', () => {
     await page.getByTestId('start-board-name').fill('Koivisto')
     await page.getByTestId('start-your-name').fill('Aino')
     await page.getByTestId('start-password').fill('abc')
+    await fillBetaKey(page, 'start')
     await page.getByTestId('start-create').click()
     await expect(page.getByTestId('start-error')).toBeVisible()
+  })
+
+  // Closed beta: the local Vault holds a key (supabase/seed.sql), so a guess
+  // is refused and the person is told what was wrong.
+  test('a wrong beta key is refused, and says so', async () => {
+    await asNewVisitor(page)
+    await page.getByTestId('start-board-name').fill('Koivisto')
+    await page.getByTestId('start-your-name').fill('Aino')
+    await page.getByTestId('start-password').fill(DEMO_PASSWORD)
+    await page.getByTestId('start-beta-key').fill('arvaus')
+    await page.getByTestId('start-create').click()
+    await expect(page.getByTestId('start-error')).toBeVisible()
+    await expect(page.getByTestId('start-board-screen')).toBeVisible()
   })
 
   test('starting a board needs no account', async () => {

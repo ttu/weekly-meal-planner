@@ -5,6 +5,7 @@ import {
   JoinBoardScreen,
   boardPreview,
   joinBoard,
+  useBetaKeyRequired,
   useRefreshHousehold,
   useSession,
   type BoardPreview,
@@ -15,6 +16,7 @@ export default function Join(): React.JSX.Element {
   const params = useLocalSearchParams<{ token: string }>()
   const { client } = useSession()
   const refreshHousehold = useRefreshHousehold()
+  const askBetaKey = useBetaKeyRequired()
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<JoinBoardError | undefined>(undefined)
   const [preview, setPreview] = useState<BoardPreview | undefined>(undefined)
@@ -35,13 +37,14 @@ export default function Join(): React.JSX.Element {
       isPending={isPending}
       error={error}
       preview={preview}
+      askBetaKey={askBetaKey}
       onStartOwn={() => {
         router.replace('/start')
       }}
-      onJoin={({ password, displayName }) => {
+      onJoin={({ password, displayName, betaKey }) => {
         setPending(true)
         setError(undefined)
-        void joinBoard(client, params.token, password, displayName).then((result) => {
+        void joinBoard(client, params.token, password, displayName, betaKey).then((result) => {
           setPending(false)
           if (isErr(result)) {
             setError(result.error)

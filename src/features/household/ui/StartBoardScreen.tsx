@@ -9,14 +9,25 @@ import { PasswordField } from '@/shared/ui/PasswordField'
 import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import type { CreateBoardError } from '../application/boards'
+import { BetaKeyField } from './BetaKeyField'
 
-const errorKey = (error: CreateBoardError): string =>
-  error === 'short-password' ? 'board.shortPassword' : 'board.createFailed'
+const errorKeys: Record<CreateBoardError, string> = {
+  'short-password': 'board.shortPassword',
+  'invalid-beta-key': 'board.invalidBetaKey',
+  'write-failed': 'board.createFailed',
+}
 
 type Props = {
   readonly isPending: boolean
   readonly error?: CreateBoardError | undefined
-  readonly onCreate: (input: { boardName: string; displayName: string; password: string }) => void
+  /** True while a beta key is set; see supabase/schemas/12_beta_key.sql. */
+  readonly askBetaKey?: boolean | undefined
+  readonly onCreate: (input: {
+    boardName: string
+    displayName: string
+    password: string
+    betaKey: string
+  }) => void
   readonly onSignInInstead: () => void
   readonly onJoinInstead?: (() => void) | undefined
 }
@@ -71,6 +82,7 @@ const sheets = themed((tokens) =>
 export const StartBoardScreen = ({
   isPending,
   error,
+  askBetaKey = false,
   onCreate,
   onSignInInstead,
   onJoinInstead,
@@ -82,6 +94,7 @@ export const StartBoardScreen = ({
   const [boardName, setBoardName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
+  const [betaKey, setBetaKey] = useState('')
 
   return (
     <ScrollView
@@ -123,9 +136,18 @@ export const StartBoardScreen = ({
       />
       <Text style={[styles.hint, { marginTop: tokens.space.xs }]}>{t('board.passwordHint')}</Text>
 
+      {askBetaKey && (
+        <BetaKeyField
+          value={betaKey}
+          onChangeText={setBetaKey}
+          hasError={error === 'invalid-beta-key'}
+          testID="start-beta-key"
+        />
+      )}
+
       {error !== undefined && (
         <Text style={formStyles.error} testID="start-error">
-          {t(errorKey(error))}
+          {t(errorKeys[error])}
         </Text>
       )}
 
@@ -138,7 +160,7 @@ export const StartBoardScreen = ({
         style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
         disabled={isPending}
         onPress={() => {
-          onCreate({ boardName, displayName, password })
+          onCreate({ boardName, displayName, password, betaKey })
         }}
         accessibilityRole="button"
         accessibilityLabel={t('board.create')}

@@ -154,6 +154,24 @@ export type Database = {
         }
         Relationships: []
       }
+      household_creation_attempt: {
+        Row: {
+          attempted_at: string
+          ip: string | null
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          ip?: string | null
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          ip?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       household_join_attempt: {
         Row: {
           attempted_at: string
@@ -561,6 +579,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      beta_key_required: { Args: never; Returns: boolean }
       board_preview: {
         Args: { p_share_token: string }
         Returns: {
@@ -575,6 +594,7 @@ export type Database = {
       }
       create_board: {
         Args: {
+          p_beta_key?: string
           p_colour: string
           p_display_name: string
           p_locale: string
@@ -588,6 +608,7 @@ export type Database = {
       }
       join_board: {
         Args: {
+          p_beta_key?: string
           p_display_name?: string
           p_password: string
           p_share_token: string
@@ -622,7 +643,11 @@ export type Database = {
       unplan_meal: { Args: { p_cook_event_id: string }; Returns: string }
     }
     Enums: {
-      join_board_status: "joined" | "rejected" | "rate-limited"
+      join_board_status:
+        | "joined"
+        | "rejected"
+        | "rate-limited"
+        | "invalid-beta-key"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -753,7 +778,12 @@ export const Constants = {
   },
   public: {
     Enums: {
-      join_board_status: ["joined", "rejected", "rate-limited"],
+      join_board_status: [
+        "joined",
+        "rejected",
+        "rate-limited",
+        "invalid-beta-key",
+      ],
     },
   },
 } as const

@@ -5,6 +5,15 @@ import { expect, type Browser, type Locator, type Page } from '@playwright/test'
 
 export const DEMO_PASSWORD = 'kaalikaari'
 
+/** The beta key supabase/seed.sql puts in the local Vault. */
+export const BETA_KEY = 'menami-beta'
+
+/** The beta key, on the start or the join screen. Waits for the field: it
+ *  appears once the app has asked whether the key is needed. */
+export const fillBetaKey = async (page: Page, screen: 'start' | 'join'): Promise<void> => {
+  await page.getByTestId(`${screen}-beta-key`).fill(BETA_KEY)
+}
+
 const DB_CONTAINER = 'supabase_db_weekly-meal-planner'
 
 /**
@@ -96,6 +105,7 @@ export const createBoard = async (
   await page.getByTestId('start-board-name').fill(boardName)
   await page.getByTestId('start-your-name').fill(yourName)
   await page.getByTestId('start-password').fill(password)
+  await fillBetaKey(page, 'start')
   await page.getByTestId('start-create').click()
   await expect(
     page.getByTestId('board-screen').or(page.getByTestId('wide-board-layout')),

@@ -56,6 +56,25 @@ Two functions are `SECURITY DEFINER`, and they are the only ones in the system:
 transaction and roll back the record of the failed attempt, leaving the rate
 limiter counting nothing — which it did, until a test caught it.
 
+### The beta key
+
+While the app is in closed beta, both functions also require a **beta key**
+(ADR 0012). It lives in Supabase Vault as the secret `beta_key`; with no such
+secret there is no gate. It is checked inside the database, never by the app.
+
+To set or rotate it on a project: Dashboard → Vault, or
+
+```sql
+select vault.create_secret('<key>', 'beta_key');           -- first time
+select vault.update_secret(id, '<new key>')                -- rotation
+  from vault.secrets where name = 'beta_key';
+delete from vault.secrets where name = 'beta_key';         -- open the gate
+```
+
+Local development gets a fixed key, `menami-beta`, from `supabase/seed.sql`.
+Pick a long key for staging and production: a wrong key on `create_board` is not
+rate-limited.
+
 ## Authorization
 
 **Row-level security, and nothing else.** See `02-architecture.md` for why there

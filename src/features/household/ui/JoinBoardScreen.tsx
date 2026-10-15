@@ -10,6 +10,7 @@ import { PasswordField } from '@/shared/ui/PasswordField'
 import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import type { BoardPreview, JoinBoardError } from '../application/boards'
+import { BetaKeyField } from './BetaKeyField'
 
 /** "Dad", "Dad and Mum", "Dad, Mum and Sanni" — the people to go and ask. */
 const listNames = (names: readonly string[], and: string): string => {
@@ -23,7 +24,9 @@ type Props = {
   /** Whose board this is. Absent when the link matches nothing — which is also
    *  what a wrong password is told, so the screen must not give that away. */
   readonly preview?: BoardPreview | undefined
-  readonly onJoin: (input: { password: string; displayName: string }) => void
+  /** True while a beta key is set; see supabase/schemas/12_beta_key.sql. */
+  readonly askBetaKey?: boolean | undefined
+  readonly onJoin: (input: { password: string; displayName: string; betaKey: string }) => void
   readonly onStartOwn?: (() => void) | undefined
 }
 
@@ -31,6 +34,7 @@ const sheets = themed((tokens) =>
   StyleSheet.create({
     faces: { flexDirection: 'row', marginBottom: tokens.space.md },
     overlap: { marginLeft: -9 },
+    gap: { height: tokens.space.md },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
     footer: {
@@ -50,6 +54,7 @@ export const JoinBoardScreen = ({
   isPending,
   error,
   preview,
+  askBetaKey = false,
   onJoin,
   onStartOwn,
 }: Props): React.JSX.Element => {
@@ -60,6 +65,7 @@ export const JoinBoardScreen = ({
   const insets = useSafeAreaInsets()
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [betaKey, setBetaKey] = useState('')
 
   const names = preview?.members.map((m) => m.name) ?? []
   // "Dad and Mum are already planning", but "check with Dad or Mum" — either
@@ -69,6 +75,7 @@ export const JoinBoardScreen = ({
 
   const errorText = (): string => {
     if (error === 'rate-limited') return t('board.joinRateLimited')
+    if (error === 'invalid-beta-key') return t('board.invalidBetaKey')
     // A wrong link and a wrong password say the same thing, because the server
     // does not distinguish them either (ADR 0010). Naming the Members is only
     // possible when the link was real, and then it is the useful thing to say.
@@ -123,9 +130,21 @@ export const JoinBoardScreen = ({
       <PasswordField
         value={password}
         onChangeText={setPassword}
-        hasError={error !== undefined}
+        hasError={error !== undefined && error !== 'invalid-beta-key'}
         testID="join-password"
       />
+
+      {askBetaKey && (
+        <>
+          <View style={styles.gap} />
+          <BetaKeyField
+            value={betaKey}
+            onChangeText={setBetaKey}
+            hasError={error === 'invalid-beta-key'}
+            testID="join-beta-key"
+          />
+        </>
+      )}
 
       {error !== undefined && (
         <Text style={[formStyles.error, { marginTop: tokens.space.sm }]} testID="join-error">
@@ -141,7 +160,7 @@ export const JoinBoardScreen = ({
         ]}
         disabled={isPending}
         onPress={() => {
-          onJoin({ password, displayName })
+          onJoin({ password, displayName, betaKey })
         }}
         accessibilityRole="button"
         accessibilityLabel={t('board.join')}

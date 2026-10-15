@@ -20,6 +20,10 @@ you want to overturn one, change the spec first.
 
 ## Security
 
+- The beta key (ADR 0012) is not yet in the staging or production Vault, so
+  both are still open until someone runs `vault.create_secret` there
+  (`docs/06-security.md`). Once email verification exists, delete the secret
+  and then the gate: `p_beta_key`, `app.beta_key_accepted`, the screen field.
 - Two advisories are ignored in `package.json` (`pnpm.auditConfig.ignoreGhsas`)
   because no patched release exists: `node-forge` (GHSA-86w9-cpqp-85rv) via
   `@expo/cli`, and `braces` (GHSA-vfj7-8cjw-p6xm) via

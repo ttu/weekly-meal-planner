@@ -6,6 +6,7 @@ import { memberColours } from '@/shared/theme/tokens'
 import {
   StartBoardScreen,
   createBoard,
+  useBetaKeyRequired,
   useRefreshHousehold,
   useSession,
   type CreateBoardError,
@@ -14,6 +15,7 @@ import {
 export default function Start(): React.JSX.Element {
   const { client } = useSession()
   const refreshHousehold = useRefreshHousehold()
+  const askBetaKey = useBetaKeyRequired()
   const { i18n } = useTranslation()
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<CreateBoardError | undefined>(undefined)
@@ -22,13 +24,14 @@ export default function Start(): React.JSX.Element {
     <StartBoardScreen
       isPending={isPending}
       error={error}
+      askBetaKey={askBetaKey}
       onSignInInstead={() => {
         router.push('/sign-in')
       }}
       onJoinInstead={() => {
         router.push('/join')
       }}
-      onCreate={({ boardName, displayName, password }) => {
+      onCreate={({ boardName, displayName, password, betaKey }) => {
         setPending(true)
         setError(undefined)
         void createBoard(client, {
@@ -37,6 +40,7 @@ export default function Start(): React.JSX.Element {
           colour: memberColours[0],
           locale: i18n.language === 'fi' ? 'fi' : 'en',
           password,
+          betaKey,
         }).then((result) => {
           setPending(false)
           if (isErr(result)) {

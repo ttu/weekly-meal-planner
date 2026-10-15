@@ -4,8 +4,11 @@ import type { HouseholdId } from '@/shared/types/ids'
 import type { Locale } from '@/shared/i18n'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
-export type CreateBoardError = 'short-password' | 'write-failed'
-export type JoinBoardError = 'rejected' | 'rate-limited' | 'write-failed'
+export type CreateBoardError = 'short-password' | 'invalid-beta-key' | 'write-failed'
+export type JoinBoardError = 'rejected' | 'rate-limited' | 'invalid-beta-key' | 'write-failed'
+
+/** What create_board raises for a missing or wrong beta key: invalid_password. */
+const INVALID_BETA_KEY = '28P01'
 
 export type NewBoard = { readonly householdId: HouseholdId; readonly shareToken: string }
 
@@ -22,6 +25,8 @@ export const createBoard = async (
     readonly colour: string
     readonly locale: Locale
     readonly password: string
+    /** Only checked while a beta key is set (supabase/schemas/12_beta_key.sql). */
+    readonly betaKey?: string | undefined
   },
 ): Promise<Result<NewBoard, CreateBoardError>> => {
   if (input.password.length < 6) return err('short-password')
@@ -38,8 +43,10 @@ export const createBoard = async (
     p_colour: input.colour,
     p_locale: input.locale,
     p_password: input.password,
+    p_beta_key: input.betaKey ?? '',
   })
 
+  if (error?.code === INVALID_BETA_KEY) return err('invalid-beta-key')
   const row = Array.isArray(data) ? data[0] : undefined
   if (error !== null || row === undefined) return err('write-failed')
 
@@ -64,6 +71,7 @@ export const joinBoard = async (
   shareToken: string,
   password: string,
   displayName: string,
+  betaKey?: string,
 ): Promise<Result<HouseholdId, JoinBoardError>> => {
   const { data: session } = await client.auth.getSession()
   if (session.session === null) {
@@ -75,17 +83,29 @@ export const joinBoard = async (
     p_share_token: shareToken,
     p_password: password,
     p_display_name: displayName,
+    p_beta_key: betaKey ?? '',
   })
 
   const row = Array.isArray(data) ? data[0] : undefined
   if (error !== null || row === undefined) return err('write-failed')
 
   if (row.out_status === 'rate-limited') return err('rate-limited')
+  if (row.out_status === 'invalid-beta-key') return err('invalid-beta-key')
   // 'joined' is the only status that carries a Household id; every other one
   // returns null beside it.
   if (row.out_status !== 'joined') return err('rejected')
 
   return ok(brand<string, 'HouseholdId'>(row.out_household_id))
+}
+
+/**
+ * Whether starting or joining a board asks for the beta key. If the answer
+ * cannot be had, ask: a field nobody needed is a nuisance, a missing one is a
+ * dead end.
+ */
+export const betaKeyRequired = async (client: AppSupabaseClient): Promise<boolean> => {
+  const { data, error } = await client.rpc('beta_key_required')
+  return error !== null || data
 }
 
 /** The URL a board is shared with. The token travels here; the password does

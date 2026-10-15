@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  fillBetaKey,
   DEMO_PASSWORD,
   addToBacklog,
   asNewVisitor,
@@ -40,6 +41,7 @@ test.describe('two Members planning at the same time', () => {
     await mum.goto(`/join/${shareTokenFor('Koivisto')}`)
     await mum.getByTestId('join-your-name').fill('Mum')
     await mum.getByTestId('join-password').fill(DEMO_PASSWORD)
+    await fillBetaKey(mum, 'join')
     await mum.getByTestId('join-submit').click()
     await expect(mum.getByTestId('wide-board-layout')).toBeVisible()
   })
