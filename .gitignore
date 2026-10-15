@@ -12,3 +12,4 @@ storybook-static/
 .jscpd/
 test-results/
 playwright-report/
+.worktrees/

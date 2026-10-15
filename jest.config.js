@@ -2,6 +2,7 @@ module.exports = {
   projects: [
     {
       displayName: 'node',
+      modulePathIgnorePatterns: ['<rootDir>/.worktrees/'],
       testEnvironment: 'node',
       transform: {
         // ts-jest emits CommonJS, which the app's verbatimModuleSyntax forbids.
@@ -14,6 +15,7 @@ module.exports = {
     },
     {
       displayName: 'native',
+      modulePathIgnorePatterns: ['<rootDir>/.worktrees/'],
       preset: 'jest-expo',
       testMatch: ['<rootDir>/src/**/*.test.tsx'],
       moduleNameMapper: {

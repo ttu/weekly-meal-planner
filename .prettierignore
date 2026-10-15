@@ -8,3 +8,4 @@ storybook-static/
 src/shared/db/database.types.ts
 test-results/
 playwright-report/
+.worktrees/
