@@ -18,3 +18,4 @@ freely. ADRs describe why we chose what we chose, and are not.
 | [0007](0007-pglite-for-integration-tests.md)           | pglite for integration tests                            | Accepted |
 | [0008](0008-no-monetisation-in-v1.md)                  | No ads or monetisation in v1                            | Accepted |
 | [0009](0009-finnish-and-english-from-the-start.md)     | Finnish and English from the first commit               | Accepted |
+| [0011](0011-named-menami.md)                           | Named Menami, served at menami.app                      | Accepted |

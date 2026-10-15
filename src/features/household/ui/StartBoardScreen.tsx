@@ -6,6 +6,7 @@ import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { PasswordField } from '@/shared/ui/PasswordField'
+import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import type { CreateBoardError } from '../application/boards'
 
@@ -88,6 +89,7 @@ export const StartBoardScreen = ({
       contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
       testID="start-board-screen"
     >
+      <Wordmark />
       <Text style={styles.title}>{t('board.startTitle')}</Text>
       <Text style={styles.body}>{t('board.startBody')}</Text>
 

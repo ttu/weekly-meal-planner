@@ -1,4 +1,7 @@
 {
+  "app": {
+    "name": "Menami"
+  },
   "board": {
     "thisWeek": "This week",
     "today": "Today",

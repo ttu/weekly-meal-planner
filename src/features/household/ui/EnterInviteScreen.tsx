@@ -6,6 +6,7 @@ import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { BackLink } from '@/shared/ui/BackLink'
+import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import { inviteToken } from '../domain/invite'
 
@@ -44,6 +45,7 @@ export const EnterInviteScreen = ({ onOpen, onBack }: Props): React.JSX.Element 
       testID="enter-invite-screen"
     >
       <BackLink onPress={onBack} label={t('nav.backPlain')} />
+      <Wordmark />
       <Text style={styles.title}>{t('board.inviteTitle')}</Text>
       <Text style={styles.body}>{t('board.inviteBody')}</Text>
 

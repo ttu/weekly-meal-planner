@@ -27,7 +27,7 @@ export default function Index(): React.JSX.Element {
 
   return (
     <BoardScreen
-      origin={Platform.OS === 'web' ? window.location.origin : 'https://mealplanner.app'}
+      origin={Platform.OS === 'web' ? window.location.origin : 'https://menami.app'}
       shared={shared}
       onShare={(url) => {
         // Copy on web, the OS share sheet on a device: on a phone the link is

@@ -28,6 +28,8 @@ export const tokens = {
     /** A day on the phone board, and a pane title. */
     dayHeading: { fontFamily: FONT.serif, fontSize: 22, lineHeight: 26 },
     sheetTitle: { fontFamily: FONT.serif, fontSize: 28, lineHeight: 32 },
+    /** The app's name, set above the title on every way in. */
+    wordmark: { fontFamily: FONT.serif, fontSize: 24, lineHeight: 28, letterSpacing: -0.3 },
     /** A planned Meal on the phone board: the largest thing on the card. */
     mealNameLarge: {
       fontFamily: FONT.sans,

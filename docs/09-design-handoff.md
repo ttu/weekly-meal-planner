@@ -1,4 +1,4 @@
-# Design Handoff — Weekly Meal Planner
+# Design Handoff — Menami
 
 Paste this whole file to Claude Design. It is self-contained; no prior
 conversation is needed.

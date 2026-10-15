@@ -13,7 +13,7 @@ wins on behaviour.
 
 ## Purpose
 
-A shared weekly meal board for a household. Anyone in the family adds meals they
+Menami (menami.app, ADR 0011) is a shared weekly meal board for a household. Anyone in the family adds meals they
 fancy to a weekly backlog; someone then places those meals on specific days and
 slots. The week's plan produces a shopping list, which leaves the app as text a
 browser AI agent can act on, or as items in the shopping list the household

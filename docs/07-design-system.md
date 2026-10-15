@@ -39,6 +39,7 @@ destroys that, and is worth a review comment every time.
 | `display`     | Instrument Serif 34             | week title                     |
 | `dayHeading`  | Instrument Serif 22             | a day, and a pane title        |
 | `sheetTitle`  | Instrument Serif 28             | the plan sheet                 |
+| `wordmark`    | Instrument Serif 24             | "Menami" on every way in       |
 | `mealName*`   | Instrument Sans 600, 14–18px    | meal names, four sizes         |
 | `body`        | Instrument Sans 400, ≥15px      | supporting copy, never smaller |
 | `support`     | Instrument Sans 400, 14px       | the second line of a card      |

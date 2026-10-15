@@ -8,6 +8,7 @@ import { useTranslation } from '@/shared/i18n'
 import { isErr } from '@/shared/types/result'
 import { Avatar } from '@/shared/ui/Avatar'
 import { BackLink } from '@/shared/ui/BackLink'
+import { Wordmark } from '@/shared/ui/Wordmark'
 import type { DemoAccount } from '../domain/demo-accounts'
 import { signIn, type SignInError } from '../application/sign-in'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
@@ -140,6 +141,7 @@ export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX
     <View style={formStyles.screen} testID="sign-in-screen">
       <View style={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}>
         {onBack !== undefined && <BackLink onPress={onBack} label={t('auth.back')} />}
+        <Wordmark />
 
         <Text style={[formStyles.title, { marginBottom: tokens.space.lg }]}>{t('auth.title')}</Text>
 

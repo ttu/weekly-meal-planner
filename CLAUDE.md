@@ -1,4 +1,4 @@
-# Weekly Meal Planner
+# Menami
 
 A shared weekly meal board for a household. Members add meals to a weekly
 backlog; someone places them on days and slots; the plan derives a shopping list

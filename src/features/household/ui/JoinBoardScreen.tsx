@@ -7,6 +7,7 @@ import { useFormStyles } from '@/shared/theme/form-styles'
 import { Avatar } from '@/shared/ui/Avatar'
 import { Field } from '@/shared/ui/Field'
 import { PasswordField } from '@/shared/ui/PasswordField'
+import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import type { BoardPreview, JoinBoardError } from '../application/boards'
 
@@ -82,6 +83,7 @@ export const JoinBoardScreen = ({
       contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
       testID="join-board-screen"
     >
+      <Wordmark />
       {preview !== undefined && preview.members.length > 0 && (
         <View style={styles.faces} testID="join-faces">
           {preview.members.map((member, index) => (

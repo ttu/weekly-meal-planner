@@ -23,7 +23,7 @@ import {
 /** Where the link in the inbox lands. Back on Settings, which is where the
  *  person was standing when they asked for it. */
 const redirectTo = (): string =>
-  Platform.OS === 'web' ? `${window.location.origin}/settings` : 'mealplanner://settings'
+  Platform.OS === 'web' ? `${window.location.origin}/settings` : 'menami://settings'
 
 export default function Settings(): React.JSX.Element {
   const { client, household, householdChecked, email, pendingEmail } = useSession()
