@@ -46,6 +46,12 @@
       "output": "single",
       "backgroundColor": "#F7F2E9"
     },
-    "backgroundColor": "#F7F2E9"
+    "backgroundColor": "#F7F2E9",
+    "extra": {
+      "eas": {
+        "projectId": "33f1bf04-0c7d-4c24-8523-085871d6e058"
+      }
+    },
+    "owner": "tomitu"
   }
 }

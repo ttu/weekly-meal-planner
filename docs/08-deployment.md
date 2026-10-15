@@ -20,6 +20,37 @@ script using the service role, run as a deploy step and idempotent by design.
 Never a manual change in the dashboard. A schema that exists only in production
 is a schema nobody can test.
 
+## Deploy pipeline
+
+Two workflows, each running the database before the web app so the app never
+ships ahead of its schema:
+
+| Workflow            | Trigger                                  | Environment  |
+| ------------------- | ---------------------------------------- | ------------ |
+| `deploy-staging`    | `validate` passes on a push to `main`    | `staging`    |
+| `deploy-production` | a `v*` tag on a commit that is on `main` | `production` |
+
+Each runs `supabase db push`, then `catalogue:sync`, then exports the web app
+with that environment's keys and runs `eas deploy` (the `staging` alias, or
+`--prod`). Both can also be run by hand from the Actions tab.
+
+Release: merge to `main`, check staging, then `git tag v0.1.0 && git push
+origin v0.1.0`. Protect the `production` environment with a required reviewer.
+
+One-time setup, in GitHub:
+
+- Repository secrets: `SUPABASE_ACCESS_TOKEN` (supabase.com/dashboard/account/tokens),
+  `EXPO_TOKEN` (expo.dev access token).
+- Per environment, variable `SUPABASE_PROJECT_REF`.
+- Per environment, secrets `SUPABASE_DB_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Run `eas init` once and commit the `extra.eas.projectId` it adds to `app.json`;
+  the workflows refuse to run without it.
+
+Not in the pipeline, set in the Supabase dashboard per project because
+`config.toml` only configures local: Auth Site URL and redirect URLs, SMTP, the
+Apple provider. Native builds are separate, through EAS Build.
+
 ## App builds
 
 EAS. Expo Go covers development until App Intents land; from that point a
