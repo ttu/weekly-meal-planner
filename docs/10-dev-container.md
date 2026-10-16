@@ -92,7 +92,10 @@ tool, active on the host as well. It covers what GitHub cannot see:
   refused. Two `gh api` writes are allowed, and only in an exact shape:
   replying to a review comment through REST
   (`gh api repos/<o>/<r>/pulls/<n>/comments/<id>/replies -f body=...`) and
-  resolving or unresolving a review thread through GraphQL. Read-only
+  resolving or unresolving a review thread through GraphQL
+  (`gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<id>"}) { thread { isResolved } } }'`,
+  single-quoted). The hook checks the call's arguments as the shell would split
+  them, so nothing can be added beside the allowed ones. Read-only
   `gh api` calls, `gh pr comment` and `gh pr review --comment` work as usual.
 
 Before matching it undoes quoting and backslash escapes and drops git's and

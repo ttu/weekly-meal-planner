@@ -139,9 +139,9 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     'git[[:space:]]+push[[:space:]].*--(mirror|all|branches|prune|tags|follow-tags|delete)'
     'git[[:space:]]+push[[:space:]].*[[:space:]:+/](refs/)?tags/'
     'git[[:space:]]+push[[:space:]].*[[:space:]:+/]v[0-9]'
-    # ...or config that makes a later push carry tags or other refs.
-    'push\.followtags'
-    'remote\.[^[:space:]]*\.push([[:space:]=]|$)'
+    # ...or config that changes what a later push sends or where: any
+    # remote.* or push.* key, stored or passed with -c / --config-env.
+    '(git[[:space:]]+config[[:space:]].*|-c[[:space:]]*|--config-env[[:space:]=]+)(remote|push)\.'
     'git[[:space:]]+push[[:space:]].*[[:space:]]-[a-zA-Z]*d([[:space:]]|$)'
     'git[[:space:]]+push[[:space:]].*[[:space:]]:[^[:space:]]'
     # gh: irreversible, or outside this repo's code.
@@ -174,18 +174,37 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   # command is split on ; & | and newlines outside quotes, so quoted text
   # stays with its call.
   API_WRITE='gh[[:space:]]+api[[:space:]].*((-X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)|[[:space:]](-f|-F|--field|--raw-field|--input)([[:space:]=]|$))'
-  JQ='([[:space:]]+(--jq|-q)[[:space:]]+('"'"'[^'"'"']*'"'"'|[^[:space:]'"'"'"]+))?'
-  REPLY='^gh[[:space:]]+api[[:space:]]+((-X|--method)[[:space:]]+POST[[:space:]]+)?/?repos/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pulls/[0-9]+/comments/[0-9]+/replies[[:space:]]+(-f|--raw-field)[[:space:]]+body=('"'"'[^'"'"']*'"'"'|"[^"]*"|[^[:space:]'"'"'"]+)'"$JQ"'$'
-  RESOLVE_BODY='mutation[[:space:]]*\{[[:space:]]*(resolveReviewThread|unresolveReviewThread)[[:space:]]*\([[:space:]]*input:[[:space:]]*\{[^{}()#,]*\}[[:space:]]*\)[[:space:]]*\{[^()#,]*\}[[:space:]]*\}'
-  RESOLVE='^gh[[:space:]]+api[[:space:]]+graphql[[:space:]]+-f[[:space:]]+query=('"'"$RESOLVE_BODY"'"'|"'"$RESOLVE_BODY"'")'"$JQ"'$'
+  # The value of query= after shell unquoting; arguments only, one field.
+  RESOLVE_QUERY='^mutation[[:space:]]*\{[[:space:]]*(resolveReviewThread|unresolveReviewThread)[[:space:]]*\([[:space:]]*input:[[:space:]]*\{[[:space:]]*threadId:[[:space:]]*"[A-Za-z0-9_-]+"[[:space:]]*\}[[:space:]]*\)[[:space:]]*\{[A-Za-z_[:space:]{}]*\}[[:space:]]*\}$'
+  REPLY_PATH='^/?repos/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pulls/[0-9]+/comments/[0-9]+/replies$'
+  # allowed_api_write <segment>: split it into argv as the shell would (xargs
+  # follows the same quoting; an unbalanced quote fails), then require one of
+  # the two shapes exactly, plus an optional `--jq <expr>` and nothing else.
+  allowed_api_write() {
+    local -a argv=()
+    local tok
+    while IFS= read -r -d '' tok; do argv+=("$tok"); done < <(printf '%s' "$1" | xargs printf '%s\0' 2>/dev/null)
+    local n=${#argv[@]}
+    if (( n >= 2 )) && [[ "${argv[n-2]}" == "--jq" || "${argv[n-2]}" == "-q" ]]; then n=$((n - 2)); fi
+    [[ "${argv[0]:-}" == "gh" && "${argv[1]:-}" == "api" ]] || return 1
+    if (( n == 5 )) && [[ "${argv[2]}" == "graphql" && "${argv[3]}" == "-f" && "${argv[4]}" == query=* ]]; then
+      printf '%s' "${argv[4]#query=}" | grep -qE "$RESOLVE_QUERY" && return 0
+      return 1
+    fi
+    local i=2
+    if (( n == 7 )) && [[ "${argv[2]}" == "-X" || "${argv[2]}" == "--method" ]] && [[ "${argv[3]}" == "POST" ]]; then i=4
+    elif (( n != 5 )); then return 1; fi
+    printf '%s' "${argv[i]}" | grep -qE "$REPLY_PATH" &&
+      [[ "${argv[i+1]}" == "-f" || "${argv[i+1]}" == "--raw-field" ]] &&
+      [[ "${argv[i+2]}" == body=* ]]
+  }
   while IFS= read -r segment; do
     seg_norm=$(normalize "$segment")
     printf '%s' "$seg_norm" | grep -qEi "$API_WRITE" || continue
     trimmed=$(printf '%s' "$segment" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
     if printf '%s' "$trimmed" | grep -qE '[$`]|<\(|>\('; then
       allowed=0   # built by the shell: what runs cannot be read from the text
-    elif printf '%s' "$trimmed" | grep -qE "$REPLY" ||
-         printf '%s' "$trimmed" | grep -qE "$RESOLVE"; then
+    elif allowed_api_write "$trimmed"; then
       allowed=1
     elif printf '%s' "$seg_norm" | grep -qEi '^[[:space:]]*gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)' &&
          ! printf '%s' "$trimmed" | grep -qiE 'mutation|@|--input' &&
