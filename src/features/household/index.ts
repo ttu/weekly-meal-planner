@@ -1,4 +1,12 @@
-export type { Household, HouseholdId, Member, MemberId, Slot, SlotKey } from './domain/types'
+export type {
+  Household,
+  HouseholdId,
+  HouseholdSize,
+  Member,
+  MemberId,
+  Slot,
+  SlotKey,
+} from './domain/types'
 export { parseSlots, type ParseSlotsError } from './domain/slot'
 export {
   MAX_SLOTS,
@@ -10,11 +18,13 @@ export {
   slotName,
   type SlotEditError,
 } from './domain/slot-edit'
+export { DEFAULT_SIZE, MAX_SIZE, MIN_SIZE, stepSize } from './domain/size'
 export { createSupabaseClient, type AppSupabaseClient } from './infrastructure/supabase-client'
 export {
   loadHousehold,
   loadMember,
   saveLocale,
+  saveSize,
   saveSlots,
   type LoadHouseholdError,
   type LoadMemberError,

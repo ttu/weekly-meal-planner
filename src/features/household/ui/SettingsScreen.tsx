@@ -13,7 +13,8 @@ import { Notice } from '@/shared/ui/Notice'
 import { useTranslation } from '@/shared/i18n'
 import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain/slot-edit'
 import type { AddEmailError } from '../application/add-email'
-import type { Slot, SlotKey } from '../domain/types'
+import { MAX_SIZE, MIN_SIZE, stepSize } from '../domain/size'
+import type { HouseholdSize, Slot, SlotKey } from '../domain/types'
 
 /** Light first, because light is what the board is unless someone says
  *  otherwise; "match device" last, for the people who want to be asked once. */
@@ -38,6 +39,9 @@ type Props = {
    *  one (ADR 0009). */
   readonly locale: Locale
   readonly onChangeLocale: (locale: Locale) => void
+  /** How many the Household cooks for: what a new Meal starts at. */
+  readonly size: HouseholdSize
+  readonly onChangeSize: (size: HouseholdSize) => void
   readonly slots: readonly Slot[]
   readonly isPending: boolean
   readonly error?: SlotEditError | 'write-failed' | undefined
@@ -75,6 +79,24 @@ const sheets = themed((tokens) =>
     addRow: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' },
     addField: { flex: 1 },
     addButton: { paddingHorizontal: tokens.space.lg, minHeight: 54 },
+    stepperRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
+    stepper: {
+      borderWidth: 1,
+      borderColor: tokens.color.rule,
+      backgroundColor: tokens.color.surfaceRaised,
+      borderRadius: tokens.radius.md,
+      minHeight: 54,
+      minWidth: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepperSpent: { opacity: 0.25 },
+    stepperValue: {
+      ...tokens.type.display,
+      color: tokens.color.textPrimary,
+      minWidth: 48,
+      textAlign: 'center',
+    },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
   }),
 )
@@ -91,6 +113,8 @@ export const SettingsScreen = ({
   account,
   locale,
   onChangeLocale,
+  size,
+  onChangeSize,
   slots,
   isPending,
   error,
@@ -223,6 +247,38 @@ export const SettingsScreen = ({
         )}
 
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
+
+        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>{t('settings.size')}</Text>
+        <View style={styles.stepperRow}>
+          <Pressable
+            style={[styles.stepper, size <= MIN_SIZE && styles.stepperSpent]}
+            disabled={size <= MIN_SIZE || isPending}
+            onPress={() => {
+              onChangeSize(stepSize(size, -1))
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.sizeFewer')}
+            testID="settings-size-less"
+          >
+            <Text style={styles.glyphText}>−</Text>
+          </Pressable>
+          <Text style={styles.stepperValue} testID="settings-size-value">
+            {String(size)}
+          </Text>
+          <Pressable
+            style={[styles.stepper, size >= MAX_SIZE && styles.stepperSpent]}
+            disabled={size >= MAX_SIZE || isPending}
+            onPress={() => {
+              onChangeSize(stepSize(size, 1))
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.sizeMore')}
+            testID="settings-size-more"
+          >
+            <Text style={styles.glyphText}>+</Text>
+          </Pressable>
+        </View>
+        <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>{t('settings.sizeHint')}</Text>
 
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.language')}

@@ -319,6 +319,10 @@
     "language": "Language",
     "language_en": "English",
     "language_fi": "Suomi",
+    "size": "People in the household",
+    "sizeFewer": "One person fewer",
+    "sizeMore": "One person more",
+    "sizeHint": "New meals start at this many servings. Meals you already have keep theirs.",
     "languageHint": "The whole board speaks it — the catalogue and the shopping list too, for everyone in the household."
   },
   "dayOne": {

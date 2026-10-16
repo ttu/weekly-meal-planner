@@ -33,6 +33,7 @@ export default function EditMeal(): React.JSX.Element | null {
   return (
     <MealEditorScreen
       initial={{ name: meal.name, servings: meal.servings, ingredients: meal.ingredients }}
+      defaultServings={meal.servings}
       photoUrl={meal.photoUrl}
       ingredients={ingredients}
       isPending={isPending}

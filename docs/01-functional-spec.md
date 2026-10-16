@@ -108,6 +108,9 @@ membership, except the global catalogue rows.
   monolingual by nature. Removing a slot never deletes what was planned in it:
   the board stops drawing the row, and putting the slot back brings the meals
   into view again. At most six, which is what a phone's day column can hold.
+  `size` is how many people the household cooks for (1–50, default 4), set in
+  Settings. It is only the number a new Meal starts at in the editor; Meals that
+  already exist keep their own `servings`.
 - **`household_member`** — user to household, with role `owner` or `member`,
   plus `display_name`, optional `avatar_url` and an assigned `colour`. The
   design puts a person's initial and colour on every backlog and planned card
