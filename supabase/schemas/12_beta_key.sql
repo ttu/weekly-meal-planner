@@ -12,6 +12,11 @@
 -- Whether a key was given that lets the caller through. Security invoker, and
 -- not in an exposed schema: only the SECURITY DEFINER board functions call it,
 -- and run as anyone else it cannot read the Vault at all.
+--
+-- Case and surrounding whitespace are ignored on both sides: the key is typed
+-- on phones that capitalise the first letter and pasted from messages with a
+-- space or a newline on the end. That costs a guesser almost nothing; a family
+-- member turned away by "Kokeilu-avain" costs the beta a family.
 create or replace function app.beta_key_accepted(p_key text)
 returns boolean
 language sql
@@ -21,7 +26,9 @@ as $fn$
   select not exists (select 1 from vault.decrypted_secrets where name = 'beta_key')
       or exists (
         select 1 from vault.decrypted_secrets
-        where name = 'beta_key' and decrypted_secret = p_key
+        where name = 'beta_key'
+          and lower(btrim(decrypted_secret, E' \t\r\n'))
+            = lower(btrim(p_key, E' \t\r\n'))
       );
 $fn$;
 

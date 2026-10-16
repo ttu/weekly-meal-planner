@@ -129,6 +129,23 @@ describe('beta key', () => {
       expect(await join(JOINER, token, BETA_KEY)).toBe('joined')
     })
 
+    // Typed on a phone that capitalises the first letter, or pasted from a
+    // message with a space on the end: still the right key.
+    it('ignores case and surrounding spaces in the key given', async () => {
+      expect(await join(JOINER, token, `  ${BETA_KEY.toUpperCase()} `)).toBe('joined')
+      expect(await createBoard(OWNER, ' Kokeilu-Avain\n')).toHaveLength(1)
+    })
+
+    it('ignores case and surrounding spaces in the key set', async () => {
+      await clearKey()
+      await setKey(' Kokeilu-Avain ')
+      expect(await join(JOINER, token, BETA_KEY)).toBe('joined')
+    })
+
+    it('still refuses a key that differs inside', async () => {
+      expect(await join(JOINER, token, 'kokeilu avain')).toBe('invalid-beta-key')
+    })
+
     // A wrong key is a guess like a wrong password, so it counts towards the
     // same limit rather than offering a second, unlimited door.
     it('counts a wrong key towards the join rate limit', async () => {

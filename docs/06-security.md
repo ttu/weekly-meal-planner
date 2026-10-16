@@ -71,6 +71,9 @@ select vault.update_secret(id, '<new key>')                -- rotation
 delete from vault.secrets where name = 'beta_key';         -- open the gate
 ```
 
+The match ignores case and surrounding whitespace, on the key typed and the
+key set alike; anything else must be exact.
+
 Local development gets a fixed key, `menami-beta`, from `supabase/seed.sql`.
 Pick a long key for staging and production: a wrong key on `create_board` is not
 rate-limited.
