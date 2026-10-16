@@ -36,7 +36,19 @@ fi
 # below: `bash -c "git push --force"`, `$(git push --force)`, `eval 'git...'`.
 # Scanning a copy with quotes stripped and shell metacharacters turned into
 # spaces makes those forms match the same patterns as the plain command.
-NORMALIZED=$(printf '%s' "$COMMAND" | tr -d '"'"'"'`' | tr '(){};&|<>' '          ')
+NORMALIZED=$(printf '%s' "$COMMAND" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ')
+
+# The program can also be hidden outright: `G=git; $G push`, `${G} push`,
+# `$(echo git) push`. A push/pr/api word straight after a token built by the
+# shell is refused, since what runs cannot be known from the text. (Backslash
+# escapes — `g\it push` — are already undone above.)
+if printf '%s' "$COMMAND" | tr -d '"'"'"'' | awk '
+  { for (i = 2; i <= NF; i++) if ($i ~ /^(push|pr|api)$/ && $(i - 1) ~ /[$\\(){}]/) found = 1 }
+  END { exit !found }'; then
+  echo "BLOCKED: '$COMMAND' runs git or gh through a shell expansion the guardrail cannot check." >&2
+  echo "Spell the command out: git push ..., gh pr ..., gh api ...." >&2
+  exit 2
+fi
 
 # Global options between `git`/`gh` and the subcommand would hide it too:
 # `git -C . push origin main`, `/usr/bin/git -c x=y push`, `gh -R o/r pr merge`.
@@ -106,7 +118,12 @@ DANGEROUS_PATTERNS=(
   # the husky hooks in the checkout. (The container also mounts both read-only.)
   'core\.hookspath'
   '\.git/(hooks|config)'
-  '\.husky/_'
+  '\.husky/'
+  # Config that decides where a push goes or what git runs, whether passed
+  # with -c / --config-env or stored with `git config` (use `git remote -v`
+  # to read the remote).
+  '(-c[[:space:]]*|--config-env[[:space:]=]+)(remote|push|branch|url|alias|core)\.'
+  'git[[:space:]]+config[[:space:]].*(remote|push|branch|url)\.'
   # This guardrail itself, and the container's branch pin.
   '\.claude/(hooks|settings)'
   'devcontainer-allowed-branch'
@@ -165,8 +182,8 @@ CONTAINER_PATTERNS=(
   'git[[:space:]]+worktree[[:space:]]+(add|move)'
   'git[[:space:]]+symbolic-ref'
   'git[[:space:]]+remote[[:space:]]+(add|remove|rm|set-url|rename)'
-  # The shared git config is read-only here; initialize.sh already set the
-  # upstream, so a bare `git push` does what `-u` would.
+  # The shared git config is read-only here, so -u cannot record an upstream;
+  # initialize.sh set it on the host already.
   'git[[:space:]]+push[[:space:]](.*[[:space:]])?(-u|--set-upstream)([[:space:]]|$)'
 )
 for pattern in "${CONTAINER_PATTERNS[@]}"; do
@@ -197,9 +214,10 @@ if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+(checkou
   fi
 fi
 
-# Every refspec of a push must land on the pinned branch: drop `git push`,
-# drop flags, drop the remote, check each of what is left. None at all means a
-# bare `git push`, which targets the current branch.
+# Every refspec of a push must be `src:dst` with dst the pinned branch: drop
+# `git push`, drop flags, drop the remote, check each of what is left. A bare
+# `git push`, or a refspec without `:`, is refused: its destination then comes
+# from remote.<name>.push in whatever config git reads, not from the text.
 if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+push([[:space:]]|$)'; then
   # Strip redirections (2>&1, >/dev/null, <file, ...) first. NORMALIZED turned
   # their operators into spaces, so a trailing `2>&1` would otherwise look like
@@ -218,16 +236,21 @@ if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+push([[:
         print $i
       }
     }')
-  CURRENT=$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null)
-  [[ -n "$REFSPECS" ]] || REFSPECS="$CURRENT"
+  if [[ -z "$REFSPECS" ]]; then
+    echo "BLOCKED: name the destination explicitly in this dev container: git push origin HEAD:$PINNED" >&2
+    exit 2
+  fi
 
   while IFS= read -r refspec; do
+    if [[ "$refspec" != *:* ]]; then
+      echo "BLOCKED: '$refspec' has no destination; use git push origin HEAD:$PINNED" >&2
+      exit 2
+    fi
     # src:dst -> dst; `+x` and `refs/heads/x` name the branch x.
     target=${refspec##*:}
     target=${target#+}
     target=${target#refs/heads/}
-    [[ -z "$target" || "$target" == "HEAD" ]] && target="$CURRENT"
-    if [[ -z "$target" || "$target" != "$PINNED" ]]; then
+    if [[ "$target" != "$PINNED" ]]; then
       echo "BLOCKED: this dev container may only push to '$PINNED', but the command targets '${target:-<unknown>}'." >&2
       echo "Ask the user to push other branches from the host." >&2
       exit 2

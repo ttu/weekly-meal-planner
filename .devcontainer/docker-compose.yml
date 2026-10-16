@@ -32,12 +32,12 @@ services:
       - ${GIT_WORKTREE_ADMIN}/commondir:${GIT_WORKTREE_ADMIN}/commondir:ro
       - ${GIT_WORKTREE_ADMIN}/gitdir:${GIT_WORKTREE_ADMIN}/gitdir:ro
       # The worktree's `.git` file points at the admin dir: read-only at both
-      # workspace paths. So are husky's generated hooks (core.hooksPath),
-      # which run on the host's next commit.
+      # workspace paths. So is .husky — core.hooksPath points into it, and its
+      # hooks run on the host's next commit.
       - ../.git:/workspaces/weekly-meal-planner/.git:ro
       - ${LOCAL_WORKSPACE_FOLDER}/.git:${LOCAL_WORKSPACE_FOLDER}/.git:ro
-      - ../.husky/_:/workspaces/weekly-meal-planner/.husky/_:ro
-      - ${LOCAL_WORKSPACE_FOLDER}/.husky/_:${LOCAL_WORKSPACE_FOLDER}/.husky/_:ro
+      - ../.husky:/workspaces/weekly-meal-planner/.husky:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/.husky:${LOCAL_WORKSPACE_FOLDER}/.husky:ro
     # Host commit identity, captured by initialize.sh into .env.
     environment:
       - HOST_GIT_USER_NAME=${HOST_GIT_USER_NAME:-}

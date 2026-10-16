@@ -45,12 +45,17 @@ for MODE in host container; do
   # Ordinary work.
   expect 0 'git status'
   expect 0 'git commit -m "x"'
-  expect 0 'git push origin feat/pinned'
-  # -u writes the shared git config, which the container mounts read-only.
-  [[ $MODE == host ]] && expect 0 'git push -u origin feat/pinned'
+  # Container pushes need an explicit destination (see below); host ones don't.
+  if [[ $MODE == host ]]; then
+    expect 0 'git push origin feat/pinned'
+    expect 0 'git push -u origin feat/pinned'
+  fi
   expect 0 'git push origin HEAD:refs/heads/feat/pinned'
   expect 0 'git -C . log --oneline'
   expect 0 'gh pr create --fill'
+  # Words in a message are not commands.
+  expect 0 'git commit -m "push the api pr fix"'
+  expect 0 'gh pr create --title "add api docs" --body "push later"'
   expect 0 'pnpm run test'
 
   # Pushes to main, in any spelling.
@@ -82,6 +87,19 @@ for MODE in host container; do
   expect 2 'echo "#!/bin/sh" > .git/hooks/pre-commit'
   expect 2 'sed -i s/x/y/ .git/config'
   expect 2 'printf x >> .husky/_/pre-commit'
+  expect 2 'printf x >> .husky/pre-commit'
+  # Config that redirects a push, given on the command line or stored.
+  expect 2 'git -c remote.origin.push=HEAD:refs/heads/main push'
+  expect 2 'git --config-env=push.default=X push'
+  expect 2 'git -c url.x.pushInsteadOf=y push origin feat/pinned'
+  expect 2 'git config --global remote.origin.push HEAD:main'
+  expect 2 'git config branch.feat/pinned.merge refs/heads/main'
+  # The program hidden from the patterns.
+  expect 2 'g\it push origin main'
+  expect 2 'G=git; $G push origin main'
+  expect 2 'git status; $G push origin main'
+  expect 2 'H=gh; $H pr merge 1'
+  expect 2 'H=gh; $H api -X POST /x'
   expect 2 'rm .claude/hooks/block-dangerous-git.sh'
   expect 2 'cat /dev/null > .claude/settings.json'
   expect 2 'sudo rm /etc/devcontainer-allowed-branch'
@@ -99,8 +117,13 @@ expect 2 'git -C . checkout other'
 expect 2 'git switch -c new'
 expect 2 'git remote set-url origin x'
 expect 2 'git push -u origin feat/pinned'
-expect 0 'git push'
-expect 0 'git push origin feat/pinned'
+# Without an explicit destination, remote.<name>.push in some config decides
+# where it goes, so only `src:dst` with dst the pinned branch is allowed.
+expect 2 'git push'
+expect 2 'git push origin'
+expect 2 'git push origin feat/pinned'
+expect 0 'git push origin HEAD:feat/pinned'
+expect 0 'git push origin feat/pinned:refs/heads/feat/pinned'
 expect 0 'git checkout -- README.md'
 
 # Container with the pin gone: every git and gh command is refused.

@@ -54,25 +54,29 @@ tool, active on the host as well. It allows reversible work — commit, push a
 feature branch, open a PR — and blocks force-pushes, pushes to `main`, pushes
 of tags or of more than one branch (`--all`, `--mirror`, `--prune`),
 `reset --hard`, `clean -f`, `branch -D`, `gh pr merge`, mutating `gh api`
-calls and similar. Git's and gh's global options (`git -C . push`,
-`gh -R o/r pr merge`) are stripped before matching. It fails closed: a command
-it cannot parse, or a push whose target is built at run time (`$BRANCH`), is
-refused. It gates the agent only; you can run anything yourself.
+calls and similar. It gates the agent only; you can run anything yourself.
 
-It also refuses commands that would rename or switch it off: git aliases,
-`GIT_CONFIG_*` injection, `core.hooksPath`, and anything naming `.git/hooks`,
-`.git/config`, `.husky/_`, `.claude/hooks`, `.claude/settings` or the
-container's branch pin. That includes reading them through Bash; use the Read
-tool.
+It fails closed rather than guess. Before matching it undoes quoting and
+backslash escapes and drops git's and gh's global options (`git -C . push`,
+`gh -R o/r pr merge`). It refuses what it cannot read: a push whose target is
+built at run time (`$BRANCH`), or a `push`/`pr`/`api` word straight after a
+shell expansion (`G=git; $G push`). It refuses what would redirect or rename a
+command: git aliases, `GIT_CONFIG_*`, and `-c`/`--config-env`/`git config` on
+`remote.*`, `push.*`, `branch.*`, `url.*` or `core.*` (read the remote with
+`git remote -v`). And it refuses anything naming `.git/hooks`, `.git/config`,
+`.husky/`, `.claude/hooks`, `.claude/settings` or the container's branch pin —
+reads included; use the Read tool.
 
 Inside the container (`MENAMI_DEVCONTAINER=1`) it also confines the agent to
-the branch the container was created on: every refspec of a push must land on
-it, and no switching to, creating or rewriting another branch or repointing
-remotes. The pin is `/etc/devcontainer-allowed-branch`, root-owned and
-read-only; if it is missing, all git and gh commands are refused.
-`post-create.sh` ends by removing the passwordless sudo rule, so nothing in the
-container can change the pin afterwards. To install something later, rebuild,
-or `docker exec -u root` from the host.
+the branch the container was created on. A push must name its destination —
+`git push origin HEAD:<branch>` — because a bare `git push`, or a bare branch
+name, goes wherever `remote.<name>.push` in some config says. No switching to,
+creating or rewriting another branch, and no repointing remotes. The pin is
+`/etc/devcontainer-allowed-branch`, root-owned and read-only; if it is missing,
+all git and gh commands are refused. `post-create.sh` ends by removing the
+passwordless sudo rule, so nothing in the container can change the pin
+afterwards. To install something later, rebuild, or `docker exec -u root` from
+the host.
 
 The container shares the host's `.git`, and much of it decides what host git
 runs: hooks fire on your next commit, the config can name an fsmonitor, pager
@@ -80,17 +84,17 @@ or filter, and a worktree's `.git` file and its `commondir` say which config
 that is. So the shared `.git` is mounted **read-only**, except for what
 commits, fetches and pushes write — `objects/`, `refs/`, `logs/` and this
 worktree's admin dir (`.git/worktrees/<name>`), whose `commondir` and `gitdir`
-stay read-only. The worktree's `.git` file and husky's `.husky/_` are
-read-only too, and `HUSKY=0` stops `pnpm install` regenerating hooks.
-Consequences:
+stay read-only. The worktree's `.git` file and `.husky/` (where
+`core.hooksPath` points) are read-only too, and `HUSKY=0` stops
+`pnpm install` regenerating hooks. Consequences:
 
 - The container opens worktrees only; `initialize.sh` refuses the main
   checkout, which has no admin dir of its own to make writable.
-
 - Run `pnpm install` on the host once in a new worktree before opening the
   container, or `post-create.sh` stops and says so.
-- `git push -u` cannot record an upstream. `initialize.sh` sets the branch's
-  upstream on the host before the container starts, so use a bare `git push`.
+- Hook changes are made from the host.
+- `git push -u` cannot record an upstream; `initialize.sh` sets the branch's
+  upstream on the host before the container starts.
 
 `pnpm run test:guardrail` runs the hook's cases in a throwaway container.
 
@@ -99,9 +103,15 @@ Consequences:
 The hook matches command text. It stops accidents and the obvious detours, not
 a determined agent: the token is in the environment, `curl` can reach the
 GitHub API, and Claude's Edit and Write tools are not Bash — they can edit
-the hook itself. The real boundary is on GitHub — a ruleset on `main` that blocks direct
-pushes, force-pushes and deletion, which the PAT cannot bypass. Until that
-exists (`TODO.md`), treat the PAT as able to write `main`.
+the hook itself. The real boundary is on GitHub — a ruleset on `main` that
+blocks direct pushes, force-pushes and deletion, which the PAT cannot bypass.
+Until that exists (`TODO.md`), treat the PAT as able to write `main`.
+
+The read-only mounts keep the container from planting anything git runs on its
+own. They cannot protect code you run yourself: the worktree is shared, so
+`package.json` scripts, test and config files the agent changed run on the
+host the next time you run `pnpm` there. Review the diff before running
+anything from a container's worktree on the host.
 
 ## Worktrees
 

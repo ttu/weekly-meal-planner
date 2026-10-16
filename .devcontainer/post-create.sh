@@ -46,7 +46,7 @@ sudo chown -R "$(id -u):$(id -g)" "${PLAYWRIGHT_BROWSERS_PATH:-/ms-playwright}"
 pnpm exec playwright install chromium
 
 echo "==> Git hooks (husky, generated on the host)"
-# .husky/_ is mounted read-only and HUSKY=0 stops pnpm regenerating it, so it
+# .husky is mounted read-only and HUSKY=0 stops pnpm regenerating .husky/_, so it
 # must already exist from a host install. Without it every commit in the
 # container would skip lint-staged, type-check and the tests.
 if [[ ! -f "$WORKSPACE/.husky/_/pre-commit" ]]; then
