@@ -36,10 +36,15 @@ A single shared **beta key**, stored in Supabase Vault as the secret named
 
 - Joining a board now takes the key as well as the link and the password. That
   is friction for an invited family member, accepted for the beta only.
-- A wrong key on `join_board` counts towards the same per-token rate limit as a
-  wrong password. `create_board` raises on a wrong key, which rolls back any
-  record of the attempt, so guessing the key there is not rate-limited: the key
-  must be long enough not to be guessed, and it is a beta gate, not a
-  credential that protects anyone's data.
+- A wrong key is counted against whoever guessed, on both `create_board` and
+  `join_board`: ten an hour per account and thirty per address, after which
+  even the right key is refused until the hour is up. It was first counted per
+  share token, which a guesser changes on every try, and `create_board` raised
+  on a wrong key, which rolled back the record of the guess, so neither door
+  was limited. Both now return a status, and the count lives in
+  `beta_key_attempt`. Anonymous sign-in makes accounts cheap, so the address
+  limit is the one that holds, and it is only as good as `x-forwarded-for`.
+  The key is still a beta gate, not a credential that protects anyone's data,
+  and should be long enough not to be guessed.
 - When a deploy workflow exists, it can write the Vault secret from a GitHub
   environment secret without changing anything in the database.

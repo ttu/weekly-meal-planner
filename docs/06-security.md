@@ -99,8 +99,11 @@ The match ignores case and surrounding whitespace, on the key typed and the
 key set alike; anything else must be exact.
 
 Local development gets a fixed key, `menami-beta`, from `supabase/seed.sql`.
-Pick a long key for staging and production: a wrong key on `create_board` is not
-rate-limited.
+Wrong keys are counted per account (ten an hour) and per address (thirty), on
+both functions, and past that even the right key is refused until the hour is
+up. Both return a status rather than raising, so the count is kept. Pick a long
+key for staging and production all the same: anonymous accounts are cheap, so
+the address limit does the real work.
 
 ## Authorization
 

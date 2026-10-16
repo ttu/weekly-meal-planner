@@ -7,9 +7,6 @@ import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 export type CreateBoardError = 'short-password' | 'invalid-beta-key' | 'write-failed'
 export type JoinBoardError = 'rejected' | 'rate-limited' | 'invalid-beta-key' | 'write-failed'
 
-/** What create_board raises for a missing or wrong beta key: invalid_password. */
-const INVALID_BETA_KEY = '28P01'
-
 export type NewBoard = { readonly householdId: HouseholdId; readonly shareToken: string }
 
 /**
@@ -46,9 +43,11 @@ export const createBoard = async (
     p_beta_key: input.betaKey ?? '',
   })
 
-  if (error?.code === INVALID_BETA_KEY) return err('invalid-beta-key')
   const row = Array.isArray(data) ? data[0] : undefined
   if (error !== null || row === undefined) return err('write-failed')
+  // A status, not an error: the server has to record the wrong guess, and
+  // raising would roll the record back (supabase/schemas/42_sharing_rpc.sql).
+  if (row.out_status === 'invalid-beta-key') return err('invalid-beta-key')
 
   return ok({
     householdId: brand<string, 'HouseholdId'>(row.out_household_id),

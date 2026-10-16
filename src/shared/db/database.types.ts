@@ -73,6 +73,24 @@ export type Database = {
           },
         ]
       }
+      beta_key_attempt: {
+        Row: {
+          attempted_at: string
+          ip: string | null
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          ip?: string | null
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          ip?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cook_event: {
         Row: {
           added_by: string | null
@@ -604,6 +622,7 @@ export type Database = {
         Returns: {
           out_household_id: string
           out_share_token: string
+          out_status: Database["public"]["Enums"]["create_board_status"]
         }[]
       }
       join_board: {
@@ -643,6 +662,7 @@ export type Database = {
       unplan_meal: { Args: { p_cook_event_id: string }; Returns: string }
     }
     Enums: {
+      create_board_status: "created" | "invalid-beta-key"
       join_board_status:
         | "joined"
         | "rejected"
@@ -778,6 +798,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      create_board_status: ["created", "invalid-beta-key"],
       join_board_status: [
         "joined",
         "rejected",

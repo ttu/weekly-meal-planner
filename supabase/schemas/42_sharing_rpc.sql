@@ -1,3 +1,46 @@
+-- The first address in x-forwarded-for, or nothing when there are no headers to
+-- read.
+create or replace function app.caller_ip()
+returns text
+language sql
+stable
+set search_path = '', pg_temp
+as $fn$
+  select nullif(btrim(split_part(
+    coalesce(
+      nullif(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for',
+      ''
+    ),
+    ',',
+    1
+  )), '');
+$fn$;
+
+-- Whether this account, or this address, has already guessed the beta key
+-- wrong too often. Checked before the key is, and refusing the right key too:
+-- a limit that a correct guess slips past does not bound guessing.
+create or replace function app.beta_key_guesses_exhausted(p_user_id uuid, p_ip text)
+returns boolean
+language plpgsql
+stable
+set search_path = public, pg_temp
+as $fn$
+begin
+  if (select count(*) from beta_key_attempt
+      where user_id = p_user_id and attempted_at > now() - interval '1 hour') >= 10
+  then
+    return true;
+  end if;
+
+  return p_ip is not null
+    and (select count(*) from beta_key_attempt
+         where ip = p_ip and attempted_at > now() - interval '1 hour') >= 30;
+end;
+$fn$;
+
+revoke execute on function app.caller_ip() from public;
+revoke execute on function app.beta_key_guesses_exhausted(uuid, text) from public;
+
 -- Creating a board.
 --
 -- SECURITY DEFINER, like join_board and for the same reason: a person creating
@@ -5,6 +48,12 @@
 -- for a policy to check. Making this the only way to create a Household is
 -- stronger than a permissive insert policy would be — a client cannot write a
 -- household row at all, only ask for a properly formed board.
+--
+-- A wrong beta key comes back as a status, not an exception, for the reason
+-- join_board does: the guess has to be recorded, and a raise would roll the
+-- record back.
+create type create_board_status as enum ('created', 'invalid-beta-key');
+
 create or replace function public.create_board(
   p_name text,
   p_display_name text,
@@ -12,7 +61,7 @@ create or replace function public.create_board(
   p_locale text,
   p_password text,
   p_beta_key text default null
-) returns table (out_household_id uuid, out_share_token text)
+) returns table (out_household_id uuid, out_share_token text, out_status create_board_status)
 language plpgsql
 security definer
 set search_path = public, extensions, pg_temp
@@ -30,27 +79,23 @@ begin
     raise exception 'Not signed in';
   end if;
 
-  -- 12_beta_key.sql. Raised with invalid_password so the app can tell this
-  -- refusal from every other one without matching on the message.
+  caller_ip := app.caller_ip();
+
+  -- 12_beta_key.sql. Guesses are counted by account and by address, and the
+  -- count is read before the key is.
+  if app.beta_key_guesses_exhausted(auth.uid(), caller_ip) then
+    raise exception 'Too many attempts. Wait an hour.';
+  end if;
+
   if not app.beta_key_accepted(p_beta_key) then
-    raise exception 'Invalid beta key' using errcode = 'invalid_password';
+    insert into beta_key_attempt (user_id, ip) values (auth.uid(), caller_ip);
+    return query select null::uuid, null::text, 'invalid-beta-key'::create_board_status;
+    return;
   end if;
 
   if length(coalesce(p_password, '')) < 6 then
     raise exception 'Board password must be at least 6 characters';
   end if;
-
-  -- The first address in x-forwarded-for, or nothing when there are no
-  -- headers to read.
-  caller_ip := split_part(
-    coalesce(
-      nullif(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for',
-      ''
-    ),
-    ',',
-    1
-  );
-  caller_ip := nullif(btrim(caller_ip), '');
 
   select count(*) into recent
   from household_creation_attempt
@@ -83,7 +128,7 @@ begin
   insert into household_member (household_id, user_id, role, display_name, colour)
   values (new_id, auth.uid(), 'owner', p_display_name, p_colour);
 
-  return query select new_id, token;
+  return query select new_id, token, 'created'::create_board_status;
 end;
 $fn$;
 
@@ -105,7 +150,10 @@ grant execute on function public.create_board(text, text, text, text, text, text
 -- them apart would turn this into an oracle for valid tokens.
 --
 -- 'invalid-beta-key' is checked before the token is looked at, so it says
--- nothing about whether the link is real (12_beta_key.sql).
+-- nothing about whether the link is real (12_beta_key.sql). Wrong keys are
+-- counted against the caller, not the link: the link is the one thing a
+-- guesser can change on every try, and it keeps its own attempts for the board
+-- password.
 create type join_board_status as enum ('joined', 'rejected', 'rate-limited', 'invalid-beta-key');
 
 create function public.join_board(
@@ -128,7 +176,19 @@ declare
   recent integer;
   palette text[] := array['#5F7355', '#C05A38', '#8A8172', '#4A6670'];
   taken integer;
+  caller_ip text := app.caller_ip();
 begin
+  if app.beta_key_guesses_exhausted(auth.uid(), caller_ip) then
+    return query select null::uuid, 'rate-limited'::join_board_status;
+    return;
+  end if;
+
+  if not app.beta_key_accepted(p_beta_key) then
+    insert into beta_key_attempt (user_id, ip) values (auth.uid(), caller_ip);
+    return query select null::uuid, 'invalid-beta-key'::join_board_status;
+    return;
+  end if;
+
   select count(*) into recent
   from household_join_attempt
   where share_token = p_share_token
@@ -136,14 +196,6 @@ begin
 
   if recent >= 10 then
     return query select null::uuid, 'rate-limited'::join_board_status;
-    return;
-  end if;
-
-  -- After the rate limit and recorded like a wrong password: a wrong key is a
-  -- guess too, and must not be a second door with no limit on it.
-  if not app.beta_key_accepted(p_beta_key) then
-    insert into household_join_attempt (share_token) values (p_share_token);
-    return query select null::uuid, 'invalid-beta-key'::join_board_status;
     return;
   end if;
 

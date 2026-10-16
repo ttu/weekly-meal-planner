@@ -56,3 +56,20 @@ begin
   end if;
 end
 $$;
+
+-- Wrong beta keys, by who guessed and from where (12_beta_key.sql). Not by
+-- share token: a guesser changes the token on every try, and a token's own
+-- attempts are for its board password. Written only by the SECURITY DEFINER
+-- board functions, which is why a failed guess returns a status instead of
+-- raising: a raise would roll this row back and count nothing.
+create table beta_key_attempt (
+  user_id uuid not null,
+  -- Null where the request did not arrive through PostgREST, as above.
+  ip text,
+  attempted_at timestamptz not null default now()
+);
+
+create index beta_key_attempt_user_idx on beta_key_attempt (user_id, attempted_at);
+create index beta_key_attempt_ip_idx on beta_key_attempt (ip, attempted_at);
+
+alter table beta_key_attempt enable row level security;
