@@ -111,7 +111,7 @@ a determined agent: the token is in the environment, `curl` can reach the
 GitHub API, and Claude's Edit and Write tools are not Bash — they can edit
 the hook itself. The real boundary is on GitHub — a ruleset on `main` that
 blocks direct pushes, force-pushes and deletion, which the PAT cannot bypass.
-Until that exists (`TODO.md`), treat the PAT as able to write `main`.
+Without it, treat the PAT as able to write `main`.
 
 `refs/` has to stay writable for commits, and git cannot narrow that to one
 branch, so the container can move any local branch ref, `main` included, in
