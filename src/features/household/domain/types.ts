@@ -4,6 +4,9 @@ import type { HouseholdId, MemberId, SlotKey } from '@/shared/types/ids'
 
 export type { HouseholdId, MemberId, SlotKey } from '@/shared/types/ids'
 
+/** How many people the Household cooks for. The number a new Meal starts at. */
+export type HouseholdSize = Brand<number, 'HouseholdSize'>
+
 /**
  * `labelKey` is a translation key, never display text: storing "Lounas" there
  * would make the board monolingual (ADR 0009).
@@ -12,9 +15,6 @@ export type { HouseholdId, MemberId, SlotKey } from '@/shared/types/ids'
  * "Eväät" has no translation key because nobody but them uses it. Read both
  * through `slotName`, never `labelKey` alone.
  */
-/** How many people the Household cooks for. The number a new Meal starts at. */
-export type HouseholdSize = Brand<number, 'HouseholdSize'>
-
 export type Slot = {
   readonly key: SlotKey
   readonly labelKey: string

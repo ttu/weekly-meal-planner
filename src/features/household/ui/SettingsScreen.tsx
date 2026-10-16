@@ -97,6 +97,8 @@ const sheets = themed((tokens) =>
       minWidth: 48,
       textAlign: 'center',
     },
+    sizeLabel: { marginTop: tokens.space.xl },
+    sizeHint: { ...tokens.type.meta, color: tokens.color.textSupport, marginTop: tokens.space.sm },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
   }),
 )
@@ -248,7 +250,7 @@ export const SettingsScreen = ({
 
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
 
-        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>{t('settings.size')}</Text>
+        <Text style={[formStyles.label, styles.sizeLabel]}>{t('settings.size')}</Text>
         <View style={styles.stepperRow}>
           <Pressable
             style={[styles.stepper, size <= MIN_SIZE && styles.stepperSpent]}
@@ -278,7 +280,7 @@ export const SettingsScreen = ({
             <Text style={styles.glyphText}>+</Text>
           </Pressable>
         </View>
-        <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>{t('settings.sizeHint')}</Text>
+        <Text style={styles.sizeHint}>{t('settings.sizeHint')}</Text>
 
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.language')}

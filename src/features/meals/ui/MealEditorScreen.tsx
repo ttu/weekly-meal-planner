@@ -12,7 +12,7 @@ import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
 import { IngredientRow } from './IngredientRow'
 import { pickPhotoFromLibrary, type PickPhoto } from '../infrastructure/photo-picker'
-import type { Ingredient, IngredientId } from '../domain/types'
+import type { Ingredient, IngredientId, Servings } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
 import type { PhotoChange } from '../application/save-meal-photo'
 import type { EditorError } from './useSaveMeal'
@@ -99,7 +99,7 @@ type Props = {
   readonly initial?: MealDraft | undefined
   /** What a new Meal starts at: the Household's size. An existing Meal keeps
    *  its own. */
-  readonly defaultServings: number
+  readonly defaultServings?: Servings | undefined
   readonly ingredients: readonly Ingredient[]
   /** A Catalogue Meal is read-only through the client; the editor offers to
    *  copy it instead (ADR 0005). */
@@ -145,7 +145,7 @@ export const MealEditorScreen = ({
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [name, setName] = useState(initial?.name ?? '')
-  const [servings, setServings] = useState<number>(initial?.servings ?? defaultServings)
+  const [servings, setServings] = useState<number>(initial?.servings ?? defaultServings ?? 1)
   const [entries, setEntries] = useState<readonly IngredientEntry[]>(
     initial?.ingredients.map((i) => ({
       ingredientId: i.ingredientId,
