@@ -5,7 +5,8 @@ create table household (
   -- Translation keys, never display text: storing "Lounas" here would make the
   -- board monolingual (ADR 0009).
   slots jsonb not null default
-    '[{"key":"lunch","labelKey":"slot.lunch"},{"key":"dinner","labelKey":"slot.dinner"}]'::jsonb,
+    '[{"key":"lunch","labelKey":"slot.lunch"},{"key":"dinner","labelKey":"slot.dinner"}]'::jsonb
+    check (length(slots::text) <= 4000),
   created_at timestamptz not null default now()
 );
 
@@ -14,8 +15,8 @@ create table household_member (
   user_id uuid not null,
   role text not null default 'member' check (role in ('owner', 'member')),
   display_name text not null check (length(display_name) between 1 and 40),
-  avatar_url text,
-  colour text not null,
+  avatar_url text check (length(avatar_url) <= 2048),
+  colour text not null check (length(colour) <= 16),
   created_at timestamptz not null default now(),
   primary key (household_id, user_id)
 );

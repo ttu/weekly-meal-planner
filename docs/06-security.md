@@ -24,6 +24,30 @@ address. The address comes from the forwarded-for header and is advisory; the
 per-account count is the one that holds. Joining was already throttled, ten
 attempts per share token per fifteen minutes.
 
+**What a Household can write is capped** (`supabase/schemas/95_limits.sql`).
+RLS decides whose rows they are, not how many, so without this a Member could
+insert in a loop until the database filled. The bounds are on totals, not
+requests per minute: the harm is storage, and a ceiling holds however slowly
+it is approached. Each is far above real use — a cap someone meets by planning
+meals is a bug.
+
+| Rows                                  | Cap  | Per        |
+| ------------------------------------- | ---- | ---------- |
+| Members                               | 20   | Household  |
+| Household Meals, Ingredients, Staples | 500  | Household  |
+| Week Plans                            | 1040 | Household  |
+| Ingredients on a Meal                 | 60   | Meal       |
+| Backlog Items, Cook Events, Extras    | 100  | Week Plan  |
+| Leftovers                             | 20   | Cook Event |
+
+The caps also fire on an update that moves a row to another scope, or
+insert-then-move would pile rows onto one. A refusal raises SQLSTATE `54000`.
+Every free-text column has a length check. A photo can only be uploaded as
+`<household>/<meal>.<ext>` for a Meal that exists, and a Household holds at
+most 500 photo objects: deleting a Meal without its photo leaves an orphan
+that SQL cannot remove, so the count is what bounds it. Request floods are the
+platform's to absorb; there is no per-request throttle of ours.
+
 `household_member.user_id` is a foreign key to `auth.users` with
 `on delete cascade`. Without it a deleted account leaves a ghost Member that
 still shows a name on Backlog cards and that nothing can clean up — likely

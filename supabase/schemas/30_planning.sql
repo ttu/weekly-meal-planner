@@ -22,7 +22,7 @@ create table cook_event (
   date date not null,
   -- Deliberately not a foreign key to the Household's slots: Slots are
   -- configuration, and removing one must not delete the Meals planned in it.
-  slot_key text not null,
+  slot_key text not null check (length(slot_key) <= 40),
   servings_cooked integer not null check (servings_cooked between 1 and 50),
   from_backlog_item_id uuid,
   -- Carried through planning so unplanning can restore the Backlog Item with
@@ -44,7 +44,7 @@ create table leftover (
   id uuid primary key default gen_random_uuid(),
   cook_event_id uuid not null references cook_event(id) on delete cascade,
   date date not null,
-  slot_key text not null
+  slot_key text not null check (length(slot_key) <= 40)
 );
 
 create index leftover_cook_event_idx on leftover (cook_event_id);

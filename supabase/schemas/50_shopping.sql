@@ -23,9 +23,9 @@ create table shopping_override (
   week_plan_id uuid not null references week_plan(id) on delete cascade,
   ingredient_id uuid not null references ingredient(id) on delete cascade,
   quantity numeric not null check (quantity > 0),
-  unit text not null,
+  unit text not null check (length(unit) <= 20),
   -- Shown under the quantity so nobody wonders why the arithmetic looks wrong.
-  reason text,
+  reason text check (length(reason) <= 200),
   primary key (week_plan_id, ingredient_id)
 );
 
