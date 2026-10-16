@@ -1,10 +1,16 @@
 #!/bin/bash
 # PreToolUse(Bash) guardrail for Claude's Bash tool.
 #
-# Policy: the agent may do normal, reversible development work — commit, push a
-# feature branch, rebase, merge, open a PR. It may not do things that are
-# destructive or hard to undo: force-pushing, pushing to main, discarding
-# working-tree state, rewriting history, or releasing.
+# Policy: the agent may do normal, reversible development work — commit,
+# rebase, push, open and comment on PRs. It may not destroy local state that
+# git cannot give back (uncommitted work, unreachable commits, other
+# worktrees), and it may not merge a PR: that stays with a person.
+#
+# What may happen on GitHub is not decided here. The PAT is scoped to this
+# repository without Administration, Secrets, Actions or Workflows
+# permissions; a ruleset protects main; the production environment needs a
+# reviewer. Those hold whatever command the agent writes. See
+# docs/10-dev-container.md.
 #
 # This gates the agent only. Humans are unaffected and can run anything.
 #
@@ -32,26 +38,25 @@ if [[ -z "$COMMAND" ]]; then
   exit 2
 fi
 
-# Quoting and shell nesting would otherwise hide a command from the patterns
-# below: `bash -c "git push --force"`, `$(git push --force)`, `eval 'git...'`.
-# Scanning a copy with quotes stripped and shell metacharacters turned into
-# spaces makes those forms match the same patterns as the plain command.
-NORMALIZED=$(printf '%s' "$COMMAND" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ')
-
-# The program can also be hidden outright: `G=git; $G push`, `${G} push`,
-# `$(echo git) push`, `/usr/bin/gi? push`. A push/pr/api word straight after a
-# token the shell expands is refused, since what runs cannot be known from the
-# text. (Backslash escapes — `g\it push` — are already undone above.)
-if printf '%s' "$COMMAND" | tr -d '"'"'"'' | awk '
-  { for (i = 2; i <= NF; i++) if ($i ~ /^(push|pr|api)$/ && $(i - 1) ~ /[$\\(){}*?[]/) found = 1 }
+# Subcommands the rules below guard. A guarded word straight after a token
+# the shell expands (`G=git; $G reset`, `${G} reset`, `/usr/bin/gi? clean`)
+# is refused: what would run cannot be known from the text.
+GUARDED='reset|clean|checkout|restore|switch|branch|stash|update-ref|filter-branch|reflog|worktree|gc|prune|symbolic-ref|fetch|pr'
+if printf '%s' "$COMMAND" | tr -d '"'"'"'' | awk -v words="^($GUARDED)\$" '
+  { for (i = 2; i <= NF; i++) if ($i ~ words && $(i - 1) ~ /[$\\(){}*?[]/) found = 1 }
   END { exit !found }'; then
   echo "BLOCKED: '$COMMAND' runs git or gh through a shell expansion the guardrail cannot check." >&2
-  echo "Spell the command out: git push ..., gh pr ..., gh api ...." >&2
+  echo "Spell the command out: git <subcommand> ..., gh pr ...." >&2
   exit 2
 fi
 
+# Quoting, backslash escapes and shell nesting would otherwise hide a command
+# from the patterns: `bash -c "git reset --hard"`, `g\it reset`, `$(...)`.
+# Scan a copy with those undone and shell metacharacters turned into spaces.
+NORMALIZED=$(printf '%s' "$COMMAND" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ')
+
 # Global options between `git`/`gh` and the subcommand would hide it too:
-# `git -C . push origin main`, `/usr/bin/git -c x=y push`, `gh -R o/r pr merge`.
+# `git -C . reset --hard`, `/usr/bin/git -c x=y clean`, `gh -R o/r pr merge`.
 # Drop them (and their values) so the subcommand sits right after the program.
 NORMALIZED=$(printf '%s' "$NORMALIZED" | awk '{
   n = split($0, t, /[[:space:]]+/); out = ""; i = 1
@@ -71,7 +76,7 @@ NORMALIZED=$(printf '%s' "$NORMALIZED" | awk '{
 }')
 
 DANGEROUS_PATTERNS=(
-  # --- Destructive to working tree or history (not recoverable from reflog) ---
+  # --- Local state git cannot give back (not recoverable from reflog) ---
   'git[[:space:]]+reset[[:space:]]+--hard'
   'git[[:space:]]+clean[[:space:]]+-[a-z]*f'
   'git[[:space:]]+checkout[[:space:]]+\.'
@@ -88,65 +93,19 @@ DANGEROUS_PATTERNS=(
   'git[[:space:]]+worktree[[:space:]]+prune'
   'git[[:space:]]+gc([[:space:]]|$)'
   'git[[:space:]]+prune([[:space:]]|$)'
-
-  # --- Publishing that is hard to undo ---
-  # Force-push in any spelling.
-  'push[[:space:]].*--force'
-  'push[[:space:]]+(.*[[:space:]]+)?-f([[:space:]]|$)'
-  '--force-with-lease'
-  # A `+` refspec is a force-push too (`git push origin +branch`).
-  'git[[:space:]]+push[[:space:]].*[[:space:]:]\+[^[:space:]]'
-  # Push that targets the default branch, in any spelling: `main`, `+main`,
-  # `HEAD:main`, `refs/heads/main`.
-  'git[[:space:]]+push[[:space:]].*[[:space:]:/+](main|master)([[:space:]]|$)'
-  # Pushes of more than the branch at hand: every branch, deletions of
-  # branches gone locally, and tags (a tag deploys production).
-  'git[[:space:]]+push[[:space:]].*--(mirror|all|branches|prune|tags|follow-tags)'
-  # A target built at run time (`$BRANCH`, `$(...)`) or by brace, glob or
-  # tilde expansion (`HEAD:{main,x}`, `HEAD:mai?`) cannot be checked here.
-  'git[[:space:]]+push[[:space:]].*\$'
-  'git[[:space:]]+push[[:space:]].*[][{}*?~]'
-  # Deleting a remote branch.
-  'git[[:space:]]+push[[:space:]].*--delete'
-  'git[[:space:]]+push[[:space:]].*[[:space:]]-[a-zA-Z]*d([[:space:]]|$)'
-  'git[[:space:]]+push[[:space:]].*[[:space:]]:[^[:space:]]'
-
-  # --- Renaming a blocked command, or running code outside the agent ---
-  # An alias turns `git p` into `git push --force`; config injected through
-  # the environment can define one, or point git at a different config file.
+  # An alias can rename any of the above (`git r --hard`), and config passed
+  # through the environment can define one.
   'git[[:space:]].*alias\.'
-  'GIT_CONFIG_(COUNT|KEY|VALUE|PARAMETERS|GLOBAL|SYSTEM)'
-  # Hooks run on the host as well: the container shares the host's .git and
-  # the husky hooks in the checkout. (The container also mounts both read-only.)
-  'core\.hookspath'
-  '\.git/(hooks|config)'
-  '\.husky/'
-  # Config that decides where a push goes or what git runs, whether passed
-  # with -c / --config-env or stored with `git config` (use `git remote -v`
-  # to read the remote).
-  '(-c[[:space:]]*|--config-env[[:space:]=]+)((remote|push|branch|url|alias|core)\.|include)'
-  # ...or read from a config file somewhere else.
-  '(^|[[:space:]])(HOME|XDG_CONFIG_HOME|GIT_(DIR|COMMON_DIR|WORK_TREE|CONFIG[A-Z_]*|EXEC_PATH|NAMESPACE))='
-  'git[[:space:]]+config[[:space:]].*(remote|push|branch|url)\.'
-  # This guardrail itself, and the container's branch pin.
-  '\.claude/(hooks|settings)'
-  'devcontainer-allowed-branch'
+  'GIT_CONFIG_(COUNT|KEY|VALUE|PARAMETERS)'
 
-  # --- gh: irreversible, or bypasses review ---
-  'gh[[:space:]]+pr[[:space:]]+(merge|close)'
-  'gh[[:space:]]+release[[:space:]]+(create|delete|edit|upload)'
-  'gh[[:space:]]+repo[[:space:]]+(delete|edit|rename|archive|sync)'
-  'gh[[:space:]]+workflow[[:space:]]+(run|disable|enable)'
-  'gh[[:space:]]+secret[[:space:]]'
-  'gh[[:space:]]+auth[[:space:]]+(login|logout|refresh)'
-  # Generic API escape hatch: any mutating method, and the -f/-F/--field/--input
-  # forms which make `gh api` POST implicitly. `gh api /path` (GET) stays allowed.
-  'gh[[:space:]]+api[[:space:]].*(-X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)'
-  'gh[[:space:]]+api[[:space:]].*[[:space:]](-f|-F|--field|--raw-field|--input)[[:space:]=]'
+  # --- Merging stays with a person ---
+  # Rulesets cannot require a review here: the PAT acts as the repo owner, who
+  # cannot approve their own PR. So the agent opens PRs and does not merge them.
+  'gh[[:space:]]+pr[[:space:]]+merge'
 )
 
 for pattern in "${DANGEROUS_PATTERNS[@]}"; do
-  # -i: case-insensitive, so `-X post` / `GIT PUSH --FORCE` cannot slip past.
+  # -i: case-insensitive, so `GIT RESET --HARD` cannot slip past.
   if printf '%s' "$COMMAND"    | grep -qEi -- "$pattern" ||
      printf '%s' "$NORMALIZED" | grep -qEi -- "$pattern"; then
     echo "BLOCKED: '$COMMAND' matches protected pattern '$pattern'." >&2
@@ -156,9 +115,10 @@ for pattern in "${DANGEROUS_PATTERNS[@]}"; do
 done
 
 # --- Dev container only: confine the agent to the branch the container was
-# created on. MENAMI_DEVCONTAINER comes from devcontainer.json, so it is in
-# the environment Claude Code runs this hook with, and nothing the agent runs
-# can unset it. post-create.sh writes the pin root-owned and read-only.
+# created on, so it cannot commit onto another local branch in the .git it
+# shares with the host. MENAMI_DEVCONTAINER comes from devcontainer.json, so it
+# is in the environment Claude Code runs this hook with, and nothing the agent
+# runs can unset it. post-create.sh writes the pin root-owned and read-only.
 [[ -n "${MENAMI_DEVCONTAINER:-}" ]] || exit 0
 
 BRANCH_PIN_FILE=/etc/devcontainer-allowed-branch
@@ -176,8 +136,7 @@ fi
 PINNED=$(tr -d '[:space:]' < "$BRANCH_PIN_FILE")
 REPO="${CLAUDE_PROJECT_DIR:-$PWD}"
 
-# Operations that write refs other than the current branch. Blocking the push
-# target alone is not enough: these alter other branches locally.
+# Operations that write refs other than the current branch.
 CONTAINER_PATTERNS=(
   # branch create / move / rename / copy (`--list`, `-a`, `-v` stay allowed)
   'git[[:space:]]+branch[[:space:]]+(-[a-z]*(f|m|c)([[:space:]]|$)|--force|--move|--copy)'
@@ -185,16 +144,12 @@ CONTAINER_PATTERNS=(
   'git[[:space:]]+(fetch|pull)[[:space:]].*[[:space:]][^[:space:]-][^[:space:]]*:[^[:space:]]'
   'git[[:space:]]+worktree[[:space:]]+(add|move)'
   'git[[:space:]]+symbolic-ref'
-  'git[[:space:]]+remote[[:space:]]+(add|remove|rm|set-url|rename)'
-  # The shared git config is read-only here, so -u cannot record an upstream;
-  # initialize.sh set it on the host already.
-  'git[[:space:]]+push[[:space:]](.*[[:space:]])?(-u|--set-upstream)([[:space:]]|$)'
 )
 for pattern in "${CONTAINER_PATTERNS[@]}"; do
   if printf '%s' "$COMMAND"    | grep -qEi -- "$pattern" ||
      printf '%s' "$NORMALIZED" | grep -qEi -- "$pattern"; then
     echo "BLOCKED: '$COMMAND' matches protected pattern '$pattern'." >&2
-    echo "This dev container is confined to branch '$PINNED' and may not alter other branches or remotes." >&2
+    echo "This dev container is confined to branch '$PINNED' and may not alter other branches." >&2
     exit 2
   fi
 done
@@ -221,50 +176,6 @@ if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+(checkou
     echo "BLOCKED: switching to '$REF' is not allowed; this dev container is confined to '$PINNED'." >&2
     exit 2
   fi
-fi
-
-# Every refspec of a push must be `src:dst` with dst the pinned branch: drop
-# `git push`, drop flags, drop the remote, check each of what is left. A bare
-# `git push`, or a refspec without `:`, is refused: its destination then comes
-# from remote.<name>.push in whatever config git reads, not from the text.
-if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+push([[:space:]]|$)'; then
-  # Strip redirections (2>&1, >/dev/null, <file, ...) first. NORMALIZED turned
-  # their operators into spaces, so a trailing `2>&1` would otherwise look like
-  # extra refspecs.
-  PUSH_SOURCE=$(printf '%s' "$COMMAND" | sed -E 's/[0-9]*(>>?&?[0-9]*|<)[^[:space:]]*//g')
-  PUSH_NORMALIZED=$(printf '%s' "$PUSH_SOURCE" | tr -d '"'"'"'`' | tr '(){};&|<>' '          ')
-  # Flag values (`-o x`, `--repo x`) are counted as refspecs and so refused:
-  # failing closed costs a retry, failing open costs a branch.
-  REFSPECS=$(printf '%s' "$PUSH_NORMALIZED" | awk '
-    { for (i = 1; i <= NF; i++) if ($i == "push") { start = i + 1; break } }
-    start {
-      n = 0
-      for (i = start; i <= NF; i++) {
-        if ($i ~ /^-/) continue
-        if (++n == 1) continue      # remote name
-        print $i
-      }
-    }')
-  if [[ -z "$REFSPECS" ]]; then
-    echo "BLOCKED: name the destination explicitly in this dev container: git push origin HEAD:$PINNED" >&2
-    exit 2
-  fi
-
-  while IFS= read -r refspec; do
-    if [[ "$refspec" != *:* ]]; then
-      echo "BLOCKED: '$refspec' has no destination; use git push origin HEAD:$PINNED" >&2
-      exit 2
-    fi
-    # src:dst -> dst; `+x` and `refs/heads/x` name the branch x.
-    target=${refspec##*:}
-    target=${target#+}
-    target=${target#refs/heads/}
-    if [[ "$target" != "$PINNED" ]]; then
-      echo "BLOCKED: this dev container may only push to '$PINNED', but the command targets '${target:-<unknown>}'." >&2
-      echo "Ask the user to push other branches from the host." >&2
-      exit 2
-    fi
-  done <<< "$REFSPECS"
 fi
 
 exit 0

@@ -148,20 +148,20 @@ if [[ ! -x "$GUARD" ]]; then
   echo "FAIL: $GUARD missing or not executable" >&2
   exit 1
 fi
-OFF_BRANCH="${CONTAINER_BRANCH}__guardrail_off_branch_test"
-OFF_BRANCH_INPUT=$(jq -cn --arg branch "$OFF_BRANCH" \
-  '{tool_input:{command:("git push origin " + $branch)}}')
 set +e
-printf '%s' '{"tool_input":{"command":"git push --force"}}' | bash "$GUARD" >/dev/null 2>&1
+# Must block destroying local work...
+printf '%s' '{"tool_input":{"command":"git reset --hard"}}' | bash "$GUARD" >/dev/null 2>&1
 blocked=$?
-printf '%s' "$OFF_BRANCH_INPUT" | bash "$GUARD" >/dev/null 2>&1
+# ...must block leaving the pinned branch...
+printf '%s' '{"tool_input":{"command":"git switch -c guardrail-self-test"}}' | bash "$GUARD" >/dev/null 2>&1
 off_branch=$?
+# ...and must still allow ordinary work.
 printf '%s' '{"tool_input":{"command":"git status"}}' | bash "$GUARD" >/dev/null 2>&1
 allowed=$?
 set -e
 if [[ "$blocked" -ne 2 || "$off_branch" -ne 2 || "$allowed" -ne 0 ]]; then
-  echo "FAIL: git guardrail self-test failed (force-push=$blocked want 2," >&2
-  echo "      off-branch push=$off_branch want 2, read-only=$allowed want 0)" >&2
+  echo "FAIL: git guardrail self-test failed (reset --hard=$blocked want 2," >&2
+  echo "      new branch=$off_branch want 2, status=$allowed want 0)" >&2
   exit 1
 fi
 echo "    git guardrail OK"

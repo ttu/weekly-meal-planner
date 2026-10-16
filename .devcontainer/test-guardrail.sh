@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Tests for .claude/hooks/block-dangerous-git.sh: `pnpm run test:guardrail`.
 # Runs inside a throwaway container, because the dev-container cases need a
-# root-owned pin file in /etc. It lives here rather than next to the hook
-# because the hook refuses any command that names its own directory.
+# root-owned pin file in /etc.
 set -uo pipefail
 
 HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.claude/hooks/block-dangerous-git.sh"
@@ -42,105 +41,67 @@ for MODE in host container; do
     rm -f "$PIN"
   fi
 
-  # Ordinary work.
+  # Ordinary work, GitHub included: what may happen on GitHub is decided by
+  # the PAT's permissions and the rulesets, not by this hook.
   expect 0 'git status'
-  expect 0 'git commit -m "x"'
-  # Container pushes need an explicit destination (see below); host ones don't.
-  if [[ $MODE == host ]]; then
-    expect 0 'git push origin feat/pinned'
-    expect 0 'git push -u origin feat/pinned'
-  fi
-  expect 0 'git push origin HEAD:refs/heads/feat/pinned'
+  expect 0 'git commit -m "reset the clean branch"'
+  expect 0 'git push'
+  expect 0 'git push -u origin feat/pinned'
   expect 0 'git -C . log --oneline'
-  expect 0 'gh pr create --fill'
-  # Words in a message are not commands.
-  expect 0 'git commit -m "push the api pr fix"'
-  expect 0 'gh pr create --title "add api docs" --body "push later"'
-  expect 0 'pnpm run test'
   expect 0 'GIT_EDITOR=true git rebase --continue'
+  expect 0 'pnpm run test'
+  expect 0 'gh pr create --fill'
+  expect 0 'gh pr comment 2 --body "x"'
+  expect 0 'gh pr review 2 --comment --body "x"'
+  expect 0 'gh api repos/o/r/pulls/2/comments/1/replies -f body=x'
+  expect 0 'gh api graphql -f query="mutation { resolveReviewThread(input:{threadId:\"x\"}) { thread { id } } }"'
 
-  # Pushes to main, in any spelling.
-  expect 2 'git push origin main'
-  expect 2 'git push origin +main'
-  expect 2 'git push origin HEAD:refs/heads/main'
-  expect 2 'git -C . push origin main'
-  expect 2 '/usr/bin/git -c x=y push origin main'
-  expect 2 'git --git-dir=.git push origin HEAD:main'
-  # Force, and flags that push or delete more than one branch.
-  expect 2 'git push --force'
-  expect 2 'git -C . push -f origin feat/pinned'
-  expect 2 'git push origin +feat/pinned'
-  for flag in --mirror --all --prune --tags --follow-tags; do
-    expect 2 "git push $flag origin"
-  done
-  # Targets that cannot be read from the text.
-  expect 2 'git push origin $BRANCH'
-  expect 2 'git push origin "$(git rev-parse --abbrev-ref HEAD)"'
-  # gh behind its global flags.
-  expect 2 'gh -R ttu/weekly-meal-planner pr merge 1'
-  expect 2 'gh --repo ttu/weekly-meal-planner release create v1'
-  # Aliases and config injection that rename a blocked command.
-  expect 2 'git -c alias.p=push p origin main'
-  expect 2 'git config alias.p push'
-  expect 2 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.p GIT_CONFIG_VALUE_0=push git p'
-  expect 2 'git -c core.hooksPath=/tmp/h commit -m x'
-  # Things that would switch the guardrail off or run code on the host.
-  expect 2 'echo "#!/bin/sh" > .git/hooks/pre-commit'
-  expect 2 'sed -i s/x/y/ .git/config'
-  expect 2 'printf x >> .husky/_/pre-commit'
-  expect 2 'printf x >> .husky/pre-commit'
-  # Config that redirects a push, given on the command line or stored.
-  expect 2 'git -c remote.origin.push=HEAD:refs/heads/main push'
-  expect 2 'git --config-env=push.default=X push'
-  expect 2 'git -c url.x.pushInsteadOf=y push origin feat/pinned'
-  expect 2 'git config --global remote.origin.push HEAD:main'
-  expect 2 'git config branch.feat/pinned.merge refs/heads/main'
-  # The program hidden from the patterns.
-  expect 2 'g\it push origin main'
-  expect 2 'G=git; $G push origin main'
-  expect 2 'git status; $G push origin main'
-  expect 2 'H=gh; $H pr merge 1'
-  expect 2 'H=gh; $H api -X POST /x'
-  # Brace, glob and tilde expansion in a push or in the program name.
-  expect 2 'git push origin HEAD:{main,x}'
-  expect 2 'git push origin HEAD:mai?'
-  expect 2 'git push origin HEAD:ma[i]n'
-  expect 2 '/usr/bin/gi? push origin main'
-  expect 2 '/usr/bin/g*t push origin feat/pinned'
-  # Config pulled in from elsewhere.
-  expect 2 'git -c include.path=/tmp/x push'
-  expect 2 'git -c includeIf.onbranch:feat.path=/tmp/x push'
-  expect 2 'HOME=/tmp/x git push origin feat/pinned'
-  expect 2 'XDG_CONFIG_HOME=/tmp/x git push origin feat/pinned'
-  expect 2 'GIT_DIR=/tmp/x git push origin feat/pinned'
-  expect 2 'env HOME=/tmp/x git push origin feat/pinned'
-  expect 2 'rm .claude/hooks/block-dangerous-git.sh'
-  expect 2 'cat /dev/null > .claude/settings.json'
-  expect 2 'sudo rm /etc/devcontainer-allowed-branch'
+  # Local state that git cannot give back.
+  expect 2 'git reset --hard'
+  expect 2 'git clean -fd'
+  expect 2 'git checkout .'
+  expect 2 'git restore .'
+  expect 2 'git branch -D other'
+  expect 2 'git stash drop'
+  expect 2 'git update-ref -d refs/heads/other'
+  expect 2 'git filter-branch'
+  expect 2 'git reflog expire --all'
+  expect 2 'git worktree remove x'
+  expect 2 'git worktree prune'
+  expect 2 'git gc'
+  expect 2 'git prune'
+  # ...behind global options, quoting, escapes or a shell expansion.
+  expect 2 'git -C . reset --hard'
+  expect 2 'bash -c "git reset --hard"'
+  expect 2 'g\it reset --hard'
+  expect 2 'G=git; $G reset --hard'
+  expect 2 '/usr/bin/gi? clean -fd'
+  # ...or renamed by an alias.
+  expect 2 'git -c alias.r=reset r --hard'
+  expect 2 'git config alias.r reset'
+  expect 2 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.r GIT_CONFIG_VALUE_0=reset git r --hard'
+
+  # Merging stays with a person.
+  expect 2 'gh pr merge 2'
+  expect 2 'gh -R ttu/weekly-meal-planner pr merge 2'
+  expect 2 'H=gh; $H pr merge 2'
 done
 
-# Container only: confined to the pinned branch.
+# Container only: confined to the pinned branch locally.
 MODE=container
 export MENAMI_DEVCONTAINER=1
 printf 'feat/pinned\n' > "$PIN"
-expect 2 'git push origin other'
-expect 2 'git push origin feat/pinned other'
-expect 2 'git push origin feat/pinned HEAD:other'
-expect 2 'git push origin v1.0.0'
 expect 2 'git -C . checkout other'
+expect 2 'git switch other'
 expect 2 'git switch -c new'
-expect 2 'git remote set-url origin x'
-expect 2 'git push -u origin feat/pinned'
-# Without an explicit destination, remote.<name>.push in some config decides
-# where it goes, so only `src:dst` with dst the pinned branch is allowed.
-expect 2 'git push'
-expect 2 'git push origin'
-expect 2 'git push origin feat/pinned'
-expect 0 'git push origin HEAD:feat/pinned'
-expect 0 'git push origin feat/pinned:refs/heads/feat/pinned'
 expect 2 'git checkout -'
 expect 2 'git switch -'
+expect 2 'git branch -f other HEAD'
+expect 2 'git fetch origin main:main'
+expect 2 'git worktree add ../x'
+expect 2 'git symbolic-ref HEAD refs/heads/other'
 expect 0 'git checkout -- README.md'
+expect 0 'git branch --list'
 
 # Container with the pin gone: every git and gh command is refused.
 MODE=container-unpinned

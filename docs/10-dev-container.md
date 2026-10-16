@@ -39,7 +39,9 @@ GitHub → Settings → Developer settings → Fine-grained tokens:
 
 - **Repository access:** only `ttu/weekly-meal-planner`
 - **Permissions:** Contents read and write, Pull requests read and write,
-  Issues read and write. Metadata read is added automatically. Nothing else.
+  Issues read and write. Metadata read is added automatically. Nothing else —
+  in particular not Administration, Secrets, Actions or Workflows: their
+  absence is what stops the agent changing settings, secrets or CI.
 
 Inside the container it becomes `GH_TOKEN`, which `gh` reads, and `gh` is set
 as git's credential helper. SSH remotes are rewritten to HTTPS in the
@@ -47,38 +49,54 @@ container's own `~/.gitconfig`, so git never uses your SSH key there. The host
 name is repo-specific so it cannot collide with another project's container.
 `post-create.sh` proves the token with a `push --dry-run`.
 
+## What the agent may do on GitHub
+
+GitHub decides, not a hook: these hold whatever command the agent writes,
+including a raw API call. The agent can push branches, open PRs, comment,
+reply to and resolve review threads, and open issues. Three settings, in the
+repository on GitHub, bound the rest:
+
+- **The PAT's permissions** (above): no settings, secrets, Actions or
+  workflow changes.
+- **A ruleset on `main`**, with no bypass actors — the PAT acts as you, so a
+  bypass for your role is a bypass for the agent: restrict deletions, block
+  force pushes, require a pull request, require the `validate` checks.
+- **The `production` environment with you as required reviewer.** A `v*` tag
+  deploys production, and the PAT can push tags; the deployment then waits
+  for an approval the PAT has no permission to give.
+
+Without the ruleset, the agent can push to `main`. Without the environment
+rule, it can deploy production.
+
 ## Guardrail
 
 `.claude/hooks/block-dangerous-git.sh` is a `PreToolUse` hook on Claude's Bash
-tool, active on the host as well. It allows reversible work — commit, push a
-feature branch, open a PR — and blocks force-pushes, pushes to `main`, pushes
-of tags or of more than one branch (`--all`, `--mirror`, `--prune`),
-`reset --hard`, `clean -f`, `branch -D`, `gh pr merge`, mutating `gh api`
-calls and similar. It gates the agent only; you can run anything yourself.
+tool, active on the host as well. It covers what GitHub cannot see:
 
-It fails closed rather than guess. Before matching it undoes quoting and
-backslash escapes and drops git's and gh's global options (`git -C . push`,
-`gh -R o/r pr merge`). It refuses what it cannot read: a push whose target is
-built at run time (`$BRANCH`), or a `push`/`pr`/`api` word straight after a
-shell expansion (`G=git; $G push`). It refuses what would redirect or rename a
-command: git aliases, `GIT_CONFIG_*`, `-c`/`--config-env`/`git config` on
-`remote.*`, `push.*`, `branch.*`, `url.*`, `core.*` or `include*` (read the
-remote with `git remote -v`), and `HOME`, `XDG_CONFIG_HOME` or `GIT_DIR`-style
-overrides that make git read another config. Brace, glob and tilde expansion
-in a push (`HEAD:{main,x}`) is refused for the same reason. And it refuses anything naming `.git/hooks`, `.git/config`,
-`.husky/`, `.claude/hooks`, `.claude/settings` or the container's branch pin —
-reads included; use the Read tool.
+- **Local state git cannot give back** — `reset --hard`, `clean -f`,
+  `checkout .`, `restore .`, `branch -D`, `stash drop`, `update-ref`,
+  `filter-branch`, `reflog expire`, `worktree remove`, and `gc` /
+  `worktree prune` / `prune`, which in a container would delete the other
+  worktrees' admin dirs on the host. Aliases that rename these, and
+  `GIT_CONFIG_*`, are refused too.
+- **Merging** — `gh pr merge`. A ruleset cannot require a review here: the PAT
+  acts as you, and you cannot approve your own PR. So the agent opens PRs and
+  you merge them.
+
+Before matching it undoes quoting and backslash escapes and drops git's and
+gh's global options (`git -C . reset`, `gh -R o/r pr merge`), and it refuses a
+guarded subcommand straight after a shell expansion (`G=git; $G reset`). It
+fails closed if it cannot parse the command. It gates the agent only; you can
+run anything yourself.
 
 Inside the container (`MENAMI_DEVCONTAINER=1`) it also confines the agent to
-the branch the container was created on. A push must name its destination —
-`git push origin HEAD:<branch>` — because a bare `git push`, or a bare branch
-name, goes wherever `remote.<name>.push` in some config says. No switching to,
-creating or rewriting another branch, and no repointing remotes. The pin is
-`/etc/devcontainer-allowed-branch`, root-owned and read-only; if it is missing,
-all git and gh commands are refused. `post-create.sh` ends by removing the
-passwordless sudo rule, so nothing in the container can change the pin
-afterwards. To install something later, rebuild, or `docker exec -u root` from
-the host.
+the branch the container was created on, so it cannot commit onto another
+local branch in the `.git` it shares with the host: no switching to, creating
+or rewriting another branch. The pin is `/etc/devcontainer-allowed-branch`,
+root-owned and read-only; if it is missing, all git and gh commands are
+refused. `post-create.sh` ends by removing the passwordless sudo rule, so
+nothing in the container can change the pin afterwards. To install something
+later, rebuild, or `docker exec -u root` from the host.
 
 The container shares the host's `.git`, and much of it decides what host git
 runs: hooks fire on your next commit, the config can name an fsmonitor, pager
@@ -99,24 +117,22 @@ container opens. Consequences:
   container, or `post-create.sh` stops and says so.
 - Changes to git hooks, the guardrail or the container are made from the
   host.
-- `git push -u` cannot record an upstream; `initialize.sh` sets the branch's
-  upstream on the host before the container starts.
+- `git push -u` cannot record an upstream (the shared config is read-only);
+  `initialize.sh` sets the branch's upstream on the host before the container
+  starts, so a bare `git push` works.
 
 `pnpm run test:guardrail` runs the hook's cases in a throwaway container.
 
 ### Limits
 
-The hook matches command text. It stops accidents and the obvious detours, not
-a determined agent: the token is in the environment, `curl` can reach the
-GitHub API, and Claude's Edit and Write tools are not Bash — they can edit
-the hook itself. The real boundary is on GitHub — a ruleset on `main` that
-blocks direct pushes, force-pushes and deletion, which the PAT cannot bypass.
-Without it, treat the PAT as able to write `main`.
+The hook matches command text. It stops accidents and the obvious detours,
+not a determined agent — which is why nothing on GitHub depends on it. On the
+host, Claude's Edit and Write tools are not Bash and can edit the hook itself.
 
 `refs/` has to stay writable for commits, and git cannot narrow that to one
 branch, so the container can move any local branch ref, `main` included, in
-the shared `.git`. It cannot push it (see above), and the reflog on the host
-recovers it.
+the shared `.git`. The ruleset stops it reaching GitHub, and the reflog on the
+host recovers it.
 
 The read-only mounts keep the container from planting anything git runs on its
 own. They cannot protect code you run yourself: the worktree is shared, so
