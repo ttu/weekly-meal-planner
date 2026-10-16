@@ -54,28 +54,29 @@ fi
 
 # Quoting, backslash escapes and shell nesting would otherwise hide a command
 # from the patterns: `bash -c "git reset --hard"`, `g\it reset`, `$(...)`.
-# Scan a copy with those undone and shell metacharacters turned into spaces.
-NORMALIZED=$(printf '%s' "$COMMAND" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ')
-
-# Global options between `git`/`gh` and the subcommand would hide it too:
-# `git -C . reset --hard`, `/usr/bin/git -c x=y clean`, `gh -R o/r pr merge`.
-# Drop them (and their values) so the subcommand sits right after the program.
-NORMALIZED=$(printf '%s' "$NORMALIZED" | awk '{
-  n = split($0, t, /[[:space:]]+/); out = ""; i = 1
-  while (i <= n) {
-    base = t[i]; sub(/^.*\//, "", base)
-    if (base == "git" || base == "gh") {
-      out = out " " base; i++
-      while (i <= n && t[i] ~ /^-/) {
-        opt = t[i]; i++
-        if (opt ~ /^(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix|-R|--repo)$/) i++
+# normalize() returns a copy with those undone and shell metacharacters turned
+# into spaces, and with git's and gh's global options (`git -C . reset`,
+# `/usr/bin/git -c x=y clean`, `gh -R o/r pr merge`) dropped, so the
+# subcommand sits right after the program.
+normalize() {
+  printf '%s' "$1" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ' | awk '{
+    n = split($0, t, /[[:space:]]+/); out = ""; i = 1
+    while (i <= n) {
+      base = t[i]; sub(/^.*\//, "", base)
+      if (base == "git" || base == "gh") {
+        out = out " " base; i++
+        while (i <= n && t[i] ~ /^-/) {
+          opt = t[i]; i++
+          if (opt ~ /^(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix|-R|--repo)$/) i++
+        }
+        continue
       }
-      continue
+      out = out " " t[i]; i++
     }
-    out = out " " t[i]; i++
-  }
-  print out
-}')
+    print out
+  }'
+}
+NORMALIZED=$(normalize "$COMMAND")
 
 DANGEROUS_PATTERNS=(
   # --- Local state git cannot give back (not recoverable from reflog) ---
@@ -100,6 +101,7 @@ DANGEROUS_PATTERNS=(
   'git[[:space:]].*alias\.'
   'GIT_CONFIG_(COUNT|KEY|VALUE|PARAMETERS|GLOBAL|SYSTEM)'
   '(-c[[:space:]]*|--config-env[[:space:]=]+)include'
+  'git[[:space:]]+config[[:space:]].*include'
 
   # --- Merging stays with a person ---
   # Rulesets cannot require a review here: the PAT acts as the repo owner, who
@@ -133,8 +135,10 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     'git[[:space:]]+push[[:space:]].*[[:space:]:]\+[^[:space:]]'
     # Push to the default branch: `main`, `HEAD:main`, `refs/heads/main`.
     'git[[:space:]]+push[[:space:]].*[[:space:]:/+](main|master)([[:space:]]|$)'
-    # Tags (a tag deploys production), every branch, or deletions.
+    # Tags (a `v*` tag deploys production), every branch, or deletions.
     'git[[:space:]]+push[[:space:]].*--(mirror|all|branches|prune|tags|follow-tags|delete)'
+    'git[[:space:]]+push[[:space:]].*refs/tags/'
+    'git[[:space:]]+push[[:space:]].*[[:space:]:+]v[0-9]'
     'git[[:space:]]+push[[:space:]].*[[:space:]]-[a-zA-Z]*d([[:space:]]|$)'
     'git[[:space:]]+push[[:space:]].*[[:space:]]:[^[:space:]]'
     # gh: irreversible, or outside this repo's code.
@@ -157,27 +161,33 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make
   # it POST) are refused except PR review conversation: replying to a review
   # comment, and replying to or resolving a review thread over GraphQL. Reads
-  # stay allowed.
-  if printf '%s' "$NORMALIZED" | grep -qEi 'gh[[:space:]]+api[[:space:]].*((-X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)|[[:space:]](-f|-F|--field|--raw-field|--input)([[:space:]=]|$))'; then
+  # stay allowed. Each call in a chain is judged on its own, so an allowed
+  # reply cannot carry a second write past the check.
+  API_WRITE='gh[[:space:]]+api[[:space:]].*((-X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)|[[:space:]](-f|-F|--field|--raw-field|--input)([[:space:]=]|$))'
+  while IFS= read -r segment; do
+    seg_norm=$(normalize "$segment")
+    printf '%s' "$seg_norm" | grep -qEi "$API_WRITE" || continue
     allowed=0
-    if printf '%s' "$NORMALIZED" | grep -qEi 'gh[[:space:]]+api[[:space:]]+(-X[[:space:]]+POST[[:space:]]+)?/?repos/[^[:space:]]+/pulls/[0-9]+/comments/[0-9]+/replies([[:space:]]|$)'; then
+    if printf '%s' "$seg_norm" | grep -qEi 'gh[[:space:]]+api[[:space:]]+(-X[[:space:]]+POST[[:space:]]+)?/?repos/[^[:space:]]+/pulls/[0-9]+/comments/[0-9]+/replies([[:space:]]|$)'; then
       allowed=1
-    elif printf '%s' "$NORMALIZED" | grep -qEi 'gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)'; then
-      if ! printf '%s' "$COMMAND" | grep -qi 'mutation'; then
+    elif printf '%s' "$seg_norm" | grep -qEi 'gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)'; then
+      if printf '%s' "$segment" | grep -qE '=@|--input|\$|`'; then
+        allowed=0   # read from a file, stdin or the shell: cannot be checked
+      elif ! printf '%s' "$segment" | grep -qi 'mutation'; then
         allowed=1   # a query
       else
         # Every field called with `(input:` must be one of the three.
-        others=$(printf '%s' "$COMMAND" | grep -oE '[A-Za-z]+[[:space:]]*\([[:space:]]*input' |
+        others=$(printf '%s' "$segment" | grep -oE '[A-Za-z]+[[:space:]]*\([[:space:]]*input' |
           grep -vE '^(addPullRequestReviewThreadReply|resolveReviewThread|unresolveReviewThread)[[:space:]]*\(')
         [[ -z "$others" ]] && allowed=1
       fi
     fi
     if [[ "$allowed" -ne 1 ]]; then
-      echo "BLOCKED: '$COMMAND' writes through the GitHub API with your own login." >&2
+      echo "BLOCKED: '$segment' writes through the GitHub API with your own login." >&2
       echo "On the host only PR comment replies and review-thread resolution are allowed; ask the user for anything else." >&2
       exit 2
     fi
-  fi
+  done < <(printf '%s\n' "$COMMAND" | tr ';&|' '\n\n\n')
   exit 0
 fi
 

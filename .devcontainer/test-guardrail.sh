@@ -116,6 +116,19 @@ expect 2 'gh api -X DELETE repos/o/r'
 expect 2 'gh api repos/o/r/issues -f title=x'
 expect 2 'gh api graphql -f query="mutation { deleteRef(input:{refId:\"x\"}) { clientMutationId } }"'
 expect 0 'gh api graphql -f query="query { viewer { login } }"'
+# Each gh api call is judged on its own; an allowed one does not cover the next.
+expect 2 'gh api repos/o/r/pulls/2/comments/1/replies -f body=x; gh api -X DELETE repos/o/r'
+expect 2 'gh api repos/o/r/pulls/2/comments/1/replies -f body=x && gh api repos/o/r/issues -f title=y'
+# A query the hook cannot read is treated as a write.
+expect 2 'gh api graphql -F query=@q.graphql'
+expect 2 'gh api graphql --input q.json'
+expect 2 'gh api graphql -f query="$(cat q.graphql)"'
+# Tags by name, and includes stored in config.
+expect 2 'git push origin v1.2.0'
+expect 2 'git push origin refs/tags/v1.2.0'
+expect 2 'git config --global include.path /tmp/x'
+expect 0 'git push origin feat/pinned'
+expect 0 'git commit -m "bump v2 docs"'
 expect 0 'gh api graphql -f query="mutation { addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\"x\", body:\"y\"}) { comment { id } } }"'
 
 # Container: the scoped PAT is in use, and GitHub's own limits decide.
