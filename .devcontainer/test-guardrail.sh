@@ -126,10 +126,24 @@ expect 2 'gh api graphql -f query="$(cat q.graphql)"'
 # Tags by name, and includes stored in config.
 expect 2 'git push origin v1.2.0'
 expect 2 'git push origin refs/tags/v1.2.0'
+expect 2 'git push origin HEAD:tags/v1'
+expect 2 'git config push.followTags true'
+expect 2 'git -c push.followTags=true push'
+expect 2 'git config remote.origin.push refs/tags/*'
 expect 2 'git config --global include.path /tmp/x'
 expect 0 'git push origin feat/pinned'
 expect 0 'git commit -m "bump v2 docs"'
-expect 0 'gh api graphql -f query="mutation { addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\"x\", body:\"y\"}) { comment { id } } }"'
+# Free text goes through the REST reply endpoint; GraphQL only resolves.
+expect 2 'gh api graphql -f query="mutation { addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\"x\", body:\"y\"}) { comment { id } } }"'
+expect 0 "gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: \"PRRT_x\"}) { thread { isResolved } } }' --jq .data"
+expect 0 "gh api -X POST repos/o/r/pulls/2/comments/1/replies -f body='Fixed in abc123; see the test.'"
+# Anything beside the one allowed field, however it is separated, is refused.
+expect 2 'gh api graphql -f query="mutation { resolveReviewThread(input:{threadId:\"x\"}) { thread { id } }, deleteRef(input:{refId:\"y\"}) { clientMutationId } }"'
+expect 2 'gh api graphql -f query="mutation { resolveReviewThread(input:{threadId:\"x\"}) { thread { id } } # c
+deleteRef(input:{refId:\"y\"}) { clientMutationId } }"'
+expect 2 "gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: \"x\"}) { thread { id } } }' -f query='mutation { deleteRef(input: {refId: \"y\"}) { clientMutationId } }'"
+expect 2 'gh api repos/o/r/pulls/2/comments/1/replies -f body="$(gh api -X DELETE repos/o/r)"'
+expect 2 'gh api repos/o/r/pulls/2/comments/1/replies -f body=x -X DELETE'
 
 # Container: the scoped PAT is in use, and GitHub's own limits decide.
 MODE=container

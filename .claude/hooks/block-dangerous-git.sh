@@ -137,8 +137,11 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     'git[[:space:]]+push[[:space:]].*[[:space:]:/+](main|master)([[:space:]]|$)'
     # Tags (a `v*` tag deploys production), every branch, or deletions.
     'git[[:space:]]+push[[:space:]].*--(mirror|all|branches|prune|tags|follow-tags|delete)'
-    'git[[:space:]]+push[[:space:]].*refs/tags/'
-    'git[[:space:]]+push[[:space:]].*[[:space:]:+]v[0-9]'
+    'git[[:space:]]+push[[:space:]].*[[:space:]:+/](refs/)?tags/'
+    'git[[:space:]]+push[[:space:]].*[[:space:]:+/]v[0-9]'
+    # ...or config that makes a later push carry tags or other refs.
+    'push\.followtags'
+    'remote\.[^[:space:]]*\.push([[:space:]=]|$)'
     'git[[:space:]]+push[[:space:]].*[[:space:]]-[a-zA-Z]*d([[:space:]]|$)'
     'git[[:space:]]+push[[:space:]].*[[:space:]]:[^[:space:]]'
     # gh: irreversible, or outside this repo's code.
@@ -159,35 +162,56 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   done
 
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make
-  # it POST) are refused except PR review conversation: replying to a review
-  # comment, and replying to or resolving a review thread over GraphQL. Reads
-  # stay allowed. Each call in a chain is judged on its own, so an allowed
-  # reply cannot carry a second write past the check.
+  # it POST) are refused unless the whole call, on its own, is one of two
+  # fixed shapes. Matching a template rather than parsing GraphQL: a parser
+  # written in regexes misses commas, comments and repeated fields.
+  #   - a reply to a PR review comment (REST; the only place free text goes):
+  #       gh api [-X POST] repos/<o>/<r>/pulls/<n>/comments/<id>/replies -f body=<text>
+  #   - resolving or unresolving a review thread (GraphQL; arguments only):
+  #       gh api graphql -f query='mutation { resolveReviewThread(input: {...}) { ... } }' [--jq <expr>]
+  # Read-only GraphQL (no `mutation` anywhere in the call, no file or stdin
+  # input) stays allowed. Each call in a chain is judged on its own: the
+  # command is split on ; & | and newlines outside quotes, so quoted text
+  # stays with its call.
   API_WRITE='gh[[:space:]]+api[[:space:]].*((-X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)|[[:space:]](-f|-F|--field|--raw-field|--input)([[:space:]=]|$))'
+  JQ='([[:space:]]+(--jq|-q)[[:space:]]+('"'"'[^'"'"']*'"'"'|[^[:space:]'"'"'"]+))?'
+  REPLY='^gh[[:space:]]+api[[:space:]]+((-X|--method)[[:space:]]+POST[[:space:]]+)?/?repos/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pulls/[0-9]+/comments/[0-9]+/replies[[:space:]]+(-f|--raw-field)[[:space:]]+body=('"'"'[^'"'"']*'"'"'|"[^"]*"|[^[:space:]'"'"'"]+)'"$JQ"'$'
+  RESOLVE_BODY='mutation[[:space:]]*\{[[:space:]]*(resolveReviewThread|unresolveReviewThread)[[:space:]]*\([[:space:]]*input:[[:space:]]*\{[^{}()#,]*\}[[:space:]]*\)[[:space:]]*\{[^()#,]*\}[[:space:]]*\}'
+  RESOLVE='^gh[[:space:]]+api[[:space:]]+graphql[[:space:]]+-f[[:space:]]+query=('"'"$RESOLVE_BODY"'"'|"'"$RESOLVE_BODY"'")'"$JQ"'$'
   while IFS= read -r segment; do
     seg_norm=$(normalize "$segment")
     printf '%s' "$seg_norm" | grep -qEi "$API_WRITE" || continue
-    allowed=0
-    if printf '%s' "$seg_norm" | grep -qEi 'gh[[:space:]]+api[[:space:]]+(-X[[:space:]]+POST[[:space:]]+)?/?repos/[^[:space:]]+/pulls/[0-9]+/comments/[0-9]+/replies([[:space:]]|$)'; then
+    trimmed=$(printf '%s' "$segment" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+    if printf '%s' "$trimmed" | grep -qE '[$`]|<\(|>\('; then
+      allowed=0   # built by the shell: what runs cannot be read from the text
+    elif printf '%s' "$trimmed" | grep -qE "$REPLY" ||
+         printf '%s' "$trimmed" | grep -qE "$RESOLVE"; then
       allowed=1
-    elif printf '%s' "$seg_norm" | grep -qEi 'gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)'; then
-      if printf '%s' "$segment" | grep -qE '=@|--input|\$|`'; then
-        allowed=0   # read from a file, stdin or the shell: cannot be checked
-      elif ! printf '%s' "$segment" | grep -qi 'mutation'; then
-        allowed=1   # a query
-      else
-        # Every field called with `(input:` must be one of the three.
-        others=$(printf '%s' "$segment" | grep -oE '[A-Za-z]+[[:space:]]*\([[:space:]]*input' |
-          grep -vE '^(addPullRequestReviewThreadReply|resolveReviewThread|unresolveReviewThread)[[:space:]]*\(')
-        [[ -z "$others" ]] && allowed=1
-      fi
+    elif printf '%s' "$seg_norm" | grep -qEi '^[[:space:]]*gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)' &&
+         ! printf '%s' "$trimmed" | grep -qiE 'mutation|@|--input' &&
+         ! printf '%s' "$trimmed" | grep -qE '[[:space:]]-F[[:space:]]'; then
+      allowed=1   # a query
+    else
+      allowed=0
     fi
     if [[ "$allowed" -ne 1 ]]; then
       echo "BLOCKED: '$segment' writes through the GitHub API with your own login." >&2
-      echo "On the host only PR comment replies and review-thread resolution are allowed; ask the user for anything else." >&2
+      echo "On the host only PR comment replies (REST) and resolving review threads are allowed; ask the user for anything else." >&2
       exit 2
     fi
-  done < <(printf '%s\n' "$COMMAND" | tr ';&|' '\n\n\n')
+  done < <(printf '%s' "$COMMAND" | awk 'BEGIN { RS = "\001" } {
+    # Split on ; & | and newlines that are outside single and double quotes.
+    out = ""; sq = 0; dq = 0
+    for (i = 1; i <= length($0); i++) {
+      c = substr($0, i, 1)
+      if (c == "\\" && !sq) { out = out c substr($0, i + 1, 1); i++; continue }
+      if (c == "\047" && !dq) sq = !sq
+      else if (c == "\"" && !sq) dq = !dq
+      if (!sq && !dq && (c == ";" || c == "&" || c == "|" || c == "\n")) { print out; out = ""; continue }
+      out = out c
+    }
+    print out
+  }')
   exit 0
 fi
 
