@@ -104,8 +104,13 @@ echo "==> Git authentication (HTTPS via GH_MENAMI_TOKEN, container-local only)"
 # All github.com traffic goes over HTTPS with a token scoped to this repo, not
 # over the SSH agent VS Code would forward. --global is this container's own
 # ~/.gitconfig, so the host's config and remote are untouched.
-git config --global --add url."https://github.com/".insteadOf "git@github.com:"
-git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
+# --add appends, and post-create.sh runs again after a failed `up`: add each
+# rewrite only once.
+for from in "git@github.com:" "ssh://git@github.com/"; do
+  if ! git config --global --get-all url."https://github.com/".insteadOf | grep -qxF "$from"; then
+    git config --global --add url."https://github.com/".insteadOf "$from"
+  fi
+done
 # devcontainer.json maps the host's GH_MENAMI_TOKEN to GH_TOKEN.
 if [[ -n "${GH_TOKEN:-}" ]]; then
   gh auth setup-git

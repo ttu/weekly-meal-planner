@@ -206,6 +206,11 @@ if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+(checkou
     echo "BLOCKED: creating a branch is not allowed; this dev container is confined to '$PINNED'." >&2
     exit 2
   fi
+  # A lone `-` is the previously checked-out branch, not an option.
+  if printf '%s' "$NORMALIZED" | grep -qE '(checkout|switch)[[:space:]](.*[[:space:]])?-([[:space:]]|$)'; then
+    echo "BLOCKED: switching to the previous branch is not allowed; this dev container is confined to '$PINNED'." >&2
+    exit 2
+  fi
   REF=$(printf '%s' "$NORMALIZED" | awk '
     { for (i = 1; i <= NF; i++) if ($i == "checkout" || $i == "switch") { start = i + 1; break } }
     start { for (i = start; i <= NF; i++) { if ($i == "--") exit; if ($i ~ /^-/) continue; print $i; exit } }')

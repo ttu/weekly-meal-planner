@@ -138,6 +138,8 @@ expect 2 'git push origin'
 expect 2 'git push origin feat/pinned'
 expect 0 'git push origin HEAD:feat/pinned'
 expect 0 'git push origin feat/pinned:refs/heads/feat/pinned'
+expect 2 'git checkout -'
+expect 2 'git switch -'
 expect 0 'git checkout -- README.md'
 
 # Container with the pin gone: every git and gh command is refused.
