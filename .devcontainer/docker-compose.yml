@@ -38,6 +38,14 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER}/.git:${LOCAL_WORKSPACE_FOLDER}/.git:ro
       - ../.husky:/workspaces/weekly-meal-planner/.husky:ro
       - ${LOCAL_WORKSPACE_FOLDER}/.husky:${LOCAL_WORKSPACE_FOLDER}/.husky:ro
+      # The guardrail and its settings: Claude's Edit and Write tools are not
+      # gated by a Bash hook, so the files themselves must be unwritable here.
+      # And .devcontainer: initialize.sh runs on the host every time the
+      # container is opened.
+      - ../.claude:/workspaces/weekly-meal-planner/.claude:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/.claude:${LOCAL_WORKSPACE_FOLDER}/.claude:ro
+      - ../.devcontainer:/workspaces/weekly-meal-planner/.devcontainer:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/.devcontainer:${LOCAL_WORKSPACE_FOLDER}/.devcontainer:ro
     # Host commit identity, captured by initialize.sh into .env.
     environment:
       - HOST_GIT_USER_NAME=${HOST_GIT_USER_NAME:-}

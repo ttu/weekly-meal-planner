@@ -39,11 +39,11 @@ fi
 NORMALIZED=$(printf '%s' "$COMMAND" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ')
 
 # The program can also be hidden outright: `G=git; $G push`, `${G} push`,
-# `$(echo git) push`. A push/pr/api word straight after a token built by the
-# shell is refused, since what runs cannot be known from the text. (Backslash
-# escapes — `g\it push` — are already undone above.)
+# `$(echo git) push`, `/usr/bin/gi? push`. A push/pr/api word straight after a
+# token the shell expands is refused, since what runs cannot be known from the
+# text. (Backslash escapes — `g\it push` — are already undone above.)
 if printf '%s' "$COMMAND" | tr -d '"'"'"'' | awk '
-  { for (i = 2; i <= NF; i++) if ($i ~ /^(push|pr|api)$/ && $(i - 1) ~ /[$\\(){}]/) found = 1 }
+  { for (i = 2; i <= NF; i++) if ($i ~ /^(push|pr|api)$/ && $(i - 1) ~ /[$\\(){}*?[]/) found = 1 }
   END { exit !found }'; then
   echo "BLOCKED: '$COMMAND' runs git or gh through a shell expansion the guardrail cannot check." >&2
   echo "Spell the command out: git push ..., gh pr ..., gh api ...." >&2
@@ -102,8 +102,10 @@ DANGEROUS_PATTERNS=(
   # Pushes of more than the branch at hand: every branch, deletions of
   # branches gone locally, and tags (a tag deploys production).
   'git[[:space:]]+push[[:space:]].*--(mirror|all|branches|prune|tags|follow-tags)'
-  # A target built at run time (`$BRANCH`, `$(...)`) cannot be checked here.
+  # A target built at run time (`$BRANCH`, `$(...)`) or by brace, glob or
+  # tilde expansion (`HEAD:{main,x}`, `HEAD:mai?`) cannot be checked here.
   'git[[:space:]]+push[[:space:]].*\$'
+  'git[[:space:]]+push[[:space:]].*[][{}*?~]'
   # Deleting a remote branch.
   'git[[:space:]]+push[[:space:]].*--delete'
   'git[[:space:]]+push[[:space:]].*[[:space:]]-[a-zA-Z]*d([[:space:]]|$)'
@@ -122,7 +124,9 @@ DANGEROUS_PATTERNS=(
   # Config that decides where a push goes or what git runs, whether passed
   # with -c / --config-env or stored with `git config` (use `git remote -v`
   # to read the remote).
-  '(-c[[:space:]]*|--config-env[[:space:]=]+)(remote|push|branch|url|alias|core)\.'
+  '(-c[[:space:]]*|--config-env[[:space:]=]+)((remote|push|branch|url|alias|core)\.|include)'
+  # ...or read from a config file somewhere else.
+  '(^|[[:space:]])(HOME|XDG_CONFIG_HOME|GIT_(DIR|COMMON_DIR|WORK_TREE|CONFIG[A-Z_]*|EXEC_PATH|NAMESPACE))='
   'git[[:space:]]+config[[:space:]].*(remote|push|branch|url)\.'
   # This guardrail itself, and the container's branch pin.
   '\.claude/(hooks|settings)'

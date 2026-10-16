@@ -57,6 +57,7 @@ for MODE in host container; do
   expect 0 'git commit -m "push the api pr fix"'
   expect 0 'gh pr create --title "add api docs" --body "push later"'
   expect 0 'pnpm run test'
+  expect 0 'GIT_EDITOR=true git rebase --continue'
 
   # Pushes to main, in any spelling.
   expect 2 'git push origin main'
@@ -100,6 +101,19 @@ for MODE in host container; do
   expect 2 'git status; $G push origin main'
   expect 2 'H=gh; $H pr merge 1'
   expect 2 'H=gh; $H api -X POST /x'
+  # Brace, glob and tilde expansion in a push or in the program name.
+  expect 2 'git push origin HEAD:{main,x}'
+  expect 2 'git push origin HEAD:mai?'
+  expect 2 'git push origin HEAD:ma[i]n'
+  expect 2 '/usr/bin/gi? push origin main'
+  expect 2 '/usr/bin/g*t push origin feat/pinned'
+  # Config pulled in from elsewhere.
+  expect 2 'git -c include.path=/tmp/x push'
+  expect 2 'git -c includeIf.onbranch:feat.path=/tmp/x push'
+  expect 2 'HOME=/tmp/x git push origin feat/pinned'
+  expect 2 'XDG_CONFIG_HOME=/tmp/x git push origin feat/pinned'
+  expect 2 'GIT_DIR=/tmp/x git push origin feat/pinned'
+  expect 2 'env HOME=/tmp/x git push origin feat/pinned'
   expect 2 'rm .claude/hooks/block-dangerous-git.sh'
   expect 2 'cat /dev/null > .claude/settings.json'
   expect 2 'sudo rm /etc/devcontainer-allowed-branch'

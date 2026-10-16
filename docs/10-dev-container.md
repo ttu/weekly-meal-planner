@@ -61,9 +61,11 @@ backslash escapes and drops git's and gh's global options (`git -C . push`,
 `gh -R o/r pr merge`). It refuses what it cannot read: a push whose target is
 built at run time (`$BRANCH`), or a `push`/`pr`/`api` word straight after a
 shell expansion (`G=git; $G push`). It refuses what would redirect or rename a
-command: git aliases, `GIT_CONFIG_*`, and `-c`/`--config-env`/`git config` on
-`remote.*`, `push.*`, `branch.*`, `url.*` or `core.*` (read the remote with
-`git remote -v`). And it refuses anything naming `.git/hooks`, `.git/config`,
+command: git aliases, `GIT_CONFIG_*`, `-c`/`--config-env`/`git config` on
+`remote.*`, `push.*`, `branch.*`, `url.*`, `core.*` or `include*` (read the
+remote with `git remote -v`), and `HOME`, `XDG_CONFIG_HOME` or `GIT_DIR`-style
+overrides that make git read another config. Brace, glob and tilde expansion
+in a push (`HEAD:{main,x}`) is refused for the same reason. And it refuses anything naming `.git/hooks`, `.git/config`,
 `.husky/`, `.claude/hooks`, `.claude/settings` or the container's branch pin —
 reads included; use the Read tool.
 
@@ -86,13 +88,17 @@ commits, fetches and pushes write — `objects/`, `refs/`, `logs/` and this
 worktree's admin dir (`.git/worktrees/<name>`), whose `commondir` and `gitdir`
 stay read-only. The worktree's `.git` file and `.husky/` (where
 `core.hooksPath` points) are read-only too, and `HUSKY=0` stops
-`pnpm install` regenerating hooks. Consequences:
+`pnpm install` regenerating hooks. So are `.claude/` — the hook and its
+settings, which Claude's Edit and Write tools could otherwise change — and
+`.devcontainer/`, whose `initialize.sh` runs on the host each time the
+container opens. Consequences:
 
 - The container opens worktrees only; `initialize.sh` refuses the main
   checkout, which has no admin dir of its own to make writable.
 - Run `pnpm install` on the host once in a new worktree before opening the
   container, or `post-create.sh` stops and says so.
-- Hook changes are made from the host.
+- Changes to git hooks, the guardrail or the container are made from the
+  host.
 - `git push -u` cannot record an upstream; `initialize.sh` sets the branch's
   upstream on the host before the container starts.
 
@@ -106,6 +112,11 @@ GitHub API, and Claude's Edit and Write tools are not Bash — they can edit
 the hook itself. The real boundary is on GitHub — a ruleset on `main` that
 blocks direct pushes, force-pushes and deletion, which the PAT cannot bypass.
 Until that exists (`TODO.md`), treat the PAT as able to write `main`.
+
+`refs/` has to stay writable for commits, and git cannot narrow that to one
+branch, so the container can move any local branch ref, `main` included, in
+the shared `.git`. It cannot push it (see above), and the reflog on the host
+recovers it.
 
 The read-only mounts keep the container from planting anything git runs on its
 own. They cannot protect code you run yourself: the worktree is shared, so
