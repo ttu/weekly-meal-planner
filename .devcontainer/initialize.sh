@@ -6,7 +6,8 @@
 # .git is a file holding an absolute path into the main repo's .git, which
 # would not exist inside the container. We write those host paths to
 # .devcontainer/.env so docker-compose can bind-mount them at the *same*
-# absolute paths, leaving the host repo completely untouched.
+# absolute paths. The only change to the host repo is the branch upstream
+# below, and only when the branch has none.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,8 +18,20 @@ if ! git -C "$WORKSPACE" rev-parse --git-dir >/dev/null 2>&1; then
   exit 1
 fi
 
-# Absolute path of the shared .git (for a worktree this is the MAIN repo's).
+# Worktrees only. The container mounts the shared .git read-only apart from
+# objects, refs, logs and this worktree's own admin dir; the main checkout has
+# no admin dir of its own, so it would need the shared .git writable — and
+# then the container could plant config that host git runs.
+if [[ ! -f "$WORKSPACE/.git" ]]; then
+  echo "initialize.sh: open a git worktree in the container, not the main checkout:" >&2
+  echo "  git worktree add .worktrees/<slug> -b feat/<slug>" >&2
+  exit 1
+fi
+
+# Absolute path of the shared .git (for a worktree this is the MAIN repo's),
+# and of this worktree's admin dir inside it (.git/worktrees/<name>).
 GIT_COMMON_DIR="$(cd "$(git -C "$WORKSPACE" rev-parse --git-common-dir)" && pwd)"
+GIT_WORKTREE_ADMIN="$(git -C "$WORKSPACE" rev-parse --absolute-git-dir)"
 
 # The host's effective commit identity (usually from ~/.gitconfig, which is
 # NOT mounted into the container — see post-create.sh for why). Forwarded so
@@ -27,12 +40,24 @@ GIT_COMMON_DIR="$(cd "$(git -C "$WORKSPACE" rev-parse --git-common-dir)" && pwd)
 HOST_GIT_USER_NAME="$(git -C "$WORKSPACE" config --get user.name || true)"
 HOST_GIT_USER_EMAIL="$(git -C "$WORKSPACE" config --get user.email || true)"
 
+# The container mounts the shared git config read-only, so `git push -u`
+# cannot record an upstream there. Record it here, on the host, so a bare
+# `git push` in the container targets this branch. Only ever added, never
+# changed: an existing upstream is left alone.
+BRANCH="$(git -C "$WORKSPACE" rev-parse --abbrev-ref HEAD)"
+if [[ "$BRANCH" != "HEAD" ]] &&
+   ! git -C "$WORKSPACE" config --get "branch.$BRANCH.remote" >/dev/null; then
+  git -C "$WORKSPACE" config "branch.$BRANCH.remote" origin
+  git -C "$WORKSPACE" config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
+fi
+
 # The worktree also has to be visible at its original host path: the main repo
 # records that path in .git/worktrees/<name>/gitdir, and if it cannot be found
 # git treats the worktree as prunable — `git gc` would then delete the shared
 # admin directory and break the worktree on the host too.
 {
   printf 'GIT_COMMON_DIR=%s\n' "$GIT_COMMON_DIR"
+  printf 'GIT_WORKTREE_ADMIN=%s\n' "$GIT_WORKTREE_ADMIN"
   printf 'LOCAL_WORKSPACE_FOLDER=%s\n' "$WORKSPACE"
   printf 'HOST_GIT_USER_NAME=%s\n' "$HOST_GIT_USER_NAME"
   printf 'HOST_GIT_USER_EMAIL=%s\n' "$HOST_GIT_USER_EMAIL"

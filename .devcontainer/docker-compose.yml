@@ -14,17 +14,36 @@ services:
       # checkout. See npm_config_store_dir in devcontainer.json.
       - pnpm-store:/home/ubuntu/.pnpm-store
       # --- git worktree support (paths written by initialize.sh) ---
-      # The shared .git, at its original host path, so the absolute `gitdir:`
-      # in a worktree's .git file resolves inside the container.
-      - ${GIT_COMMON_DIR:-/tmp/menami-devcontainer-no-git}:${GIT_COMMON_DIR:-/tmp/menami-devcontainer-no-git}
-      # The workspace at its original host path too. Without it the main repo
-      # cannot find the worktree, marks it prunable, and `git gc` deletes the
-      # shared admin dir — corrupting the worktree on the host as well.
-      - ${LOCAL_WORKSPACE_FOLDER:-/tmp/menami-devcontainer-no-ws}:${LOCAL_WORKSPACE_FOLDER:-/tmp/menami-devcontainer-no-ws}
+      # Each at its original host path, so the absolute paths git records (the
+      # worktree's `gitdir:`, the admin dir's back-pointer) resolve inside the
+      # container. Without the back-pointer target git marks the worktree
+      # prunable, and a `git gc` would delete its admin dir on the host too.
+      - ${LOCAL_WORKSPACE_FOLDER:?run .devcontainer/initialize.sh}:${LOCAL_WORKSPACE_FOLDER}
+      # The shared .git, read-only: its config, hooks and the other worktrees'
+      # admin dirs decide what host git runs, so the container may not write
+      # them. Writable are only what commits, fetches and pushes touch —
+      # objects, refs, reflogs — and this worktree's own admin dir (HEAD,
+      # index), minus the two files in it that point git elsewhere.
+      - ${GIT_COMMON_DIR:?run .devcontainer/initialize.sh}:${GIT_COMMON_DIR}:ro
+      - ${GIT_COMMON_DIR}/objects:${GIT_COMMON_DIR}/objects
+      - ${GIT_COMMON_DIR}/refs:${GIT_COMMON_DIR}/refs
+      - ${GIT_COMMON_DIR}/logs:${GIT_COMMON_DIR}/logs
+      - ${GIT_WORKTREE_ADMIN:?run .devcontainer/initialize.sh}:${GIT_WORKTREE_ADMIN}
+      - ${GIT_WORKTREE_ADMIN}/commondir:${GIT_WORKTREE_ADMIN}/commondir:ro
+      - ${GIT_WORKTREE_ADMIN}/gitdir:${GIT_WORKTREE_ADMIN}/gitdir:ro
+      # The worktree's `.git` file points at the admin dir: read-only at both
+      # workspace paths. So are husky's generated hooks (core.hooksPath),
+      # which run on the host's next commit.
+      - ../.git:/workspaces/weekly-meal-planner/.git:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/.git:${LOCAL_WORKSPACE_FOLDER}/.git:ro
+      - ../.husky/_:/workspaces/weekly-meal-planner/.husky/_:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/.husky/_:${LOCAL_WORKSPACE_FOLDER}/.husky/_:ro
     # Host commit identity, captured by initialize.sh into .env.
     environment:
       - HOST_GIT_USER_NAME=${HOST_GIT_USER_NAME:-}
       - HOST_GIT_USER_EMAIL=${HOST_GIT_USER_EMAIL:-}
+      # The workspace's host path, which git must also be told to trust.
+      - LOCAL_WORKSPACE_FOLDER=${LOCAL_WORKSPACE_FOLDER:-}
     # Local Supabase runs on the host (`supabase start`); scripts in the
     # container reach it as host.docker.internal. Docker Desktop provides the
     # name already; this line makes Linux hosts match.

@@ -45,7 +45,26 @@ echo "==> Playwright browsers"
 sudo chown -R "$(id -u):$(id -g)" "${PLAYWRIGHT_BROWSERS_PATH:-/ms-playwright}"
 pnpm exec playwright install chromium
 
+echo "==> Git hooks (husky, generated on the host)"
+# .husky/_ is mounted read-only and HUSKY=0 stops pnpm regenerating it, so it
+# must already exist from a host install. Without it every commit in the
+# container would skip lint-staged, type-check and the tests.
+if [[ ! -f "$WORKSPACE/.husky/_/pre-commit" ]]; then
+  echo "FAIL: .husky/_ has no hooks. Run 'pnpm install' on the host in this" >&2
+  echo "      checkout once, then rebuild the container." >&2
+  exit 1
+fi
+echo "    husky hooks present (read-only)"
+
 echo "==> Verifying git works (worktrees need the mounts from initialize.sh)"
+# The read-only mounts nested in the workspace make it appear root-owned, and
+# git refuses a repository owned by someone else. Trust exactly these paths,
+# in this container's own ~/.gitconfig.
+for dir in "$WORKSPACE" "${LOCAL_WORKSPACE_FOLDER:-}"; do
+  if [[ -n "$dir" ]] && ! git config --global --get-all safe.directory | grep -qxF "$dir"; then
+    git config --global --add safe.directory "$dir"
+  fi
+done
 if ! git -C "$WORKSPACE" rev-parse --git-dir >/dev/null 2>&1; then
   echo "FAIL: git is not usable inside the container." >&2
   echo "      If this workspace is a git worktree, check that .devcontainer/.env" >&2
@@ -111,7 +130,11 @@ if [[ -z "$CONTAINER_BRANCH" || "$CONTAINER_BRANCH" == "HEAD" ]]; then
   echo "FAIL: could not determine the current branch to pin to" >&2
   exit 1
 fi
-printf '%s\n' "$CONTAINER_BRANCH" > "$HOME/.devcontainer-allowed-branch"
+# Root-owned and read-only: the agent runs as `ubuntu` and must not be able
+# to edit or delete it. The hook refuses all git if it goes missing.
+printf '%s\n' "$CONTAINER_BRANCH" | sudo tee /etc/devcontainer-allowed-branch >/dev/null
+sudo chown root:root /etc/devcontainer-allowed-branch
+sudo chmod 444 /etc/devcontainer-allowed-branch
 echo "    confined to branch '$CONTAINER_BRANCH'"
 
 echo "==> Verifying git guardrail hook is active"
@@ -137,6 +160,19 @@ if [[ "$blocked" -ne 2 || "$off_branch" -ne 2 || "$allowed" -ne 0 ]]; then
   exit 1
 fi
 echo "    git guardrail OK"
+
+echo "==> Dropping sudo"
+# Everything above needed root; nothing after does. Without this the agent
+# could rewrite the root-owned branch pin, or remount anything. The account's
+# password is locked, so the image's `%sudo` rule grants nothing once the
+# passwordless rule is gone. To install something later, rebuild, or use
+# `docker exec -u root` from the host.
+sudo rm -f /etc/sudoers.d/ubuntu
+if sudo -n true 2>/dev/null; then
+  echo "FAIL: sudo still works after removing /etc/sudoers.d/ubuntu" >&2
+  exit 1
+fi
+echo "    sudo disabled for $(id -un)"
 
 echo "==> Versions"
 echo "    node $(node -v) / pnpm $(pnpm -v)"

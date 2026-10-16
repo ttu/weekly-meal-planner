@@ -48,10 +48,8 @@
   "initializeCommand": "bash .devcontainer/initialize.sh",
   "updateContentCommand": "sudo chown ubuntu:ubuntu /workspaces/weekly-meal-planner/node_modules /home/ubuntu/.pnpm-store && pnpm install --frozen-lockfile",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  // Always pull the newest Claude Code CLI on start (best-effort). `sudo`
-  // alone resets PATH to secure_path and would update the system npm's copy
-  // rather than nvm's, which is the `claude` actually on PATH.
-  "postStartCommand": "sudo env \"PATH=$PATH\" npm install -g @anthropic-ai/claude-code@latest || true",
+  // No postStartCommand: post-create.sh drops sudo, so the Claude Code CLI is
+  // updated by rebuilding the container, which installs the latest.
   "customizations": {
     "vscode": {
       "extensions": [
@@ -84,6 +82,12 @@
     // Plannotator serves its review UI on a fixed port so VS Code can forward it.
     "PLANNOTATOR_REMOTE": "1",
     "PLANNOTATOR_PORT": "19432",
+    // Tells the git guardrail it is in the container: confine to the pinned
+    // branch, and refuse git entirely if the pin is missing.
+    "MENAMI_DEVCONTAINER": "1",
+    // husky's generated hooks are mounted read-only (they run on the host), so
+    // `pnpm install` must not try to regenerate them.
+    "HUSKY": "0",
     // Keeps pnpm's store on its volume, off the workspace bind mount.
     "npm_config_store_dir": "/home/ubuntu/.pnpm-store",
     // Never hang waiting on an interactive credential prompt.

@@ -3,7 +3,8 @@
 Optional. A container for running Claude Code (or yourself) against one branch,
 with a token that can reach this repository and nothing else.
 
-Open the folder in VS Code and choose **Reopen in Container**. `pnpm install`,
+Open a **worktree** (not the main checkout — see Worktrees) in VS Code and
+choose **Reopen in Container**. `pnpm install`,
 the Playwright browser, the Claude Code plugins and a guardrail self-test all
 run on creation; a failure stops the build with the reason.
 
@@ -13,7 +14,7 @@ run on creation; a failure stops the build with the reason.
 | ------------------------- | ------------------------------------------------------------------- |
 | Base image                | `mcr.microsoft.com/playwright:v1.63.0-noble` — bump with Playwright |
 | Node 24.9.0, pnpm 10.33.0 | devcontainer `node` feature — bump with `.tool-versions`            |
-| Claude Code CLI           | Anthropic feature; updated on every container start                 |
+| Claude Code CLI           | Anthropic feature; latest at build — rebuild to update              |
 | superpowers               | `obra/superpowers-marketplace` plugin                               |
 | plannotator               | `plannotator.ai` binary + `backnotprop/plannotator` plugin          |
 | gh, jq                    | apt, in `post-create.sh`                                            |
@@ -50,27 +51,72 @@ name is repo-specific so it cannot collide with another project's container.
 
 `.claude/hooks/block-dangerous-git.sh` is a `PreToolUse` hook on Claude's Bash
 tool, active on the host as well. It allows reversible work — commit, push a
-feature branch, open a PR — and blocks force-pushes, pushes to `main`,
+feature branch, open a PR — and blocks force-pushes, pushes to `main`, pushes
+of tags or of more than one branch (`--all`, `--mirror`, `--prune`),
 `reset --hard`, `clean -f`, `branch -D`, `gh pr merge`, mutating `gh api`
-calls and similar. It fails closed if it cannot parse the command. It gates the
-agent only; you can run anything yourself.
+calls and similar. Git's and gh's global options (`git -C . push`,
+`gh -R o/r pr merge`) are stripped before matching. It fails closed: a command
+it cannot parse, or a push whose target is built at run time (`$BRANCH`), is
+refused. It gates the agent only; you can run anything yourself.
 
-Inside the container it also confines the agent to the branch the container
-was created on: no pushing, switching to or rewriting any other branch, and no
-repointing remotes.
+It also refuses commands that would rename or switch it off: git aliases,
+`GIT_CONFIG_*` injection, `core.hooksPath`, and anything naming `.git/hooks`,
+`.git/config`, `.husky/_`, `.claude/hooks`, `.claude/settings` or the
+container's branch pin. That includes reading them through Bash; use the Read
+tool.
 
-The hook matches command text, so it stops accidents, not a determined agent:
-the token is in the environment and `curl` can reach the GitHub API directly.
-The real boundary is on GitHub — a ruleset on `main` that blocks direct pushes,
-force-pushes and deletion, which the PAT cannot bypass. Until that exists
-(`TODO.md`), treat the PAT as able to write `main`.
+Inside the container (`MENAMI_DEVCONTAINER=1`) it also confines the agent to
+the branch the container was created on: every refspec of a push must land on
+it, and no switching to, creating or rewriting another branch or repointing
+remotes. The pin is `/etc/devcontainer-allowed-branch`, root-owned and
+read-only; if it is missing, all git and gh commands are refused.
+`post-create.sh` ends by removing the passwordless sudo rule, so nothing in the
+container can change the pin afterwards. To install something later, rebuild,
+or `docker exec -u root` from the host.
+
+The container shares the host's `.git`, and much of it decides what host git
+runs: hooks fire on your next commit, the config can name an fsmonitor, pager
+or filter, and a worktree's `.git` file and its `commondir` say which config
+that is. So the shared `.git` is mounted **read-only**, except for what
+commits, fetches and pushes write — `objects/`, `refs/`, `logs/` and this
+worktree's admin dir (`.git/worktrees/<name>`), whose `commondir` and `gitdir`
+stay read-only. The worktree's `.git` file and husky's `.husky/_` are
+read-only too, and `HUSKY=0` stops `pnpm install` regenerating hooks.
+Consequences:
+
+- The container opens worktrees only; `initialize.sh` refuses the main
+  checkout, which has no admin dir of its own to make writable.
+
+- Run `pnpm install` on the host once in a new worktree before opening the
+  container, or `post-create.sh` stops and says so.
+- `git push -u` cannot record an upstream. `initialize.sh` sets the branch's
+  upstream on the host before the container starts, so use a bare `git push`.
+
+`pnpm run test:guardrail` runs the hook's cases in a throwaway container.
+
+### Limits
+
+The hook matches command text. It stops accidents and the obvious detours, not
+a determined agent: the token is in the environment, `curl` can reach the
+GitHub API, and Claude's Edit and Write tools are not Bash — they can edit
+the hook itself. The real boundary is on GitHub — a ruleset on `main` that blocks direct
+pushes, force-pushes and deletion, which the PAT cannot bypass. Until that
+exists (`TODO.md`), treat the PAT as able to write `main`.
 
 ## Worktrees
 
-One container per worktree. A worktree's `.git` is a file pointing at an
-absolute host path, so `initialize.sh` runs on the host first and writes those
-paths to `.devcontainer/.env` (gitignored); docker-compose mounts them at the
-same paths. The repo's other worktrees are not mounted and would look
+One container per worktree — the main checkout is refused (see Guardrail):
+
+```bash
+git worktree add .worktrees/<slug> -b feat/<slug>
+cd .worktrees/<slug> && pnpm install   # generates the husky hooks
+code .                                 # then: Reopen in Container
+```
+
+A worktree's `.git` is a file pointing at an absolute host path, so
+`initialize.sh` runs on the host first and writes those paths to
+`.devcontainer/.env` (gitignored); docker-compose mounts them at the same
+paths. The repo's other worktrees are not mounted and would look
 prunable, so automatic gc is off and `git gc` / `git worktree prune` are
 blocked — run those from the host.
 
