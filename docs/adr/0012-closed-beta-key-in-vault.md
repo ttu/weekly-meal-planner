@@ -42,7 +42,9 @@ A single shared **beta key**, stored in Supabase Vault as the secret named
   share token, which a guesser changes on every try, and `create_board` raised
   on a wrong key, which rolled back the record of the guess, so neither door
   was limited. Both now return a status, and the count lives in
-  `beta_key_attempt`. Anonymous sign-in makes accounts cheap, so the address
+  `beta_key_attempt`. The count and the record of a wrong guess are one step,
+  under an advisory lock per account and per address, so a burst of parallel
+  guesses cannot all read the same count and pass. Anonymous sign-in makes accounts cheap, so the address
   limit is the one that holds, and it is only as good as `x-forwarded-for`.
   The key is still a beta gate, not a credential that protects anyone's data,
   and should be long enough not to be guessed.

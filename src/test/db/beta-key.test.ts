@@ -204,6 +204,27 @@ describe('beta key', () => {
         expect(await join(fresh, token, BETA_KEY)).toBe('rate-limited')
       })
 
+      // Counting and then recording, unserialised, lets a burst of parallel
+      // guesses all read the same count and all pass. The lock is what makes the
+      // count mean something. pglite has one connection, so what can be checked
+      // here is that the lock is taken, and held until the transaction ends,
+      // after the guess is recorded.
+      it('serialises the count and the record per account and per address', async () => {
+        await db.asMember(JOINER)
+        await fromIp('203.0.113.7')
+        const locks = "select count(*)::int as n from pg_locks where locktype = 'advisory'"
+        await db.sql('begin')
+        try {
+          await join(JOINER, token, 'arvaus')
+          const held = (await db.sql(locks)) as { n: number }[]
+          expect(held[0]!.n).toBe(2)
+        } finally {
+          await db.sql('rollback')
+        }
+        const released = (await db.sql(locks)) as { n: number }[]
+        expect(released[0]!.n).toBe(0)
+      })
+
       it('leaves other people and addresses alone', async () => {
         await guess(JOINER, 10)
         expect(await join(LATECOMER, token, BETA_KEY)).toBe('joined')
