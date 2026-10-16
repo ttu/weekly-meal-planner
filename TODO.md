@@ -20,6 +20,11 @@ you want to overturn one, change the spec first.
 
 ## Security
 
+- `main` has no branch protection or ruleset (`gh api .../branches/main/protection`
+  returns 404, found while adding the dev container). The dev container's PAT
+  can therefore push to `main`; the git guardrail hook only matches command
+  text. Add a ruleset blocking direct pushes, force-pushes and deletion on
+  `main`, with no bypass for the PAT's owner role used by agents.
 - The beta key (ADR 0012) is not yet in the staging or production Vault, so
   both are still open until someone runs `vault.create_secret` there
   (`docs/06-security.md`). Once email verification exists, delete the secret

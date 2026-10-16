@@ -1,0 +1,45 @@
+services:
+  app:
+    # Pinned to match @playwright/test in package.json, so the browsers in the
+    # image are the ones the tests expect. Bump both together.
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    volumes:
+      - ..:/workspaces/weekly-meal-planner:cached
+      # node_modules on a native volume, not the macOS bind mount: install
+      # churn triggers ESTALE / ENOTEMPTY on VirtioFS.
+      - node-modules:/workspaces/weekly-meal-planner/node_modules
+      - playwright-browsers:/ms-playwright
+      # pnpm's content store. Left alone, pnpm puts it at the root of the
+      # project's filesystem — the bind mount — and 900MB lands in the host
+      # checkout. See npm_config_store_dir in devcontainer.json.
+      - pnpm-store:/home/ubuntu/.pnpm-store
+      # --- git worktree support (paths written by initialize.sh) ---
+      # The shared .git, at its original host path, so the absolute `gitdir:`
+      # in a worktree's .git file resolves inside the container.
+      - ${GIT_COMMON_DIR:-/tmp/menami-devcontainer-no-git}:${GIT_COMMON_DIR:-/tmp/menami-devcontainer-no-git}
+      # The workspace at its original host path too. Without it the main repo
+      # cannot find the worktree, marks it prunable, and `git gc` deletes the
+      # shared admin dir — corrupting the worktree on the host as well.
+      - ${LOCAL_WORKSPACE_FOLDER:-/tmp/menami-devcontainer-no-ws}:${LOCAL_WORKSPACE_FOLDER:-/tmp/menami-devcontainer-no-ws}
+    # Host commit identity, captured by initialize.sh into .env.
+    environment:
+      - HOST_GIT_USER_NAME=${HOST_GIT_USER_NAME:-}
+      - HOST_GIT_USER_EMAIL=${HOST_GIT_USER_EMAIL:-}
+    # Local Supabase runs on the host (`supabase start`); scripts in the
+    # container reach it as host.docker.internal. Docker Desktop provides the
+    # name already; this line makes Linux hosts match.
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    command: sleep infinity
+    # Chromium hard-crashes on Docker's default 64MB /dev/shm.
+    shm_size: '1gb'
+
+volumes:
+  # Per-worktree: branches diverge in dependencies.
+  node-modules:
+  # Per-container cache; survives rebuilds.
+  pnpm-store:
+  # Shared across every container for this repo. Created by initialize.sh.
+  playwright-browsers:
+    external: true
+    name: menami-playwright-browsers

@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# Runs once after the container is created (see devcontainer.json).
+set -euo pipefail
+
+WORKSPACE=/workspaces/weekly-meal-planner
+cd "$WORKSPACE"
+
+echo "==> Claude Code config"
+sudo chown -R "$(id -u):$(id -g)" "$HOME/.claude"
+if [[ ! -f "$HOME/.claude.json" ]]; then
+  echo '{"hasCompletedOnboarding":true,"theme":"dark"}' > "$HOME/.claude.json"
+fi
+
+echo "==> jq and gh"
+# jq is the git guardrail hook's fast path; gh uses GH_MENAMI_TOKEN for PRs and
+# as git's credential helper. Neither ships in the base image.
+missing=()
+command -v jq >/dev/null 2>&1 || missing+=(jq)
+command -v gh >/dev/null 2>&1 || missing+=(gh)
+if [[ ${#missing[@]} -gt 0 ]]; then
+  sudo apt-get update -qq && sudo apt-get install -y -qq "${missing[@]}"
+fi
+
+echo "==> Claude Code plugins: superpowers"
+# Lives in the ~/.claude volume, so this is a no-op after the first create.
+if ! claude plugin list 2>/dev/null | grep -q 'superpowers@superpowers-marketplace'; then
+  claude plugin marketplace add obra/superpowers-marketplace
+  claude plugin install superpowers@superpowers-marketplace
+fi
+
+echo "==> Plannotator (binary + Claude Code plugin)"
+# The plugin's hook calls the `plannotator` binary, so both are needed. The
+# installer's own plugin step is skipped in favour of the explicit one below.
+if ! command -v plannotator >/dev/null 2>&1; then
+  curl --proto '=https' --tlsv1.2 -fsSL https://plannotator.ai/install.sh | bash -s -- --skip-claude-plugin
+fi
+if ! claude plugin list 2>/dev/null | grep -q 'plannotator@plannotator'; then
+  claude plugin marketplace add backnotprop/plannotator
+  claude plugin install plannotator@plannotator
+fi
+
+echo "==> Playwright browsers"
+# /ms-playwright is a shared named volume; make it writable. Usually a no-op:
+# the image tag matches @playwright/test, so chromium is already present.
+sudo chown -R "$(id -u):$(id -g)" "${PLAYWRIGHT_BROWSERS_PATH:-/ms-playwright}"
+pnpm exec playwright install chromium
+
+echo "==> Verifying git works (worktrees need the mounts from initialize.sh)"
+if ! git -C "$WORKSPACE" rev-parse --git-dir >/dev/null 2>&1; then
+  echo "FAIL: git is not usable inside the container." >&2
+  echo "      If this workspace is a git worktree, check that .devcontainer/.env" >&2
+  echo "      exists and rebuild the container so initialize.sh runs." >&2
+  exit 1
+fi
+# A worktree whose host path is not visible here looks prunable, and a gc would
+# delete the shared admin dir — breaking it on the host too.
+ADMIN_DIR=$(git -C "$WORKSPACE" rev-parse --absolute-git-dir)
+if [[ -f "$ADMIN_DIR/gitdir" ]]; then
+  BACK_POINTER=$(cat "$ADMIN_DIR/gitdir")
+  if [[ ! -e "$BACK_POINTER" ]]; then
+    echo "FAIL: this worktree is not visible at its recorded path:" >&2
+    echo "        $BACK_POINTER" >&2
+    echo "      The LOCAL_WORKSPACE_FOLDER bind mount is missing. Check" >&2
+    echo "      .devcontainer/.env and rebuild the container." >&2
+    exit 1
+  fi
+  echo "    worktree back-pointer OK"
+fi
+echo "    git OK ($(git -C "$WORKSPACE" rev-parse --git-common-dir))"
+
+echo "==> Git identity (seeded from host, container-local only)"
+if [[ -z "$(git config --global user.name 2>/dev/null || true)" && -n "${HOST_GIT_USER_NAME:-}" ]]; then
+  git config --global user.name "$HOST_GIT_USER_NAME"
+fi
+if [[ -z "$(git config --global user.email 2>/dev/null || true)" && -n "${HOST_GIT_USER_EMAIL:-}" ]]; then
+  git config --global user.email "$HOST_GIT_USER_EMAIL"
+fi
+if git config --global user.name >/dev/null 2>&1; then
+  echo "    $(git config --global user.name) <$(git config --global user.email)>"
+else
+  echo "    no identity on host or in container; set user.name/user.email before committing"
+fi
+
+echo "==> Git authentication (HTTPS via GH_MENAMI_TOKEN, container-local only)"
+# All github.com traffic goes over HTTPS with a token scoped to this repo, not
+# over the SSH agent VS Code would forward. --global is this container's own
+# ~/.gitconfig, so the host's config and remote are untouched.
+git config --global --add url."https://github.com/".insteadOf "git@github.com:"
+git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
+# devcontainer.json maps the host's GH_MENAMI_TOKEN to GH_TOKEN.
+if [[ -n "${GH_TOKEN:-}" ]]; then
+  gh auth setup-git
+  # A dry-run push makes GitHub authenticate the token while writing nothing;
+  # ls-remote would pass anonymously on a public repo.
+  if git -C "$WORKSPACE" push --dry-run origin \
+      "HEAD:refs/heads/__devcontainer_auth_check__" >/dev/null 2>&1; then
+    echo "    git authenticates via GH_MENAMI_TOKEN — verified"
+  else
+    echo "FAIL: GH_MENAMI_TOKEN is set but git could not authenticate to 'origin'." >&2
+    echo "      The token needs Contents: Read and write on ttu/weekly-meal-planner." >&2
+    exit 1
+  fi
+else
+  echo "    GH_MENAMI_TOKEN not set on the host: git push and gh will fail until it is"
+fi
+
+echo "==> Pinning container to its own branch"
+# The guardrail hook reads this file and refuses to touch any other branch.
+CONTAINER_BRANCH=$(git -C "$WORKSPACE" rev-parse --abbrev-ref HEAD)
+if [[ -z "$CONTAINER_BRANCH" || "$CONTAINER_BRANCH" == "HEAD" ]]; then
+  echo "FAIL: could not determine the current branch to pin to" >&2
+  exit 1
+fi
+printf '%s\n' "$CONTAINER_BRANCH" > "$HOME/.devcontainer-allowed-branch"
+echo "    confined to branch '$CONTAINER_BRANCH'"
+
+echo "==> Verifying git guardrail hook is active"
+GUARD="$WORKSPACE/.claude/hooks/block-dangerous-git.sh"
+if [[ ! -x "$GUARD" ]]; then
+  echo "FAIL: $GUARD missing or not executable" >&2
+  exit 1
+fi
+OFF_BRANCH="${CONTAINER_BRANCH}__guardrail_off_branch_test"
+OFF_BRANCH_INPUT=$(jq -cn --arg branch "$OFF_BRANCH" \
+  '{tool_input:{command:("git push origin " + $branch)}}')
+set +e
+printf '%s' '{"tool_input":{"command":"git push --force"}}' | bash "$GUARD" >/dev/null 2>&1
+blocked=$?
+printf '%s' "$OFF_BRANCH_INPUT" | bash "$GUARD" >/dev/null 2>&1
+off_branch=$?
+printf '%s' '{"tool_input":{"command":"git status"}}' | bash "$GUARD" >/dev/null 2>&1
+allowed=$?
+set -e
+if [[ "$blocked" -ne 2 || "$off_branch" -ne 2 || "$allowed" -ne 0 ]]; then
+  echo "FAIL: git guardrail self-test failed (force-push=$blocked want 2," >&2
+  echo "      off-branch push=$off_branch want 2, read-only=$allowed want 0)" >&2
+  exit 1
+fi
+echo "    git guardrail OK"
+
+echo "==> Versions"
+echo "    node $(node -v) / pnpm $(pnpm -v)"
+
+echo "==> Dev container ready"

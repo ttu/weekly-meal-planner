@@ -24,6 +24,7 @@ Realtime). No server of our own.
 | Rules and conventions              | `docs/05-code-quality.md`          |
 | Auth, RLS, privacy                 | `docs/06-security.md`              |
 | Colours, type, components          | `docs/07-design-system.md`         |
+| Dev container, PAT, git guardrail  | `docs/10-dev-container.md`         |
 | Why things are the way they are    | `docs/adr/README.md`               |
 
 ## Ubiquitous language
