@@ -80,12 +80,51 @@ for MODE in host container; do
   expect 2 'git -c alias.r=reset r --hard'
   expect 2 'git config alias.r reset'
   expect 2 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.r GIT_CONFIG_VALUE_0=reset git r --hard'
+  expect 2 'GIT_CONFIG_GLOBAL=/tmp/x git r --hard'
+  expect 2 'git -c include.path=/tmp/x r --hard'
 
   # Merging stays with a person.
   expect 2 'gh pr merge 2'
   expect 2 'gh -R ttu/weekly-meal-planner pr merge 2'
   expect 2 'H=gh; $H pr merge 2'
+  # ...whichever API spells the merge.
+  expect 2 'gh api -X PUT repos/o/r/pulls/2/merge'
+  expect 2 'gh api repos/o/r/merges -f base=main -f head=x'
+  expect 2 'gh api graphql -f query="mutation { mergePullRequest(input:{pullRequestId:\"x\"}) { clientMutationId } }"'
+  expect 2 'gh api graphql -f query="mutation { enablePullRequestAutoMerge(input:{pullRequestId:\"x\"}) { clientMutationId } }"'
+  expect 2 'gh api graphql -f query="mutation { mergeBranch(input:{}) { clientMutationId } }"'
+  expect 0 'gh api repos/o/r/pulls/2'
 done
+
+# Host only: gh and git use your own login there, which reaches every repo you
+# can, so the GitHub rules stay. Comments, replies and resolving still work.
+MODE=host
+unset MENAMI_DEVCONTAINER
+rm -f "$PIN"
+expect 2 'git push --force'
+expect 2 'git push origin +feat/pinned'
+expect 2 'git push origin main'
+expect 2 'git push origin HEAD:refs/heads/main'
+expect 2 'git -C . push origin main'
+expect 2 'git push --tags'
+expect 2 'git push origin --delete feat/pinned'
+expect 2 'gh release create v1'
+expect 2 'gh repo delete o/r'
+expect 2 'gh secret set X'
+expect 2 'gh workflow run deploy'
+expect 2 'gh api -X DELETE repos/o/r'
+expect 2 'gh api repos/o/r/issues -f title=x'
+expect 2 'gh api graphql -f query="mutation { deleteRef(input:{refId:\"x\"}) { clientMutationId } }"'
+expect 0 'gh api graphql -f query="query { viewer { login } }"'
+expect 0 'gh api graphql -f query="mutation { addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\"x\", body:\"y\"}) { comment { id } } }"'
+
+# Container: the scoped PAT is in use, and GitHub's own limits decide.
+MODE=container
+export MENAMI_DEVCONTAINER=1
+printf 'feat/pinned\n' > "$PIN"
+expect 0 'git push origin HEAD:refs/heads/feat/pinned'
+expect 0 'git push --tags'
+expect 0 'gh api repos/o/r/issues -f title=x'
 
 # Container only: confined to the pinned branch locally.
 MODE=container

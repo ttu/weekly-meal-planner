@@ -51,8 +51,9 @@ name is repo-specific so it cannot collide with another project's container.
 
 ## What the agent may do on GitHub
 
-GitHub decides, not a hook: these hold whatever command the agent writes,
-including a raw API call. The agent can push branches, open PRs, comment,
+In the container, GitHub decides, not a hook: these hold whatever command the
+agent writes, including a raw API call. (On the host the agent uses your own
+login, so the hook keeps GitHub rules there — see Guardrail.) The agent can push branches, open PRs, comment,
 reply to and resolve review threads, and open issues. Three settings, in the
 repository on GitHub, bound the rest:
 
@@ -79,9 +80,16 @@ tool, active on the host as well. It covers what GitHub cannot see:
   `worktree prune` / `prune`, which in a container would delete the other
   worktrees' admin dirs on the host. Aliases that rename these, and
   `GIT_CONFIG_*`, are refused too.
-- **Merging** — `gh pr merge`. A ruleset cannot require a review here: the PAT
-  acts as you, and you cannot approve your own PR. So the agent opens PRs and
-  you merge them.
+- **Merging** — `gh pr merge`, the REST merge endpoints and the GraphQL
+  merge mutations. A ruleset cannot require a review here: the PAT acts as
+  you, and you cannot approve your own PR. So the agent opens PRs and you
+  merge them.
+- **On the host only, publishing that is hard to undo.** There `gh` and git
+  use your own login, which reaches every repo you can, so the PAT's limits do
+  not apply: force-pushes, pushes to `main`, tag and branch-deleting pushes,
+  `gh release`/`repo`/`secret`/`workflow` changes, and `gh api` writes are
+  refused — except PR review conversation (replying to a review comment,
+  replying to or resolving a review thread).
 
 Before matching it undoes quoting and backslash escapes and drops git's and
 gh's global options (`git -C . reset`, `gh -R o/r pr merge`), and it refuses a
