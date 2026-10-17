@@ -97,9 +97,10 @@ type IngredientEntry = {
 
 type Props = {
   readonly initial?: MealDraft | undefined
-  /** What a new Meal starts at: the Household's size. An existing Meal keeps
-   *  its own. */
-  readonly defaultServings?: Servings | undefined
+  /** What a Meal starts at when `initial` has no servings of its own: the
+   *  Household's size for a new one. Required, so no caller falls back to a
+   *  number the editor invented. */
+  readonly defaultServings: Servings
   readonly ingredients: readonly Ingredient[]
   /** A Catalogue Meal is read-only through the client; the editor offers to
    *  copy it instead (ADR 0005). */
@@ -145,7 +146,7 @@ export const MealEditorScreen = ({
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [name, setName] = useState(initial?.name ?? '')
-  const [servings, setServings] = useState<number>(initial?.servings ?? defaultServings ?? 1)
+  const [servings, setServings] = useState<number>(initial?.servings ?? defaultServings)
   const [entries, setEntries] = useState<readonly IngredientEntry[]>(
     initial?.ingredients.map((i) => ({
       ingredientId: i.ingredientId,

@@ -42,6 +42,20 @@ describe('household size', () => {
     expect(await sizeOf()).toBe(2)
   })
 
+  it("refuses to change another Household's size", async () => {
+    await db.asOwner()
+    const [other] = (await db.sql("insert into household (name) values ('Bob') returning id")) as {
+      id: string
+    }[]
+    await db.asMember(ALICE)
+    await db.sql('update household set size = 9 where id = $1', [other!.id])
+    await db.asOwner()
+    const rows = (await db.sql('select size from household where id = $1', [other!.id])) as {
+      size: number
+    }[]
+    expect(rows[0]!.size).toBe(4)
+  })
+
   it.each([0, 51])('refuses %i, which no Meal could be started at', async (size) => {
     await db.asMember(ALICE)
     await expect(

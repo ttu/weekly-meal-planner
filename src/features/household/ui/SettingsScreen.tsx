@@ -13,7 +13,7 @@ import { Notice } from '@/shared/ui/Notice'
 import { useTranslation } from '@/shared/i18n'
 import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain/slot-edit'
 import type { AddEmailError } from '../application/add-email'
-import { MAX_SIZE, MIN_SIZE, stepSize } from '../domain/size'
+import { SizeStepper } from './SizeStepper'
 import type { HouseholdSize, Slot, SlotKey } from '../domain/types'
 
 /** Light first, because light is what the board is unless someone says
@@ -79,24 +79,6 @@ const sheets = themed((tokens) =>
     addRow: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' },
     addField: { flex: 1 },
     addButton: { paddingHorizontal: tokens.space.lg, minHeight: 54 },
-    stepperRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
-    stepper: {
-      borderWidth: 1,
-      borderColor: tokens.color.rule,
-      backgroundColor: tokens.color.surfaceRaised,
-      borderRadius: tokens.radius.md,
-      minHeight: 54,
-      minWidth: 54,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepperSpent: { opacity: 0.25 },
-    stepperValue: {
-      ...tokens.type.display,
-      color: tokens.color.textPrimary,
-      minWidth: 48,
-      textAlign: 'center',
-    },
     sizeLabel: { marginTop: tokens.space.xl },
     sizeHint: { ...tokens.type.meta, color: tokens.color.textSupport, marginTop: tokens.space.sm },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
@@ -251,35 +233,7 @@ export const SettingsScreen = ({
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
 
         <Text style={[formStyles.label, styles.sizeLabel]}>{t('settings.size')}</Text>
-        <View style={styles.stepperRow}>
-          <Pressable
-            style={[styles.stepper, size <= MIN_SIZE && styles.stepperSpent]}
-            disabled={size <= MIN_SIZE || isPending}
-            onPress={() => {
-              onChangeSize(stepSize(size, -1))
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.sizeFewer')}
-            testID="settings-size-less"
-          >
-            <Text style={styles.glyphText}>−</Text>
-          </Pressable>
-          <Text style={styles.stepperValue} testID="settings-size-value">
-            {String(size)}
-          </Text>
-          <Pressable
-            style={[styles.stepper, size >= MAX_SIZE && styles.stepperSpent]}
-            disabled={size >= MAX_SIZE || isPending}
-            onPress={() => {
-              onChangeSize(stepSize(size, 1))
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.sizeMore')}
-            testID="settings-size-more"
-          >
-            <Text style={styles.glyphText}>+</Text>
-          </Pressable>
-        </View>
+        <SizeStepper size={size} disabled={isPending} onChange={onChangeSize} />
         <Text style={styles.sizeHint}>{t('settings.sizeHint')}</Text>
 
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>

@@ -32,6 +32,7 @@ export default function EditMeal(): React.JSX.Element | null {
   // it instead (ADR 0005).
   return (
     <MealEditorScreen
+      defaultServings={meal.servings}
       initial={{ name: meal.name, servings: meal.servings, ingredients: meal.ingredients }}
       photoUrl={meal.photoUrl}
       ingredients={ingredients}
