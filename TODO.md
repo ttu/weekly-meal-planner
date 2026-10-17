@@ -30,6 +30,15 @@ you want to overturn one, change the spec first.
   `vite-plugin-commonjs`. Both are dev-tooling only and never reach the
   shipped bundle. When a fixed version is published, add an override for it and
   delete the ignore.
+- The git guardrail hook (`.claude/hooks/block-dangerous-git.sh`) matches
+  text, and automated security reviews of PR #2 keep finding spellings past
+  it. Two are open: its quote tracking can be misled (a `#` comment, `$'...'`)
+  so brace expansion is not seen, and a git config file reached through a glob
+  (`~/.gitc*`) or from inside `.git` is not caught by its path rules. Both
+  bypass only the local rules, not GitHub's. Rather than more patterns, close
+  the config route in the container for good: point `GIT_CONFIG_GLOBAL` at a
+  root-owned file in `/etc` that `post-create.sh` writes and then locks, so
+  neither Bash nor Edit/Write can add an alias, include or autocorrect.
 
 ## Tests
 
