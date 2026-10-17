@@ -88,6 +88,12 @@ for MODE in host container; do
   expect 2 'git re?et --hard'
   expect 2 'git -c help.autocorrect=immediate rest --hard'
   expect 2 'git config --global help.autocorrect immediate'
+  expect 2 'git {reset,} --hard'
+  expect 2 'git re{s,}et --hard'
+  expect 2 'git -C . {reset,} --hard'
+  expect 2 "printf '[help]\\n autocorrect = 1' >> ~/.gitconfig"
+  expect 2 "printf '[alias]\\n r = reset' >> ~/.gitconfig"
+  expect 0 $'git status \\\n  --short'
 
   # Merging stays with a person.
   expect 2 'gh pr merge 2'
@@ -129,6 +135,8 @@ expect 2 'gh api repos/o/r/pulls/2/comments/1/replies -f body=x && gh api repos/
 expect 2 'gh api graphql -F query=@q.graphql'
 expect 2 'gh api graphql --input q.json'
 expect 2 'gh api graphql -f query="$(cat q.graphql)"'
+# An escaped backslash at a line end is no continuation: two commands.
+expect 2 $'gh api graphql -f query=\'query { viewer { login } }\' \\\\\n gh api -X DELETE repos/o/r'
 # Tags by name, and includes stored in config.
 expect 2 'git push origin v1.2.0'
 expect 2 'git push origin refs/tags/v1.2.0'

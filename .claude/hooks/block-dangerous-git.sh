@@ -42,7 +42,22 @@ fi
 
 # A backslash-newline is no break to the shell (`git reset \<newline>--hard`
 # is one command), so undo it before anything reads the text line by line.
-COMMAND=${COMMAND//$'\\\n'/}
+# Only a real continuation: not inside single quotes, and not an escaped
+# backslash (`\\<newline>` is a backslash and then a new command).
+COMMAND=$(printf '%s' "$COMMAND" | awk 'BEGIN { RS = "\001" } {
+  out = ""; sq = 0; dq = 0
+  for (i = 1; i <= length($0); i++) {
+    c = substr($0, i, 1)
+    if (c == "\\" && !sq) {
+      if (substr($0, i + 1, 1) != "\n") out = out c substr($0, i + 1, 1)
+      i++; continue
+    }
+    if (c == "\047" && !dq) sq = !sq
+    else if (c == "\"" && !sq) dq = !dq
+    out = out c
+  }
+  printf "%s", out
+}')
 
 # Subcommands the rules below guard. A guarded word straight after a token
 # the shell expands (`G=git; $G reset`, `${G} reset`, `/usr/bin/gi? clean`)
@@ -63,7 +78,10 @@ fi
 # `/usr/bin/git -c x=y clean`, `gh -R o/r pr merge`) dropped, so the
 # subcommand sits right after the program.
 normalize() {
-  printf '%s' "$1" | tr -d '"'"'"'`\\' | tr '(){};&|<>' '          ' | awk '{
+  # With a second argument braces are kept, to see brace expansion.
+  local metas='(){};&|<>'
+  [[ -n "${2:-}" ]] && metas='();&|<>'
+  printf '%s' "$1" | tr -d '"'"'"'`\\' | tr "$metas" '          ' | awk '{
     n = split($0, t, /[[:space:]]+/); out = ""; i = 1
     while (i <= n) {
       base = t[i]; sub(/^.*\//, "", base)
@@ -82,10 +100,10 @@ normalize() {
 }
 NORMALIZED=$(normalize "$COMMAND")
 
-# A subcommand the shell globs or expands (`git re?et`) is whatever file
-# matches, not what the text says.
-if printf '%s' "$NORMALIZED" | awk '
-  { for (i = 1; i < NF; i++) if (($i == "git" || $i == "gh") && $(i + 1) ~ /[*?[$]/) found = 1 }
+# A subcommand the shell globs or expands (`git re?et`, `git {reset,}`,
+# `git re{s,}et`) is whatever the shell makes of it, not what the text says.
+if normalize "$COMMAND" keep-braces | awk '
+  { for (i = 1; i < NF; i++) if (($i == "git" || $i == "gh") && $(i + 1) ~ /[*?[${}~,]/) found = 1 }
   END { exit !found }'; then
   echo "BLOCKED: '$COMMAND' runs a git or gh subcommand the shell expands; spell it out." >&2
   exit 2
@@ -113,7 +131,9 @@ DANGEROUS_PATTERNS=(
   # through the environment, another config file or an include can define one.
   'git[[:space:]].*alias\.'
   # help.autocorrect runs the closest match to a typo (`git rest --hard`).
-  'git[[:space:]].*autocorrect'
+  # Either one written into a config file directly counts too.
+  'autocorrect'
+  '\[alias'
   'GIT_CONFIG_(COUNT|KEY|VALUE|PARAMETERS|GLOBAL|SYSTEM)'
   '(-c[[:space:]]*|--config-env[[:space:]=]+)include'
   'git[[:space:]]+config[[:space:]].*include'
@@ -223,6 +243,7 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     elif allowed_api_write "$trimmed"; then
       allowed=1
     elif printf '%s' "$seg_norm" | grep -qEi '^[[:space:]]*gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)' &&
+         ! printf '%s' "$seg_norm" | awk '{ for (i = 1; i <= NF; i++) if ($i == "gh" || $i == "git") c++ } END { exit !(c > 1) }' &&
          ! printf '%s' "$trimmed" | grep -qiE 'mutation|@|--input' &&
          ! printf '%s' "$trimmed" | grep -qE '[[:space:]]-[A-Za-z]*F'; then
       allowed=1   # a query

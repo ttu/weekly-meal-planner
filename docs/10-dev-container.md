@@ -147,8 +147,10 @@ The hook matches command text. It stops accidents and the obvious detours,
 not a determined agent — which is why nothing on GitHub depends on it. Shell
 spelling is open-ended (line continuations, globs, brace expansion, git's
 abbreviated options and autocorrect); the hook refuses the ones it knows and
-anything the shell would build, but the list is never complete. On the
-host, Claude's Edit and Write tools are not Bash and can edit the hook itself.
+anything the shell would build, but the list is never complete. Claude's
+Edit and Write tools are not Bash: they can write a git config file (an alias,
+or `help.autocorrect`) that the hook never sees, in the container too, and on
+the host they can edit the hook itself.
 
 `refs/` has to stay writable for commits, and git cannot narrow that to one
 branch, so the container can move any local branch ref, `main` included, in
