@@ -162,7 +162,8 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   done
 
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make
-  # it POST) are refused unless the whole call, on its own, is one of two
+  # it POST, also with the value attached or among combined short flags:
+  # `-ftitle=x`, `-iXDELETE`) are refused unless the whole call, on its own, is one of two
   # fixed shapes. Matching a template rather than parsing GraphQL: a parser
   # written in regexes misses commas, comments and repeated fields.
   #   - a reply to a PR review comment (REST; the only place free text goes):
@@ -173,7 +174,7 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   # input) stays allowed. Each call in a chain is judged on its own: the
   # command is split on ; & | and newlines outside quotes, so quoted text
   # stays with its call.
-  API_WRITE='gh[[:space:]]+api[[:space:]].*((-X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)|[[:space:]](-f|-F|--field|--raw-field|--input)([[:space:]=]|$))'
+  API_WRITE='gh[[:space:]]+api[[:space:]].*((-[A-Za-z]*X|--method)[[:space:]=]*(POST|PUT|PATCH|DELETE)|[[:space:]](-[A-Za-z]*[fF]|--field|--raw-field|--input)([^[:space:]]*)([[:space:]]|$))'
   # The value of query= after shell unquoting; arguments only, one field.
   RESOLVE_QUERY='^mutation[[:space:]]*\{[[:space:]]*(resolveReviewThread|unresolveReviewThread)[[:space:]]*\([[:space:]]*input:[[:space:]]*\{[[:space:]]*threadId:[[:space:]]*"[A-Za-z0-9_-]+"[[:space:]]*\}[[:space:]]*\)[[:space:]]*\{[A-Za-z_[:space:]{}]*\}[[:space:]]*\}$'
   REPLY_PATH='^/?repos/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pulls/[0-9]+/comments/[0-9]+/replies$'
@@ -208,7 +209,7 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
       allowed=1
     elif printf '%s' "$seg_norm" | grep -qEi '^[[:space:]]*gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)' &&
          ! printf '%s' "$trimmed" | grep -qiE 'mutation|@|--input' &&
-         ! printf '%s' "$trimmed" | grep -qE '[[:space:]]-F[[:space:]]'; then
+         ! printf '%s' "$trimmed" | grep -qE '[[:space:]]-[A-Za-z]*F'; then
       allowed=1   # a query
     else
       allowed=0
@@ -262,6 +263,10 @@ CONTAINER_PATTERNS=(
   'git[[:space:]]+(fetch|pull)[[:space:]].*[[:space:]][^[:space:]-][^[:space:]]*:[^[:space:]]'
   'git[[:space:]]+worktree[[:space:]]+(add|move)'
   'git[[:space:]]+symbolic-ref'
+  # creates and checks out a new branch
+  'git[[:space:]]+stash[[:space:]]+branch'
+  # moves every branch that points into the rebased range
+  'git[[:space:]].*update-?refs'
 )
 for pattern in "${CONTAINER_PATTERNS[@]}"; do
   if printf '%s' "$COMMAND"    | grep -qEi -- "$pattern" ||
@@ -272,10 +277,35 @@ for pattern in "${CONTAINER_PATTERNS[@]}"; do
   fi
 done
 
+# `git rebase <upstream> <branch>` (or `--root <branch>`) rewrites <branch>,
+# which must be the pinned one. Options that take a value are skipped with it.
+if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+rebase([[:space:]]|$)'; then
+  TARGET=$(printf '%s' "$NORMALIZED" | awk '
+    { for (i = 1; i <= NF; i++) if ($i == "rebase") { start = i + 1; break } }
+    start {
+      for (i = start; i <= NF; i++) {
+        if ($i ~ /^(--onto|-s|--strategy|-X|--strategy-option|-x|--exec)$/) { i++; continue }
+        if ($i == "--root") root = 1
+        if ($i ~ /^-/) continue
+        pos[++n] = $i
+      }
+      if (root && n >= 1) print pos[1]; else if (n >= 2) print pos[2]
+    }')
+  if [[ -n "$TARGET" && "$TARGET" != "$PINNED" ]]; then
+    echo "BLOCKED: rebasing '$TARGET' is not allowed; this dev container is confined to '$PINNED'." >&2
+    exit 2
+  fi
+fi
+
 # Leaving the pinned branch would let the agent commit onto another branch.
 # Only ref arguments are blocked; `git checkout -- file` / a path stays fine.
 if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+(checkout|switch)([[:space:]]|$)'; then
-  if printf '%s' "$NORMALIZED" | grep -qEi '[[:space:]]-[bBcC]([[:space:]]|$)'; then
+  # Branch-creating options in any spelling (`-b new`, `-bnew`, `-fb new`,
+  # `--create`, `--orphan=x`), looked for only before `--`, where paths start.
+  if printf '%s' "$NORMALIZED" | awk '
+    { for (i = 1; i <= NF; i++) if ($i == "checkout" || $i == "switch") { start = i + 1; break } }
+    start { for (i = start; i <= NF && $i != "--"; i++) print $i }' |
+     grep -qE '^(-[A-Za-z]*[bBcC]|--(create|force-create|orphan)(=|$))'; then
     echo "BLOCKED: creating a branch is not allowed; this dev container is confined to '$PINNED'." >&2
     exit 2
   fi

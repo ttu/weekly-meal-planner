@@ -152,6 +152,15 @@ expect 2 'gh api graphql -f query="mutation { resolveReviewThread(input: {thread
 expect 2 "gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: '' -F query=@x ''}) { thread { id } } }'"
 expect 2 "gh api repos/o/r/pulls/2/comments/1/replies -f body='x' -F body=@secret"
 expect 2 'gh api graphql -f query="mutation { resolveReviewThread(input: {threadId: \"x\", other: 1}) { thread { id } } }"'
+# A field or method flag with its value attached, or among combined short flags.
+expect 2 'gh api repos/o/r/issues -ftitle=x'
+expect 2 'gh api repos/o/r/issues -if title=x'
+expect 2 'gh api repos/o/r/issues --field=title=x'
+expect 2 'gh api repos/o/r/issues -Ftitle=x'
+expect 2 "gh api graphql -fquery='mutation { deleteRef(input:{refId:\"x\"}) { clientMutationId } }'"
+expect 2 'gh api -XDELETE repos/o/r'
+expect 2 'gh api -iXDELETE repos/o/r'
+expect 0 "gh api graphql -fquery='query { viewer { login } }'"
 
 # Container: the scoped PAT is in use, and GitHub's own limits decide.
 MODE=container
@@ -174,6 +183,29 @@ expect 2 'git branch -f other HEAD'
 expect 2 'git fetch origin main:main'
 expect 2 'git worktree add ../x'
 expect 2 'git symbolic-ref HEAD refs/heads/other'
+# ...whatever spelling creates the branch.
+expect 2 'git switch --create new'
+expect 2 'git switch --force-create other'
+expect 2 'git switch -cnew'
+expect 2 'git checkout -bnew'
+expect 2 'git checkout -fb new'
+expect 2 'git checkout --orphan x'
+expect 2 'git switch --orphan=x'
+expect 2 'git stash branch x'
+expect 0 'git checkout -- --orphan'
+# A rebase rewrites only the pinned branch.
+expect 2 'git rebase main other'
+expect 2 'git rebase --onto main x other'
+expect 2 'git rebase -X theirs main other'
+expect 2 'git rebase --root other'
+expect 2 'git rebase --update-refs main'
+expect 2 'git -c rebase.updateRefs=true rebase main'
+expect 0 'git rebase main'
+expect 0 'git rebase -i main'
+expect 0 'git rebase -X theirs main'
+expect 0 'git rebase --onto main x'
+expect 0 'git rebase main feat/pinned'
+expect 0 'git stash list'
 expect 0 'git checkout -- README.md'
 expect 0 'git branch --list'
 

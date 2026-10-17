@@ -94,7 +94,8 @@ tool, active on the host as well. It covers what GitHub cannot see:
   (`gh api repos/<o>/<r>/pulls/<n>/comments/<id>/replies -f body=...`) and
   resolving or unresolving a review thread through GraphQL
   (`gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<id>"}) { thread { isResolved } } }'`,
-  single-quoted). The hook checks the call's arguments as the shell would split
+  single-quoted). A field or method flag with its value attached
+  (`-ftitle=x`, `-XDELETE`) counts as a write too. The hook checks the call's arguments as the shell would split
   them, so nothing can be added beside the allowed ones. Read-only
   `gh api` calls, `gh pr comment` and `gh pr review --comment` work as usual.
 
@@ -107,7 +108,8 @@ run anything yourself.
 Inside the container (`MENAMI_DEVCONTAINER=1`) it also confines the agent to
 the branch the container was created on, so it cannot commit onto another
 local branch in the `.git` it shares with the host: no switching to, creating
-or rewriting another branch. The pin is `/etc/devcontainer-allowed-branch`,
+or rewriting another branch (`checkout -b`/`--orphan`, `switch -c`,
+`stash branch`, `rebase <upstream> <other>`, `rebase --update-refs`). The pin is `/etc/devcontainer-allowed-branch`,
 root-owned and read-only; if it is missing, all git and gh commands are
 refused. `post-create.sh` ends by removing the passwordless sudo rule, so
 nothing in the container can change the pin afterwards. To install something
