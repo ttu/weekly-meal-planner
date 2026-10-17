@@ -7,6 +7,9 @@ create table household (
   slots jsonb not null default
     '[{"key":"lunch","labelKey":"slot.lunch"},{"key":"dinner","labelKey":"slot.dinner"}]'::jsonb
     check (length(slots::text) <= 4000),
+  -- How many people the Household cooks for: the number a new Meal starts at.
+  -- Same range as meal.servings, so the default is never one the editor refuses.
+  size integer not null default 4 check (size between 1 and 50),
   created_at timestamptz not null default now()
 );
 

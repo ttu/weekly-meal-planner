@@ -4,13 +4,15 @@ import { brand } from '@/shared/types/brand'
 import { ok, err, isErr, type Result } from '@/shared/types/result'
 import type { Locale } from '@/shared/i18n'
 import { parseSlots } from '../domain/slot'
-import type { Household, HouseholdId, Member, Slot } from '../domain/types'
+import { MAX_SIZE, MIN_SIZE } from '../domain/size'
+import type { Household, HouseholdId, HouseholdSize, Member, Slot } from '../domain/types'
 
 const rowSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   locale: z.enum(['fi', 'en']),
   slots: z.unknown(),
+  size: z.number().int().min(MIN_SIZE).max(MAX_SIZE),
   share_token: z.string(),
 })
 
@@ -23,7 +25,7 @@ export const loadHousehold = async (
   // own Household (ADR 0002). A filter here would be a second enforcement point.
   const { data } = await client
     .from('household')
-    .select('id,name,locale,slots,share_token')
+    .select('id,name,locale,slots,size,share_token')
     .limit(1)
     .maybeSingle()
   if (data === null) return err('not-found')
@@ -39,6 +41,7 @@ export const loadHousehold = async (
     name: row.data.name,
     locale: row.data.locale,
     slots: slots.value,
+    size: brand<number, 'HouseholdSize'>(row.data.size),
     shareToken: row.data.share_token,
   })
 }
@@ -110,4 +113,15 @@ export const saveLocale = async (
   const { error } = await client.from('household').update({ locale }).eq('id', householdId)
   if (error !== null) return err('write-failed')
   return ok(locale)
+}
+
+/** How many people the Household cooks for: what a new Meal starts at. */
+export const saveSize = async (
+  client: AppSupabaseClient,
+  householdId: HouseholdId,
+  size: HouseholdSize,
+): Promise<Result<HouseholdSize, SaveSlotsError>> => {
+  const { error } = await client.from('household').update({ size }).eq('id', householdId)
+  if (error !== null) return err('write-failed')
+  return ok(size)
 }

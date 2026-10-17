@@ -7,6 +7,8 @@ import {
   SettingsScreen,
   addEmail,
   saveLocale,
+  saveSize,
+  DEFAULT_SIZE,
   addNamedSlot,
   addPresetSlot,
   moveSlot,
@@ -67,6 +69,20 @@ export default function Settings(): React.JSX.Element {
         setPending(true)
         setError(undefined)
         void saveLocale(client, household.id, next).then((written) => {
+          setPending(false)
+          if (!isOk(written)) {
+            setError('write-failed')
+            return
+          }
+          refreshHousehold()
+        })
+      }}
+      size={household?.size ?? DEFAULT_SIZE}
+      onChangeSize={(next) => {
+        if (household === undefined) return
+        setPending(true)
+        setError(undefined)
+        void saveSize(client, household.id, next).then((written) => {
           setPending(false)
           if (!isOk(written)) {
             setError('write-failed')

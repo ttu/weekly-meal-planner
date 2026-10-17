@@ -74,6 +74,7 @@ first.
 | **Leftover**        | A card on another slot referencing a Cook Event. Contributes no ingredients. Born beside its parent, dragged from there. | leftover entry, repeat                      |
 | **Servings**        | How many the meal recipe yields.                                                                                         | portions, yield                             |
 | **Servings Cooked** | How many are actually being made at a Cook Event. Surfaced as "Cooking N".                                               | batch size, quantity                        |
+| **Household Size**  | How many people the Household cooks for. Set in Settings; the Servings a new Meal starts at in the editor.               | headcount, family size                      |
 | **Ingredient**      | A canonical shopping-list-able thing, with a category and a dimension.                                                   | item, product                               |
 | **Dimension**       | Mass, volume or count. Quantities convert only within one.                                                               | unit type                                   |
 | **Staple**          | An ingredient the household normally has in, declared from a Buy Line's "we always have this in". Kept off the Buy list. | pantry item, household ingredient           |
@@ -108,6 +109,9 @@ membership, except the global catalogue rows.
   monolingual by nature. Removing a slot never deletes what was planned in it:
   the board stops drawing the row, and putting the slot back brings the meals
   into view again. At most six, which is what a phone's day column can hold.
+  `size` is how many people the household cooks for (1–50, default 4), set in
+  Settings. It is only the number a new Meal starts at in the editor; Meals that
+  already exist keep their own `servings`.
 - **`household_member`** — user to household, with role `owner` or `member`,
   plus `display_name`, optional `avatar_url` and an assigned `colour`. The
   design puts a person's initial and colour on every backlog and planned card

@@ -13,7 +13,8 @@ import { Notice } from '@/shared/ui/Notice'
 import { useTranslation } from '@/shared/i18n'
 import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain/slot-edit'
 import type { AddEmailError } from '../application/add-email'
-import type { Slot, SlotKey } from '../domain/types'
+import { SizeStepper } from './SizeStepper'
+import type { HouseholdSize, Slot, SlotKey } from '../domain/types'
 
 /** Light first, because light is what the board is unless someone says
  *  otherwise; "match device" last, for the people who want to be asked once. */
@@ -38,6 +39,9 @@ type Props = {
    *  one (ADR 0009). */
   readonly locale: Locale
   readonly onChangeLocale: (locale: Locale) => void
+  /** How many the Household cooks for: what a new Meal starts at. */
+  readonly size: HouseholdSize
+  readonly onChangeSize: (size: HouseholdSize) => void
   readonly slots: readonly Slot[]
   readonly isPending: boolean
   readonly error?: SlotEditError | 'write-failed' | undefined
@@ -75,6 +79,8 @@ const sheets = themed((tokens) =>
     addRow: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' },
     addField: { flex: 1 },
     addButton: { paddingHorizontal: tokens.space.lg, minHeight: 54 },
+    sizeLabel: { marginTop: tokens.space.xl },
+    sizeHint: { ...tokens.type.meta, color: tokens.color.textSupport, marginTop: tokens.space.sm },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
   }),
 )
@@ -91,6 +97,8 @@ export const SettingsScreen = ({
   account,
   locale,
   onChangeLocale,
+  size,
+  onChangeSize,
   slots,
   isPending,
   error,
@@ -223,6 +231,10 @@ export const SettingsScreen = ({
         )}
 
         {full && <Text style={styles.hint}>{t('settings.slotsFull')}</Text>}
+
+        <Text style={[formStyles.label, styles.sizeLabel]}>{t('settings.size')}</Text>
+        <SizeStepper size={size} disabled={isPending} onChange={onChangeSize} />
+        <Text style={styles.sizeHint}>{t('settings.sizeHint')}</Text>
 
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.language')}
