@@ -284,6 +284,14 @@ done
 # long option, so `--cr` is `--create` and `--update-r` is `--update-refs`.
 # The scan prints one verdict per call:
 #   create | previous | updaterefs | expansion | ref <name> | switchto <name> | rebase <branch>
+# normalize() turns braces into spaces and drops backticks, so brace
+# expansion (`{-q,other}`) and command substitution are refused on the raw
+# text, before it is normalized.
+if printf '%s' "$COMMAND" | grep -qEi '(^|[^[:alnum:]_-])(checkout|switch|rebase)([^[:alnum:]_-]|$)' &&
+   printf '%s' "$COMMAND" | grep -q '[`{}$]'; then
+  echo "BLOCKED: a checkout, switch or rebase with a name built by the shell cannot be checked; this dev container is confined to '$PINNED'." >&2
+  exit 2
+fi
 VERDICTS=$(printf '%s' "$NORMALIZED" | awk '{
   for (i = 1; i < NF; i++) {
     if (tolower($i) != "git") continue
