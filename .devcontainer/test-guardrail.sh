@@ -94,6 +94,18 @@ for MODE in host container; do
   expect 2 "printf '[help]\\n autocorrect = 1' >> ~/.gitconfig"
   expect 2 "printf '[alias]\\n r = reset' >> ~/.gitconfig"
   expect 0 $'git status \\\n  --short'
+  # A continuation the quote tracking may misread, braces in an option's
+  # value, and git config files written by path.
+  expect 2 $'echo it\'s # x\ngit reset \\\n--hard'
+  expect 2 'git -c {x=y,reset} --hard'
+  expect 2 'git -C {.,} reset --hard'
+  expect 2 'git log {a..c}'
+  expect 0 'git commit -m "a {b,c} d"'
+  expect 0 "gh api graphql -f query='query { viewer { login } }'"
+  expect 2 'cp /tmp/x ~/.gitconfig'
+  expect 2 'tee -a .git/config < /tmp/x'
+  expect 2 'cat /tmp/x >> ~/.config/git/config'
+  expect 2 "printf '[include]\\n path = /tmp/x' >> /tmp/y"
 
   # Merging stays with a person.
   expect 2 'gh pr merge 2'

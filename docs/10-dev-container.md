@@ -149,7 +149,8 @@ spelling is open-ended (line continuations, globs, brace expansion, git's
 abbreviated options and autocorrect); the hook refuses the ones it knows and
 anything the shell would build, but the list is never complete. Claude's
 Edit and Write tools are not Bash: they can write a git config file (an alias,
-or `help.autocorrect`) that the hook never sees, in the container too, and on
+an include or `help.autocorrect`) that the hook never sees, where in Bash a
+config file named by its path is refused, in the container too, and on
 the host they can edit the hook itself.
 
 `refs/` has to stay writable for commits, and git cannot narrow that to one

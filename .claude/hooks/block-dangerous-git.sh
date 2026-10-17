@@ -58,6 +58,12 @@ COMMAND=$(printf '%s' "$COMMAND" | awk 'BEGIN { RS = "\001" } {
   }
   printf "%s", out
 }')
+# The quote tracking above can be misled (a quote in a `#` comment, `$'...'`),
+# so a backslash-newline it left in place is refused rather than trusted.
+if [[ "$COMMAND" == *$'\\\n'* ]]; then
+  echo "BLOCKED: a backslash at the end of a line the guardrail cannot read safely; put the command on one line." >&2
+  exit 2
+fi
 
 # Subcommands the rules below guard. A guarded word straight after a token
 # the shell expands (`G=git; $G reset`, `${G} reset`, `/usr/bin/gi? clean`)
@@ -100,6 +106,28 @@ normalize() {
 }
 NORMALIZED=$(normalize "$COMMAND")
 
+# Brace expansion outside quotes (`{x=y,reset}`, `{a..c}`) in a git or gh
+# command: the words it makes, global options' values included, are not the
+# words the rules read. `${...}` is parameter expansion and is left to the
+# checks for `$`.
+if printf '%s' "$NORMALIZED" | grep -qE '(^|[[:space:]])(git|gh)([[:space:]]|$)' &&
+   printf '%s' "$COMMAND" | awk 'BEGIN { RS = "\001" } {
+     sq = 0; dq = 0
+     for (i = 1; i <= length($0); i++) {
+       c = substr($0, i, 1)
+       if (c == "\\" && !sq) { i++; continue }
+       if (c == "\047" && !dq) sq = !sq
+       else if (c == "\"" && !sq) dq = !dq
+       else if (c == "{" && !sq && !dq && substr($0, i - 1, 1) != "$") {
+         body = substr($0, i + 1); end = index(body, "}")
+         if (end && (substr(body, 1, end - 1) ~ /,|\.\./)) found = 1
+       }
+     }
+   } END { exit !found }'; then
+  echo "BLOCKED: '$COMMAND' uses brace expansion in a git or gh command; spell the words out." >&2
+  exit 2
+fi
+
 # A subcommand the shell globs or expands (`git re?et`, `git {reset,}`,
 # `git re{s,}et`) is whatever the shell makes of it, not what the text says.
 if normalize "$COMMAND" keep-braces | awk '
@@ -133,7 +161,10 @@ DANGEROUS_PATTERNS=(
   # help.autocorrect runs the closest match to a typo (`git rest --hard`).
   # Either one written into a config file directly counts too.
   'autocorrect'
-  '\[alias'
+  '\[(alias|include)'
+  # ...and so can any git config file written by its path.
+  'gitconfig'
+  'git/config'
   'GIT_CONFIG_(COUNT|KEY|VALUE|PARAMETERS|GLOBAL|SYSTEM)'
   '(-c[[:space:]]*|--config-env[[:space:]=]+)include'
   'git[[:space:]]+config[[:space:]].*include'
