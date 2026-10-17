@@ -29,7 +29,8 @@
     "db:types": "supabase gen types typescript --local > src/shared/db/database.types.ts",
     "test:e2e": "playwright test",
     "catalogue:sync": "tsx --env-file-if-exists=.env scripts/catalogue-sync.ts",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:guardrail": "docker run --rm -v \"$PWD:/w:ro\" mcr.microsoft.com/playwright:v1.63.0-noble bash /w/.devcontainer/test-guardrail.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",

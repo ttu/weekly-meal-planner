@@ -1,0 +1,103 @@
+{
+  "name": "Menami",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/weekly-meal-planner",
+  "features": {
+    // Adds sudo + shell niceties to the base image's existing `ubuntu` user.
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "username": "ubuntu",
+      "installZsh": false,
+      "upgradePackages": false
+    },
+    // Exact versions from .tool-versions / package.json `packageManager`.
+    // Bump them together with .nvmrc and package.json `engines`.
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24.9.0",
+      "pnpmVersion": "10.33.0"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+  "mounts": [
+    // Claude config, credentials and installed plugins (superpowers,
+    // plannotator) survive rebuilds.
+    "source=claude-code-config-${devcontainerId},target=/home/ubuntu/.claude,type=volume"
+  ],
+  "forwardPorts": [8081, 6006, 9323, 19432],
+  "portsAttributes": {
+    "8081": {
+      "label": "Expo web / Metro",
+      "onAutoForward": "notify"
+    },
+    "6006": {
+      "label": "Storybook",
+      "onAutoForward": "silent"
+    },
+    "9323": {
+      "label": "Playwright report",
+      "onAutoForward": "silent"
+    },
+    "19432": {
+      "label": "Plannotator",
+      "onAutoForward": "notify"
+    }
+  },
+  // Runs on the host first: records the git paths this workspace needs mounted
+  // (so opening a git worktree works) and creates the shared browser volume.
+  "initializeCommand": "bash .devcontainer/initialize.sh",
+  "updateContentCommand": "sudo chown ubuntu:ubuntu /workspaces/weekly-meal-planner/node_modules /home/ubuntu/.pnpm-store && pnpm install --frozen-lockfile",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  // No postStartCommand: post-create.sh drops sudo, so the Claude Code CLI is
+  // updated by rebuilding the container, which installs the latest.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-playwright.playwright",
+        "orta.vscode-jest"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        // JS Debug auto-attach injects NODE_OPTIONS=--require .../bootloader.js
+        // into terminals; the path goes stale on rebuilds and husky's hooks then
+        // crash with "Cannot find module .../bootloader.js".
+        "debug.javascript.autoAttachFilter": "disabled"
+      }
+    }
+  },
+  "containerEnv": {
+    "DISABLE_AUTOUPDATER": "1",
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}",
+    // Fine-grained PAT scoped to this repository only. It authenticates both
+    // `gh` and git itself: post-create.sh rewrites SSH remotes to HTTPS and
+    // makes `gh` git's credential helper, so the container never uses your SSH
+    // key. On the host it is named per repo so it cannot collide with another
+    // devcontainer's token; inside it becomes GH_TOKEN, the name `gh` reads.
+    // What the agent may do with it is limited by
+    // .claude/hooks/block-dangerous-git.sh.
+    "GH_TOKEN": "${localEnv:GH_MENAMI_TOKEN}",
+    // Plannotator serves its review UI on a fixed port so VS Code can forward it.
+    "PLANNOTATOR_REMOTE": "1",
+    "PLANNOTATOR_PORT": "19432",
+    // Tells the git guardrail it is in the container: confine to the pinned
+    // branch, and refuse git entirely if the pin is missing.
+    "MENAMI_DEVCONTAINER": "1",
+    // husky's generated hooks are mounted read-only (they run on the host), so
+    // `pnpm install` must not try to regenerate them.
+    "HUSKY": "0",
+    // Keeps pnpm's store on its volume, off the workspace bind mount.
+    "npm_config_store_dir": "/home/ubuntu/.pnpm-store",
+    // Never hang waiting on an interactive credential prompt.
+    "GIT_TERMINAL_PROMPT": "0",
+    // No auto-gc: in a worktree-based container the repo's other worktrees are
+    // not mounted, so they look prunable and gc would delete their admin dirs
+    // on the host too. Set via env so no shared config file is touched.
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "gc.auto",
+    "GIT_CONFIG_VALUE_0": "0"
+  },
+  "remoteUser": "ubuntu"
+}

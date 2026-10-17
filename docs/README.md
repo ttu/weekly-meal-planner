@@ -15,6 +15,7 @@ behaviour changed and no doc did, the change is incomplete.
 | [07 — Design system](07-design-system.md)                 | Colour and type tokens from the design canvas, card variants             | Living        |
 | [08 — Deployment](08-deployment.md)                       | Environments, migrations, EAS, CI                                        | Living        |
 | [09 — Design handoff](09-design-handoff.md)               | Brief given to Claude Design, plus round-2 feedback                      | Living        |
+| [10 — Dev container](10-dev-container.md)                 | Container, PAT, Claude plugins, git guardrail                            | Living        |
 | [ADRs](adr/README.md)                                     | Why we chose what we chose                                               | **Immutable** |
 | [Plans](plans/)                                           | Implementation plans and progress                                        | Living        |
 
