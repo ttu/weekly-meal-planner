@@ -40,6 +40,10 @@ if [[ -z "$COMMAND" ]]; then
   exit 2
 fi
 
+# A backslash-newline is no break to the shell (`git reset \<newline>--hard`
+# is one command), so undo it before anything reads the text line by line.
+COMMAND=${COMMAND//$'\\\n'/}
+
 # Subcommands the rules below guard. A guarded word straight after a token
 # the shell expands (`G=git; $G reset`, `${G} reset`, `/usr/bin/gi? clean`)
 # is refused: what would run cannot be known from the text.
@@ -78,6 +82,15 @@ normalize() {
 }
 NORMALIZED=$(normalize "$COMMAND")
 
+# A subcommand the shell globs or expands (`git re?et`) is whatever file
+# matches, not what the text says.
+if printf '%s' "$NORMALIZED" | awk '
+  { for (i = 1; i < NF; i++) if (($i == "git" || $i == "gh") && $(i + 1) ~ /[*?[$]/) found = 1 }
+  END { exit !found }'; then
+  echo "BLOCKED: '$COMMAND' runs a git or gh subcommand the shell expands; spell it out." >&2
+  exit 2
+fi
+
 DANGEROUS_PATTERNS=(
   # --- Local state git cannot give back (not recoverable from reflog) ---
   'git[[:space:]]+reset[[:space:]]+--hard'
@@ -99,6 +112,8 @@ DANGEROUS_PATTERNS=(
   # An alias can rename any of the above (`git r --hard`), and config passed
   # through the environment, another config file or an include can define one.
   'git[[:space:]].*alias\.'
+  # help.autocorrect runs the closest match to a typo (`git rest --hard`).
+  'git[[:space:]].*autocorrect'
   'GIT_CONFIG_(COUNT|KEY|VALUE|PARAMETERS|GLOBAL|SYSTEM)'
   '(-c[[:space:]]*|--config-env[[:space:]=]+)include'
   'git[[:space:]]+config[[:space:]].*include'

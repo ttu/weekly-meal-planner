@@ -83,6 +83,11 @@ for MODE in host container; do
   expect 2 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.r GIT_CONFIG_VALUE_0=reset git r --hard'
   expect 2 'GIT_CONFIG_GLOBAL=/tmp/x git r --hard'
   expect 2 'git -c include.path=/tmp/x r --hard'
+  # ...split over a line continuation, globbed, or autocorrected from a typo.
+  expect 2 $'git reset \\\n--hard'
+  expect 2 'git re?et --hard'
+  expect 2 'git -c help.autocorrect=immediate rest --hard'
+  expect 2 'git config --global help.autocorrect immediate'
 
   # Merging stays with a person.
   expect 2 'gh pr merge 2'

@@ -144,7 +144,10 @@ container opens. Consequences:
 ### Limits
 
 The hook matches command text. It stops accidents and the obvious detours,
-not a determined agent — which is why nothing on GitHub depends on it. On the
+not a determined agent — which is why nothing on GitHub depends on it. Shell
+spelling is open-ended (line continuations, globs, brace expansion, git's
+abbreviated options and autocorrect); the hook refuses the ones it knows and
+anything the shell would build, but the list is never complete. On the
 host, Claude's Edit and Write tools are not Bash and can edit the hook itself.
 
 `refs/` has to stay writable for commits, and git cannot narrow that to one
