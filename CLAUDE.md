@@ -32,7 +32,7 @@ Realtime). No server of our own.
 The glossary in `docs/01-functional-spec.md` is the single source of naming.
 Use these words exactly, everywhere — types, files, columns, tests, commits:
 
-Household · Member · Slot · Week Plan · Meal · Catalogue Meal · Household Meal ·
+Household · Household Size · Member · Slot · Week Plan · Meal · Catalogue Meal · Household Meal ·
 Backlog Item · **Cook Event** · **Leftover** · Servings · Servings Cooked ·
 Ingredient · **Slug** · Dimension · Locale · Staple · Running Low · Shopping List · Buy Line ·
 Cupboard Check · Extra · Override · Provenance · Agent Prompt
