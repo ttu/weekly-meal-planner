@@ -231,7 +231,15 @@ mkdir "$REPO/other"
 expect 2 'git switch other'
 expect 2 'git checkout other'
 expect 0 'git checkout -- other'
+# A word the shell expands names what git sees, not what the hook sees.
+expect 2 'git checkout ot?er'
+expect 2 'B=other; git checkout "$B"'
+expect 2 'git switch ~/x'
 rmdir "$REPO/other"
+expect 2 'git rebase --ro other'
+expect 2 'git checkout --conflict merge other'
+expect 0 'git rebase -i HEAD~3'
+expect 0 'git checkout -- src/*.ts'
 expect 0 'git switch feat/pinned'
 expect 0 'git checkout README.md'
 expect 0 'git checkout -- README.md'

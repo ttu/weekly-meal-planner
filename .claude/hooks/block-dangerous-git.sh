@@ -283,25 +283,27 @@ done
 # on its own, up to the next `git`. Git accepts any unambiguous prefix of a
 # long option, so `--cr` is `--create` and `--update-r` is `--update-refs`.
 # The scan prints one verdict per call:
-#   create | previous | updaterefs | ref <name> | switchto <name> | rebase <branch>
+#   create | previous | updaterefs | expansion | ref <name> | switchto <name> | rebase <branch>
 VERDICTS=$(printf '%s' "$NORMALIZED" | awk '{
   for (i = 1; i < NF; i++) {
     if (tolower($i) != "git") continue
-    cmd = tolower($(i + 1)); ref = ""; n = 0; root = 0
+    cmd = tolower($(i + 1)); n = 0; root = 0
     if (cmd == "checkout" || cmd == "switch") {
       # Options only before `--`, where paths start; `git checkout -- file` stays fine.
       for (j = i + 2; j <= NF && tolower($j) != "git" && $j != "--"; j++) {
+        if ($j ~ /[$*?[]|^~/) print "expansion"   # the shell decides what git sees
         if ($j ~ /^(-[A-Za-z]*[bBcC]|--(cr|force-c|or))/) print "create"
         else if ($j == "-") print "previous"   # the previously checked-out branch
-        else if ($j !~ /^-/ && ref == "") ref = $j
-        if (cmd == "switch" && $j !~ /^-/) print "switchto " $j   # switch takes no paths
+        # Every word, not only the first: an option taking a value
+        # (`--conflict merge other`) would shift which one names the branch.
+        else if ($j !~ /^-/) print (cmd == "switch" ? "switchto " : "ref ") $j   # switch takes no paths
       }
-      if (ref != "") print "ref " ref
     } else if (cmd == "rebase") {
       for (j = i + 2; j <= NF && tolower($j) != "git"; j++) {
+        if ($j ~ /[$*?[]|^~/) print "expansion"
         if ($j ~ /^--u/) print "updaterefs"
         if ($j ~ /^(--onto|-s|--strategy|-X|--strategy-option|-x|--exec)$/) { j++; continue }
-        if ($j == "--root") root = 1
+        if ($j ~ /^--ro/) root = 1   # `--ro` is `--root` to git
         if ($j !~ /^-/) pos[++n] = $j
       }
       # Past the upstream every word must be the pinned branch: an option that
@@ -316,6 +318,7 @@ while read -r verdict name; do
     create)     reason="creating a branch is not allowed" ;;
     previous)   reason="switching to the previous branch is not allowed" ;;
     updaterefs) reason="'git rebase --update-refs' moves other branches" ;;
+    expansion)  reason="a branch name built by the shell cannot be checked" ;;
     rebase)     [[ "$name" == "$PINNED" ]] && continue
                 reason="rebasing '$name' is not allowed" ;;
     switchto)   [[ "$name" == "$PINNED" ]] && continue
