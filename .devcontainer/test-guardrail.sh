@@ -16,6 +16,7 @@ REPO=$(mktemp -d)
 git -C "$REPO" init -q -b feat/pinned
 git -C "$REPO" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
 git -C "$REPO" branch other
+git -C "$REPO" update-ref refs/remotes/origin/remote-only HEAD
 export CLAUDE_PROJECT_DIR="$REPO"
 
 failures=0
@@ -216,6 +217,23 @@ expect 2 'git switch --force-c other'
 expect 2 'git checkout --orph x'
 expect 2 'git rebase --update-r main'
 expect 0 'git checkout -- README.md; git rebase main'
+# Global options that take a value, and rebase options that take one.
+expect 2 'git --attr-source x switch other'
+expect 2 'git rebase main other --whitespace feat/pinned'
+expect 2 'git rebase -C 3 main other'
+expect 2 'git rebase main --whitespace feat/pinned other'
+expect 2 'git rebase --ont main x other'
+expect 0 'git rebase main feat/pinned'
+# A branch that only exists on a remote, or shares its name with a directory.
+expect 2 'git checkout remote-only'
+expect 2 'git switch remote-only'
+mkdir "$REPO/other"
+expect 2 'git switch other'
+expect 2 'git checkout other'
+expect 0 'git checkout -- other'
+rmdir "$REPO/other"
+expect 0 'git switch feat/pinned'
+expect 0 'git checkout README.md'
 expect 0 'git checkout -- README.md'
 expect 0 'git branch --list'
 

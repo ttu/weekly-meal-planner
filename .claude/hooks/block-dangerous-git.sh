@@ -67,7 +67,7 @@ normalize() {
         out = out " " base; i++
         while (i <= n && t[i] ~ /^-/) {
           opt = t[i]; i++
-          if (opt ~ /^(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix|-R|--repo)$/) i++
+          if (opt ~ /^(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix|--attr-source|-R|--repo)$/) i++
         }
         continue
       }
@@ -283,7 +283,7 @@ done
 # on its own, up to the next `git`. Git accepts any unambiguous prefix of a
 # long option, so `--cr` is `--create` and `--update-r` is `--update-refs`.
 # The scan prints one verdict per call:
-#   create | previous | updaterefs | ref <name> | rebase <branch>
+#   create | previous | updaterefs | ref <name> | switchto <name> | rebase <branch>
 VERDICTS=$(printf '%s' "$NORMALIZED" | awk '{
   for (i = 1; i < NF; i++) {
     if (tolower($i) != "git") continue
@@ -294,6 +294,7 @@ VERDICTS=$(printf '%s' "$NORMALIZED" | awk '{
         if ($j ~ /^(-[A-Za-z]*[bBcC]|--(cr|force-c|or))/) print "create"
         else if ($j == "-") print "previous"   # the previously checked-out branch
         else if ($j !~ /^-/ && ref == "") ref = $j
+        if (cmd == "switch" && $j !~ /^-/) print "switchto " $j   # switch takes no paths
       }
       if (ref != "") print "ref " ref
     } else if (cmd == "rebase") {
@@ -303,7 +304,10 @@ VERDICTS=$(printf '%s' "$NORMALIZED" | awk '{
         if ($j == "--root") root = 1
         if ($j !~ /^-/) pos[++n] = $j
       }
-      if (root && n >= 1) print "rebase " pos[1]; else if (n >= 2) print "rebase " pos[2]
+      # Past the upstream every word must be the pinned branch: an option that
+      # takes a value this list misses (`--whitespace x`, `--ont`) shifts the
+      # words, so all of them are checked rather than the second alone.
+      for (k = root ? 1 : 2; k <= n; k++) print "rebase " pos[k]
     }
   }
 }')
@@ -314,10 +318,15 @@ while read -r verdict name; do
     updaterefs) reason="'git rebase --update-refs' moves other branches" ;;
     rebase)     [[ "$name" == "$PINNED" ]] && continue
                 reason="rebasing '$name' is not allowed" ;;
-    ref)        # A ref that resolves to a commit and is not also an existing
-                # path means a real branch switch, rather than `git checkout <file>`.
-                [[ "$name" == "$PINNED" || -e "$REPO/$name" ]] && continue
-                git -C "$REPO" rev-parse --verify --quiet "${name}^{commit}" >/dev/null 2>&1 || continue
+    switchto)   [[ "$name" == "$PINNED" ]] && continue
+                reason="switching to '$name' is not allowed" ;;
+    ref)        # Before `--` git reads a name as a ref first, even when a path
+                # has the same name, and creates a local branch from a remote
+                # one of that name. A name that is neither stays a path.
+                [[ "$name" == "$PINNED" ]] && continue
+                git -C "$REPO" rev-parse --verify --quiet "${name}^{commit}" >/dev/null 2>&1 ||
+                  [[ -n $(git -C "$REPO" for-each-ref --count=1 "refs/remotes/*/$name" 2>/dev/null) ]] ||
+                  continue
                 reason="switching to '$name' is not allowed" ;;
     *)          continue ;;
   esac
