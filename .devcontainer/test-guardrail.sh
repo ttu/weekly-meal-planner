@@ -239,6 +239,8 @@ expect 2 'git checkout {-q,other}'
 expect 2 'git checkout oth{e,}r'
 expect 2 'git checkout `printf oth`er'
 expect 2 'git rebase main ${B}'
+expect 2 'git che"ck"out {-q,other}'
+expect 2 'git swi\\tch {-q,other}'
 rmdir "$REPO/other"
 expect 2 'git rebase --ro other'
 expect 2 'git checkout --conflict merge other'

@@ -287,7 +287,8 @@ done
 # normalize() turns braces into spaces and drops backticks, so brace
 # expansion (`{-q,other}`) and command substitution are refused on the raw
 # text, before it is normalized.
-if printf '%s' "$COMMAND" | grep -qEi '(^|[^[:alnum:]_-])(checkout|switch|rebase)([^[:alnum:]_-]|$)' &&
+# The word itself is looked for with quotes and backslashes removed (`che"ck"out`).
+if printf '%s' "$COMMAND" | tr -d '"'"'"'\\' | grep -qEi '(^|[^[:alnum:]_-])(checkout|switch|rebase)([^[:alnum:]_-]|$)' &&
    printf '%s' "$COMMAND" | grep -q '[`{}$]'; then
   echo "BLOCKED: a checkout, switch or rebase with a name built by the shell cannot be checked; this dev container is confined to '$PINNED'." >&2
   exit 2
