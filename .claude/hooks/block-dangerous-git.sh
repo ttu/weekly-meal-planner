@@ -277,53 +277,52 @@ for pattern in "${CONTAINER_PATTERNS[@]}"; do
   fi
 done
 
-# `git rebase <upstream> <branch>` (or `--root <branch>`) rewrites <branch>,
-# which must be the pinned one. Options that take a value are skipped with it.
-if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+rebase([[:space:]]|$)'; then
-  TARGET=$(printf '%s' "$NORMALIZED" | awk '
-    { for (i = 1; i <= NF; i++) if ($i == "rebase") { start = i + 1; break } }
-    start {
-      for (i = start; i <= NF; i++) {
-        if ($i ~ /^(--onto|-s|--strategy|-X|--strategy-option|-x|--exec)$/) { i++; continue }
-        if ($i == "--root") root = 1
-        if ($i ~ /^-/) continue
-        pos[++n] = $i
+# Leaving the pinned branch would let the agent commit onto another branch,
+# and `git rebase <upstream> <branch>` (or `--root <branch>`) rewrites
+# <branch>. Every `git checkout|switch|rebase` call in the command is judged
+# on its own, up to the next `git`. Git accepts any unambiguous prefix of a
+# long option, so `--cr` is `--create` and `--update-r` is `--update-refs`.
+# The scan prints one verdict per call:
+#   create | previous | updaterefs | ref <name> | rebase <branch>
+VERDICTS=$(printf '%s' "$NORMALIZED" | awk '{
+  for (i = 1; i < NF; i++) {
+    if (tolower($i) != "git") continue
+    cmd = tolower($(i + 1)); ref = ""; n = 0; root = 0
+    if (cmd == "checkout" || cmd == "switch") {
+      # Options only before `--`, where paths start; `git checkout -- file` stays fine.
+      for (j = i + 2; j <= NF && tolower($j) != "git" && $j != "--"; j++) {
+        if ($j ~ /^(-[A-Za-z]*[bBcC]|--(cr|force-c|or))/) print "create"
+        else if ($j == "-") print "previous"   # the previously checked-out branch
+        else if ($j !~ /^-/ && ref == "") ref = $j
       }
-      if (root && n >= 1) print pos[1]; else if (n >= 2) print pos[2]
-    }')
-  if [[ -n "$TARGET" && "$TARGET" != "$PINNED" ]]; then
-    echo "BLOCKED: rebasing '$TARGET' is not allowed; this dev container is confined to '$PINNED'." >&2
-    exit 2
-  fi
-fi
-
-# Leaving the pinned branch would let the agent commit onto another branch.
-# Only ref arguments are blocked; `git checkout -- file` / a path stays fine.
-if printf '%s' "$NORMALIZED" | grep -qEi '(^|[[:space:]])git[[:space:]]+(checkout|switch)([[:space:]]|$)'; then
-  # Branch-creating options in any spelling (`-b new`, `-bnew`, `-fb new`,
-  # `--create`, `--orphan=x`), looked for only before `--`, where paths start.
-  if printf '%s' "$NORMALIZED" | awk '
-    { for (i = 1; i <= NF; i++) if ($i == "checkout" || $i == "switch") { start = i + 1; break } }
-    start { for (i = start; i <= NF && $i != "--"; i++) print $i }' |
-     grep -qE '^(-[A-Za-z]*[bBcC]|--(create|force-create|orphan)(=|$))'; then
-    echo "BLOCKED: creating a branch is not allowed; this dev container is confined to '$PINNED'." >&2
-    exit 2
-  fi
-  # A lone `-` is the previously checked-out branch, not an option.
-  if printf '%s' "$NORMALIZED" | grep -qE '(checkout|switch)[[:space:]](.*[[:space:]])?-([[:space:]]|$)'; then
-    echo "BLOCKED: switching to the previous branch is not allowed; this dev container is confined to '$PINNED'." >&2
-    exit 2
-  fi
-  REF=$(printf '%s' "$NORMALIZED" | awk '
-    { for (i = 1; i <= NF; i++) if ($i == "checkout" || $i == "switch") { start = i + 1; break } }
-    start { for (i = start; i <= NF; i++) { if ($i == "--") exit; if ($i ~ /^-/) continue; print $i; exit } }')
-  # A ref that resolves to a commit and is not also an existing path means a
-  # real branch switch, rather than `git checkout <file>`.
-  if [[ -n "$REF" && "$REF" != "$PINNED" && ! -e "$REPO/$REF" ]] &&
-     git -C "$REPO" rev-parse --verify --quiet "${REF}^{commit}" >/dev/null 2>&1; then
-    echo "BLOCKED: switching to '$REF' is not allowed; this dev container is confined to '$PINNED'." >&2
-    exit 2
-  fi
-fi
+      if (ref != "") print "ref " ref
+    } else if (cmd == "rebase") {
+      for (j = i + 2; j <= NF && tolower($j) != "git"; j++) {
+        if ($j ~ /^--u/) print "updaterefs"
+        if ($j ~ /^(--onto|-s|--strategy|-X|--strategy-option|-x|--exec)$/) { j++; continue }
+        if ($j == "--root") root = 1
+        if ($j !~ /^-/) pos[++n] = $j
+      }
+      if (root && n >= 1) print "rebase " pos[1]; else if (n >= 2) print "rebase " pos[2]
+    }
+  }
+}')
+while read -r verdict name; do
+  case "$verdict" in
+    create)     reason="creating a branch is not allowed" ;;
+    previous)   reason="switching to the previous branch is not allowed" ;;
+    updaterefs) reason="'git rebase --update-refs' moves other branches" ;;
+    rebase)     [[ "$name" == "$PINNED" ]] && continue
+                reason="rebasing '$name' is not allowed" ;;
+    ref)        # A ref that resolves to a commit and is not also an existing
+                # path means a real branch switch, rather than `git checkout <file>`.
+                [[ "$name" == "$PINNED" || -e "$REPO/$name" ]] && continue
+                git -C "$REPO" rev-parse --verify --quiet "${name}^{commit}" >/dev/null 2>&1 || continue
+                reason="switching to '$name' is not allowed" ;;
+    *)          continue ;;
+  esac
+  echo "BLOCKED: $reason; this dev container is confined to '$PINNED'." >&2
+  exit 2
+done <<< "$VERDICTS"
 
 exit 0

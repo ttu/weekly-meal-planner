@@ -109,7 +109,8 @@ Inside the container (`MENAMI_DEVCONTAINER=1`) it also confines the agent to
 the branch the container was created on, so it cannot commit onto another
 local branch in the `.git` it shares with the host: no switching to, creating
 or rewriting another branch (`checkout -b`/`--orphan`, `switch -c`,
-`stash branch`, `rebase <upstream> <other>`, `rebase --update-refs`). The pin is `/etc/devcontainer-allowed-branch`,
+`stash branch`, `rebase <upstream> <other>`, `rebase --update-refs`, also
+with abbreviated long options and in every call of a chain). The pin is `/etc/devcontainer-allowed-branch`,
 root-owned and read-only; if it is missing, all git and gh commands are
 refused. `post-create.sh` ends by removing the passwordless sudo rule, so
 nothing in the container can change the pin afterwards. To install something
