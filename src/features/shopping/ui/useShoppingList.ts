@@ -16,6 +16,7 @@ import {
 } from '../application/shopping-writes'
 import { brand } from '@/shared/types/brand'
 import type { Extra, ExtraId, ShoppingList } from '../domain/types'
+import { IDEMPOTENT_WRITE_RETRY } from '@/shared/net/queryClient'
 
 const EMPTY: ShoppingList = { sittings: 0, buy: [], cupboard: [], extras: [], incomplete: [] }
 
@@ -78,6 +79,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
   }
 
   const toggleMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async ({ id, checked }: { id: IngredientId; checked: boolean }) => {
       if (weekPlanId === undefined) return
       await setChecked(client, weekPlanId, id, checked)
@@ -94,6 +96,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
   })
 
   const outOfMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (id: IngredientId) => {
       if (household === undefined) return
       await markRunningLow(client, household.id, id)
@@ -102,6 +105,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
   })
 
   const stapleMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async ({ id, keep }: { id: IngredientId; keep: boolean }) => {
       if (household === undefined) return
       await (keep ? makeStaple : forgetStaple)(client, household.id, id)
@@ -131,6 +135,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
   })
 
   const extraMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async ({ id, checked }: { id: ExtraId; checked: boolean }) => {
       await setExtraChecked(client, id, checked)
     },

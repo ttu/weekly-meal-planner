@@ -5,6 +5,7 @@ import { copyCatalogueMeal } from '../application/copy-catalogue-meal'
 import { deleteMeal } from '../application/delete-meal'
 import { loadMeal, type MealDetail } from '../infrastructure/meal-repository'
 import type { MealId } from '../domain/types'
+import { IDEMPOTENT_WRITE_RETRY } from '@/shared/net/queryClient'
 
 export const useMeal = (id: MealId | undefined): { meal: MealDetail | undefined } => {
   const { client } = useSession()
@@ -48,6 +49,7 @@ export const useMealActions = (): MealActions => {
   })
 
   const deleteMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (id: MealId) => {
       const result = await deleteMeal(client, id)
       if (isErr(result)) throw new Error(result.error)

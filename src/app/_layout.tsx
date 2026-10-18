@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Blank } from '@/shared/ui/Blank'
@@ -9,6 +9,10 @@ import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
 import { DEFAULT_LOCALE, initI18n } from '@/shared/i18n'
+import { createQueryClient } from '@/shared/net/queryClient'
+import { createPlatformNetworkSource } from '@/shared/net/platformNetworkSource'
+import { NetworkSourceProvider } from '@/shared/net/NetworkSourceContext'
+import { createAppStateSource, useQueryLifecycle } from '@/shared/net/useQueryLifecycle'
 import { ThemeProvider, useTheme } from '@/shared/theme/theme'
 import { SelectedWeekProvider } from '@/features/planning'
 import {
@@ -58,7 +62,10 @@ const App = (): React.JSX.Element => {
     'InstrumentSerif-Regular': InstrumentSerif,
     'InstrumentSans-Variable': InstrumentSans,
   })
-  const queryClient = useMemo(() => new QueryClient(), [])
+  const queryClient = useMemo(() => createQueryClient(), [])
+  const network = useMemo(() => createPlatformNetworkSource(), [])
+  const appState = useMemo(() => createAppStateSource(), [])
+  useQueryLifecycle(network, appState)
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
 
   return (
@@ -67,9 +74,11 @@ const App = (): React.JSX.Element => {
     // default grey either side of their column.
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.color.surface }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          {fontsLoaded ? <AppSession client={client} /> : <Blank />}
-        </QueryClientProvider>
+        <NetworkSourceProvider source={network}>
+          <QueryClientProvider client={queryClient}>
+            {fontsLoaded ? <AppSession client={client} /> : <Blank />}
+          </QueryClientProvider>
+        </NetworkSourceProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
