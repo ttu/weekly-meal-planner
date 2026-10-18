@@ -17,10 +17,13 @@ export const useIsOnline = (): boolean => {
 
   useEffect(() => {
     let live = true
+    // A listener event is newer than a read that was still in flight.
+    let heard = false
     void source.read().then((now) => {
-      if (live) setOnline(now)
+      if (live && !heard) setOnline(now)
     })
     const stop = source.subscribe((now) => {
+      heard = true
       setOnline(now)
     })
 

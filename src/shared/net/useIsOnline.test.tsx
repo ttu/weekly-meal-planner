@@ -49,4 +49,28 @@ describe('useIsOnline', () => {
     })
     expect(result.current).toBe(true)
   })
+
+  it('does not let a late initial read override a newer event', async () => {
+    let resolveRead: ((online: boolean) => void) | undefined
+    let listener: ((online: boolean) => void) | undefined
+    const source: NetworkSource = {
+      read: () =>
+        new Promise<boolean>((resolve) => {
+          resolveRead = resolve
+        }),
+      subscribe: (l) => {
+        listener = l
+        return () => undefined
+      },
+    }
+    const { result } = await renderHook(() => useIsOnline(), { wrapper: wrap(source) })
+    await act(() => {
+      listener?.(false)
+    })
+    await act(async () => {
+      resolveRead?.(true)
+      await Promise.resolve()
+    })
+    expect(result.current).toBe(false)
+  })
 })

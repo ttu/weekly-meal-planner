@@ -39,8 +39,15 @@ export const useQueryLifecycle = (network: NetworkSource, appState: AppStateSour
 
   useEffect(() => {
     onlineManager.setEventListener((setOnline) => {
-      void network.read().then(setOnline)
-      return network.subscribe(setOnline)
+      // A listener event is newer than a read that was still in flight.
+      let heard = false
+      void network.read().then((now) => {
+        if (!heard) setOnline(now)
+      })
+      return network.subscribe((now) => {
+        heard = true
+        setOnline(now)
+      })
     })
     return () => {
       onlineManager.setEventListener(() => () => undefined)

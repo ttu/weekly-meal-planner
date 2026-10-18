@@ -97,9 +97,15 @@ Supabase client, with realtime subscriptions invalidating it. Client state
 state or a small store. A cook event never lives in both.
 
 Query defaults live in `src/shared/net/queryClient.ts`: a 30 s `staleTime`
-(realtime does the real invalidating), two query retries, and mutations on
+(realtime does the real invalidating), one query retry after a second (so a
+failed first load shows its error in about two seconds), and mutations on
 `networkMode: 'online'` so an optimistic tick made offline waits and flushes on
-reconnect. The queue is in memory only. On native, `useQueryLifecycle` points
+reconnect. The queue is in memory only. Mutations do not retry by default: a
+write that commits but loses its response would be inserted twice, and errors
+like RLS refusals never heal. A mutation whose repeat is harmless (set-to-value
+updates, upserts, deletes) opts in with `retry: IDEMPOTENT_WRITE_RETRY`;
+inserts with server-assigned ids (Extras, Cook Events, Backlog Items, Meals,
+Leftovers) never do. On native, `useQueryLifecycle` points
 TanStack Query's `focusManager` at `AppState` and its `onlineManager` at the
 injected `NetworkSource` (expo-network on device, `navigator.onLine` on web), so
 returning from the background or regaining signal refetches what is on screen.

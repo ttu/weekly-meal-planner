@@ -12,6 +12,7 @@ import { removeBacklogItem } from '../application/remove-backlog-item'
 import type { Servings } from '@/features/meals'
 import type { BacklogItemId, CookEventId, LeftoverId } from '../domain/types'
 import { useSelectedWeek } from './SelectedWeek'
+import { IDEMPOTENT_WRITE_RETRY } from '@/shared/net/queryClient'
 
 export type LeftoverRequest = {
   readonly cookEventId: CookEventId
@@ -67,6 +68,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   })
 
   const moveMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (request: MoveRequest) => {
       const result = await moveCookEvent(client, request)
       if (isErr(result)) throw new Error(result.error)
@@ -76,6 +78,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   })
 
   const moveLeftoverMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (request: MoveLeftoverRequest) => {
       const result = await moveLeftover(client, request)
       if (isErr(result)) throw new Error(result.error)
@@ -85,6 +88,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   })
 
   const removeLeftoverMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (id: LeftoverId) => {
       const result = await removeLeftover(client, id)
       if (isErr(result)) throw new Error(result.error)
@@ -93,6 +97,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   })
 
   const unplanMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (cookEventId: CookEventId) => {
       const result = await unplanMeal(client, cookEventId)
       if (isErr(result)) throw new Error(result.error)
@@ -102,6 +107,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   })
 
   const servingsMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async ({ id, servings }: { id: CookEventId; servings: Servings }) => {
       const result = await setServingsCooked(client, id, servings)
       if (isErr(result)) throw new Error(result.error)
@@ -111,6 +117,7 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
   })
 
   const removeMutation = useMutation({
+    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
     mutationFn: async (id: BacklogItemId) => {
       const result = await removeBacklogItem(client, id)
       if (isErr(result)) throw new Error(result.error)
