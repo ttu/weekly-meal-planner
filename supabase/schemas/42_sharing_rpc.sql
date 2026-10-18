@@ -49,6 +49,21 @@ begin
 end;
 $fn$;
 
+-- The attempt tables are write-mostly: every wrong guess adds a row, and nothing
+-- else removes one. Rows older than a day are past every window above, so they
+-- count for nothing. Run from the two functions that write them, so no scheduler
+-- is needed.
+create or replace function app.purge_stale_attempts()
+returns void
+language sql
+set search_path = public, pg_temp
+as $fn$
+  delete from household_join_attempt where attempted_at < now() - interval '1 day';
+  delete from household_creation_attempt where attempted_at < now() - interval '1 day';
+  delete from beta_key_attempt where attempted_at < now() - interval '1 day';
+$fn$;
+
+revoke execute on function app.purge_stale_attempts() from public;
 revoke execute on function app.caller_ip() from public;
 revoke execute on function app.beta_key_guesses_exhausted(uuid, text) from public;
 
@@ -127,6 +142,7 @@ begin
   end if;
 
   insert into household_creation_attempt (user_id, ip) values (auth.uid(), caller_ip);
+  perform app.purge_stale_attempts();
 
   insert into household (name, locale, join_password_hash)
   values (
@@ -199,6 +215,20 @@ begin
     return query select null::uuid, 'invalid-beta-key'::join_board_status;
     return;
   end if;
+
+  -- A real token is 43 characters. Anything this long is not one, and is not
+  -- worth a row in the attempt table.
+  if length(p_share_token) > 100 then
+    return query select null::uuid, 'rejected'::join_board_status;
+    return;
+  end if;
+
+  perform app.purge_stale_attempts();
+
+  -- Same reason as the beta key lock: without it a burst of parallel guesses
+  -- each reads the same count and all pass. After the account and address locks
+  -- taken above, always in that order.
+  perform pg_advisory_xact_lock(hashtextextended('join_token:' || p_share_token, 0));
 
   select count(*) into recent
   from household_join_attempt
