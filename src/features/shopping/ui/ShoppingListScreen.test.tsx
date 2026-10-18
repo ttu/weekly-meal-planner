@@ -1,5 +1,7 @@
 import { fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
+import { NetworkSourceProvider } from '@/shared/net/NetworkSourceContext'
+import type { NetworkSource } from '@/shared/net/networkSource'
 import { initI18n, setLocale } from '@/shared/i18n'
 import type { ExtraId } from '../domain/types'
 import type { ShoppingList } from '../domain/types'
@@ -16,19 +18,27 @@ const withCoffee: ShoppingList = {
   extras: [{ id: 'e1' as ExtraId, label: 'Coffee', checked: false }],
 }
 
+// The device's network is a system boundary; the screen reads it via useIsOnline.
+const online: NetworkSource = {
+  read: () => Promise.resolve(true),
+  subscribe: () => () => undefined,
+}
+
 const noop = (): void => undefined
 
 const screen = (props: Partial<React.ComponentProps<typeof ShoppingListScreen>> = {}) => (
-  <ShoppingListScreen
-    list={empty}
-    onToggle={noop}
-    onOutOf={noop}
-    onAddExtra={noop}
-    onToggleExtra={noop}
-    onCopyPrompt={noop}
-    justCopied={false}
-    {...props}
-  />
+  <NetworkSourceProvider source={online}>
+    <ShoppingListScreen
+      list={empty}
+      onToggle={noop}
+      onOutOf={noop}
+      onAddExtra={noop}
+      onToggleExtra={noop}
+      onCopyPrompt={noop}
+      justCopied={false}
+      {...props}
+    />
+  </NetworkSourceProvider>
 )
 
 describe('ShoppingListScreen load states', () => {
