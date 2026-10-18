@@ -10,6 +10,7 @@ import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import type { CreateBoardError } from '../application/boards'
 import { BetaKeyField } from './BetaKeyField'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 const errorKeys: Record<CreateBoardError, string> = {
   'short-password': 'board.shortPassword',
@@ -97,105 +98,114 @@ export const StartBoardScreen = ({
   const [betaKey, setBetaKey] = useState('')
 
   return (
-    <ScrollView
-      style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
-      testID="start-board-screen"
-    >
-      <Wordmark />
-      <Text style={styles.title}>{t('board.startTitle')}</Text>
-      <Text style={styles.body}>{t('board.startBody')}</Text>
-
-      <Text style={formStyles.label}>{t('board.boardName')}</Text>
-      <Field
-        value={boardName}
-        onChangeText={setBoardName}
-        placeholder={t('board.boardNamePlaceholder')}
-        accessibilityLabel={t('board.boardName')}
-        testID="start-board-name"
-      />
-
-      <Text style={formStyles.label}>{t('board.yourName')}</Text>
-      <Field
-        style={{ marginBottom: tokens.space.xs }}
-        value={displayName}
-        onChangeText={setDisplayName}
-        placeholder={t('board.yourNamePlaceholder')}
-        accessibilityLabel={t('board.yourName')}
-        testID="start-your-name"
-      />
-      <Text style={styles.hint}>{t('board.yourNameHint')}</Text>
-
-      <Text style={formStyles.label}>{t('board.password')}</Text>
-      <PasswordField
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t('board.passwordPlaceholder')}
-        hasError={error === 'short-password'}
-        testID="start-password"
-      />
-      <Text style={[styles.hint, { marginTop: tokens.space.xs }]}>{t('board.passwordHint')}</Text>
-
-      {askBetaKey && (
-        <BetaKeyField
-          value={betaKey}
-          onChangeText={setBetaKey}
-          hasError={error === 'invalid-beta-key'}
-          testID="start-beta-key"
-        />
-      )}
-
-      {error !== undefined && (
-        <Text style={formStyles.error} testID="start-error">
-          {t(errorKeys[error])}
-        </Text>
-      )}
-
-      <View style={styles.keyNote}>
-        <View style={styles.dot} />
-        <Text style={styles.keyNoteText}>{t('board.keyWarning')}</Text>
-      </View>
-
-      <Pressable
-        style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
-        disabled={isPending}
-        onPress={() => {
-          onCreate({ boardName, displayName, password, betaKey })
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t('board.create')}
-        testID="start-create"
+    <KeyboardAvoiding>
+      <ScrollView
+        style={formStyles.screen}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
+        testID="start-board-screen"
       >
-        <Text style={formStyles.primaryText}>{t('board.create')}</Text>
-      </Pressable>
+        <Wordmark />
+        <Text style={styles.title}>{t('board.startTitle')}</Text>
+        <Text style={styles.body}>{t('board.startBody')}</Text>
 
-      <View style={styles.footer}>
-        {/* Shown only once there is somewhere for it to go: an invite arrives
-            as a link, and there is no screen yet that takes one typed in. */}
-        {onJoinInstead === undefined ? (
-          <View />
-        ) : (
-          <View style={styles.footerLeft}>
-            <Text style={styles.muted}>{t('board.haveInvite')}</Text>
-            <Pressable
-              onPress={onJoinInstead}
-              accessibilityRole="button"
-              accessibilityLabel={t('board.joinABoard')}
-              testID="start-join-instead"
-            >
-              <Text style={styles.link}>{t('board.joinABoard')}</Text>
-            </Pressable>
-          </View>
+        <Text style={formStyles.label}>{t('board.boardName')}</Text>
+        <Field
+          value={boardName}
+          onChangeText={setBoardName}
+          autoCapitalize="words"
+          returnKeyType="next"
+          placeholder={t('board.boardNamePlaceholder')}
+          accessibilityLabel={t('board.boardName')}
+          testID="start-board-name"
+        />
+
+        <Text style={formStyles.label}>{t('board.yourName')}</Text>
+        <Field
+          style={{ marginBottom: tokens.space.xs }}
+          value={displayName}
+          onChangeText={setDisplayName}
+          autoComplete="name"
+          autoCapitalize="words"
+          returnKeyType="next"
+          placeholder={t('board.yourNamePlaceholder')}
+          accessibilityLabel={t('board.yourName')}
+          testID="start-your-name"
+        />
+        <Text style={styles.hint}>{t('board.yourNameHint')}</Text>
+
+        <Text style={formStyles.label}>{t('board.password')}</Text>
+        <PasswordField
+          value={password}
+          onChangeText={setPassword}
+          isNew
+          placeholder={t('board.passwordPlaceholder')}
+          hasError={error === 'short-password'}
+          testID="start-password"
+        />
+        <Text style={[styles.hint, { marginTop: tokens.space.xs }]}>{t('board.passwordHint')}</Text>
+
+        {askBetaKey && (
+          <BetaKeyField
+            value={betaKey}
+            onChangeText={setBetaKey}
+            hasError={error === 'invalid-beta-key'}
+            testID="start-beta-key"
+          />
         )}
+
+        {error !== undefined && (
+          <Text style={formStyles.error} testID="start-error">
+            {t(errorKeys[error])}
+          </Text>
+        )}
+
+        <View style={styles.keyNote}>
+          <View style={styles.dot} />
+          <Text style={styles.keyNoteText}>{t('board.keyWarning')}</Text>
+        </View>
+
         <Pressable
-          onPress={onSignInInstead}
+          style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
+          disabled={isPending}
+          onPress={() => {
+            onCreate({ boardName, displayName, password, betaKey })
+          }}
           accessibilityRole="button"
-          accessibilityLabel={t('board.signInInstead')}
-          testID="start-sign-in-instead"
+          accessibilityLabel={t('board.create')}
+          testID="start-create"
         >
-          <Text style={styles.muted}>{t('board.signInInstead')}</Text>
+          <Text style={formStyles.primaryText}>{t('board.create')}</Text>
         </Pressable>
-      </View>
-    </ScrollView>
+
+        <View style={styles.footer}>
+          {/* Shown only once there is somewhere for it to go: an invite arrives
+            as a link, and there is no screen yet that takes one typed in. */}
+          {onJoinInstead === undefined ? (
+            <View />
+          ) : (
+            <View style={styles.footerLeft}>
+              <Text style={styles.muted}>{t('board.haveInvite')}</Text>
+              <Pressable
+                onPress={onJoinInstead}
+                accessibilityRole="button"
+                accessibilityLabel={t('board.joinABoard')}
+                testID="start-join-instead"
+              >
+                <Text style={styles.link}>{t('board.joinABoard')}</Text>
+              </Pressable>
+            </View>
+          )}
+          <Pressable
+            onPress={onSignInInstead}
+            accessibilityRole="button"
+            accessibilityLabel={t('board.signInInstead')}
+            testID="start-sign-in-instead"
+          >
+            <Text style={styles.muted}>{t('board.signInInstead')}</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoiding>
   )
 }

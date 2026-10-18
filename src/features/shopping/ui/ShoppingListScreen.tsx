@@ -9,6 +9,7 @@ import { BackLink } from '@/shared/ui/BackLink'
 import type { IngredientId } from '@/shared/types/ids'
 import { groupBuyLines } from '../domain/group'
 import type { BuyLine, Extra, ExtraId, ShoppingList } from '../domain/types'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 /**
  * Row ergonomics are requirements, not styling: 19px text, 28px checkbox, 54px
@@ -276,6 +277,8 @@ const AddExtraRow = ({ onAdd }: { readonly onAdd: (label: string) => void }): Re
         value={label}
         onChangeText={setLabel}
         onSubmitEditing={add}
+        returnKeyType="done"
+        autoCapitalize="sentences"
         placeholder={t('shopping.addExtra')}
         placeholderTextColor={theme.color.textGhost}
         accessibilityLabel={t('shopping.addExtra')}
@@ -419,9 +422,10 @@ export const ShoppingListScreen = ({
   }
 
   return (
-    <View style={styles.page} testID="shopping-screen">
+    <KeyboardAvoiding style={styles.page} testID="shopping-screen">
       <ScrollView
         style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
       >
         {onBack !== undefined && <BackLink onPress={onBack} />}
@@ -585,6 +589,6 @@ export const ShoppingListScreen = ({
           </Pressable>
         </View>
       </View>
-    </View>
+    </KeyboardAvoiding>
   )
 }

@@ -15,6 +15,7 @@ import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain
 import type { AddEmailError } from '../application/add-email'
 import { SizeStepper } from './SizeStepper'
 import type { HouseholdSize, Slot, SlotKey } from '../domain/types'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 /** Light first, because light is what the board is unless someone says
  *  otherwise; "match device" last, for the people who want to be asked once. */
@@ -120,8 +121,9 @@ export const SettingsScreen = ({
   const full = slots.length >= MAX_SLOTS
 
   return (
-    <View style={formStyles.screen} testID="settings-screen">
+    <KeyboardAvoiding style={formStyles.screen} testID="settings-screen">
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           formStyles.content,
           { paddingTop: insets.top + tokens.space.md, paddingBottom: insets.bottom },
@@ -207,6 +209,9 @@ export const SettingsScreen = ({
                 placeholder={t('settings.ownNamePlaceholder')}
                 accessibilityLabel={t('settings.ownName')}
                 maxLength={24}
+                autoComplete="name"
+                autoCapitalize="words"
+                returnKeyType="done"
                 testID="settings-own-name"
               />
               <Pressable
@@ -310,6 +315,9 @@ export const SettingsScreen = ({
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="done"
                 hasError={account.error === 'invalid-email'}
                 testID="settings-email-field"
               />
@@ -338,6 +346,6 @@ export const SettingsScreen = ({
       {account.error !== undefined && (
         <Notice message={t(`settings.error.${account.error}`)} testID="settings-email-error" />
       )}
-    </View>
+    </KeyboardAvoiding>
   )
 }

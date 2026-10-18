@@ -189,12 +189,16 @@ export const MealLibraryScreen = ({
           placeholder={t('picker.search')}
           placeholderTextColor={theme.color.textGhost}
           autoCapitalize="none"
+          returnKeyType="search"
           accessibilityLabel={t('picker.search')}
           testID="library-search"
         />
       </View>
 
-      <ScrollView contentContainerStyle={isPane ? styles.list : styles.listScreen}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={isPane ? styles.list : styles.listScreen}
+      >
         {meals.length === 0 ? (
           <Text style={styles.empty} testID="library-empty">
             {t('meal.emptyLibrary')}

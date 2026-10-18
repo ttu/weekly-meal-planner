@@ -7,6 +7,7 @@ import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
 import { matchesSearch } from '../domain/search'
 import type { Ingredient, IngredientId } from '../domain/types'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -60,7 +61,7 @@ export const IngredientPicker = ({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
-      <View
+      <KeyboardAvoiding
         style={[formStyles.screen, { paddingTop: insets.top + tokens.space.md }]}
         testID="ingredient-picker"
       >
@@ -83,11 +84,12 @@ export const IngredientPicker = ({
           placeholder={t('ingredient.search')}
           placeholderTextColor={theme.color.textMuted}
           autoCapitalize="none"
+          returnKeyType="search"
           accessibilityLabel={t('ingredient.search')}
           testID="ingredient-search"
         />
 
-        <ScrollView>
+        <ScrollView keyboardShouldPersistTaps="handled" testID="ingredient-results">
           {grouped.length === 0 ? (
             <Text style={formStyles.muted} testID="ingredient-no-results">
               {t('ingredient.noResults')}
@@ -114,7 +116,7 @@ export const IngredientPicker = ({
             ))
           )}
         </ScrollView>
-      </View>
+      </KeyboardAvoiding>
     </Modal>
   )
 }
