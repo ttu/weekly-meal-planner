@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -111,7 +111,7 @@ export const SettingsScreen = ({
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.md, bottom: 0 })
   const [named, setNamed] = useState('')
   const [email, setEmail] = useState('')
   const { choice, setChoice } = useSchemeChoice()
@@ -121,12 +121,7 @@ export const SettingsScreen = ({
 
   return (
     <View style={formStyles.screen} testID="settings-screen">
-      <ScrollView
-        contentContainerStyle={[
-          formStyles.content,
-          { paddingTop: insets.top + tokens.space.md, paddingBottom: insets.bottom },
-        ]}
-      >
+      <ScrollView contentContainerStyle={[formStyles.content, contentPadding]}>
         <BackLink onPress={onBack} />
         <Text style={styles.title}>{t('settings.title')}</Text>
         <Text style={styles.body}>{t('settings.slotsBody')}</Text>
@@ -196,9 +191,7 @@ export const SettingsScreen = ({
               ))}
             </View>
 
-            <Text style={[formStyles.label, { marginTop: tokens.space.lg }]}>
-              {t('settings.ownName')}
-            </Text>
+            <Text style={[formStyles.label, formStyles.topLg]}>{t('settings.ownName')}</Text>
             <View style={styles.addRow}>
               <Field
                 style={styles.addField}
@@ -236,9 +229,7 @@ export const SettingsScreen = ({
         <SizeStepper size={size} disabled={isPending} onChange={onChangeSize} />
         <Text style={styles.sizeHint}>{t('settings.sizeHint')}</Text>
 
-        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
-          {t('settings.language')}
-        </Text>
+        <Text style={[formStyles.label, formStyles.topXl]}>{t('settings.language')}</Text>
         <View style={styles.presets}>
           {LOCALES.map((option) => (
             <Pressable
@@ -257,13 +248,9 @@ export const SettingsScreen = ({
             </Pressable>
           ))}
         </View>
-        <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>
-          {t('settings.languageHint')}
-        </Text>
+        <Text style={[styles.hint, formStyles.topSm]}>{t('settings.languageHint')}</Text>
 
-        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
-          {t('settings.appearance')}
-        </Text>
+        <Text style={[formStyles.label, formStyles.topXl]}>{t('settings.appearance')}</Text>
         <View style={styles.presets}>
           {APPEARANCES.map((option) => (
             <Pressable
@@ -281,13 +268,9 @@ export const SettingsScreen = ({
             </Pressable>
           ))}
         </View>
-        <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>
-          {t('settings.appearanceHint')}
-        </Text>
+        <Text style={[styles.hint, formStyles.topSm]}>{t('settings.appearanceHint')}</Text>
 
-        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
-          {t('settings.account')}
-        </Text>
+        <Text style={[formStyles.label, formStyles.topXl]}>{t('settings.account')}</Text>
         {account.email !== undefined ? (
           <Text style={styles.body} testID="settings-email">
             {t('settings.emailOn', { email: account.email })}

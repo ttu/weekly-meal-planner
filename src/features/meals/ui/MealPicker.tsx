@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useLocale, useTranslation } from '@/shared/i18n'
@@ -81,7 +81,7 @@ export const MealPicker = ({
   const theme = useTheme()
   const { t } = useTranslation()
   const locale = useLocale()
-  const insets = useSafeAreaInsets()
+  const sheetPadding = useSafeAreaPadding({ top: tokens.space.md })
   const [query, setQuery] = useState('')
 
   // Own Meals first: a family reaches for what they already cook far more often
@@ -114,10 +114,7 @@ export const MealPicker = ({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
-      <View
-        style={[styles.sheet, { paddingTop: insets.top + tokens.space.md }]}
-        testID="meal-picker"
-      >
+      <View style={[styles.sheet, sheetPadding]} testID="meal-picker">
         <View style={styles.header}>
           <Text style={styles.title}>{t('picker.title')}</Text>
           <Pressable

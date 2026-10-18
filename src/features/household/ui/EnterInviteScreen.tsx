@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -17,6 +17,7 @@ type Props = {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    fieldTight: { marginBottom: tokens.space.xs },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
@@ -34,14 +35,14 @@ export const EnterInviteScreen = ({ onOpen, onBack }: Props): React.JSX.Element 
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.md })
   const [pasted, setPasted] = useState('')
   const [unreadable, setUnreadable] = useState(false)
 
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.md }]}
+      contentContainerStyle={[formStyles.content, contentPadding]}
       testID="enter-invite-screen"
     >
       <BackLink onPress={onBack} label={t('nav.backPlain')} />
@@ -51,7 +52,7 @@ export const EnterInviteScreen = ({ onOpen, onBack }: Props): React.JSX.Element 
 
       <Text style={formStyles.label}>{t('board.inviteLabel')}</Text>
       <Field
-        style={{ marginBottom: tokens.space.xs }}
+        style={styles.fieldTight}
         value={pasted}
         onChangeText={(next) => {
           setPasted(next)

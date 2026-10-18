@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
@@ -50,6 +50,7 @@ import type { BacklogItem, CookEvent, CookEventId, LeftoverId } from '../domain/
 const sheets = themed((tokens) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: tokens.color.surface },
+    wideBoard: { flex: 1, flexDirection: 'row' },
     dragHint: { ...tokens.type.meta, color: tokens.color.textSupport },
     /**
      * Padding out to 44 and then pulled back in by the same amount, so the
@@ -182,7 +183,8 @@ const Board = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.md })
+  const topInset = useSafeAreaPadding({ top: 0 })
   const session = useSession()
   const household = session.household
   const me = session.member
@@ -559,7 +561,7 @@ const Board = ({
   if (isWide) {
     return (
       <WideBoardLayout
-        style={{ paddingTop: insets.top }}
+        style={topInset}
         header={header}
         weekHeading={
           <View style={styles.wideWeekHeading}>
@@ -593,7 +595,7 @@ const Board = ({
         }
         backlog={shelf('pane')}
         board={
-          <View style={{ flex: 1, flexDirection: 'row' }} testID="board">
+          <View style={styles.wideBoard} testID="board">
             {board.map((day, index) => (
               <WideDayColumn
                 key={day.date}
@@ -636,7 +638,7 @@ const Board = ({
           scrollEventThrottle={16}
           onScroll={autoScroll.onScroll}
           onContentSizeChange={autoScroll.onContentSizeChange}
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+          contentContainerStyle={[styles.content, contentPadding]}
         >
           <View style={styles.boardNameRow}>
             <BoardNameButton

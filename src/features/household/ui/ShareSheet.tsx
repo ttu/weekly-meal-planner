@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
@@ -24,6 +24,8 @@ type Props = {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** The part of the backdrop above the sheet: pressing it closes. */
+    dismiss: { flex: 1 },
     backdrop: { flex: 1, backgroundColor: tokens.color.scrim, justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: tokens.color.surface,
@@ -76,21 +78,18 @@ export const ShareSheet = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const sheetPadding = useSafeAreaPadding({ bottom: tokens.space.md })
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable
-          style={{ flex: 1 }}
+          style={styles.dismiss}
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel={t('board.shareClose')}
         />
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.md }]}
-          testID="share-sheet"
-        >
+        <View style={[styles.sheet, sheetPadding]} testID="share-sheet">
           <View style={styles.grip} />
           <Text style={styles.title}>{t('board.share')}</Text>
 

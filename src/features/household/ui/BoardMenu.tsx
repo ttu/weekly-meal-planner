@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
@@ -7,6 +7,8 @@ import { useWideScreen } from '@/shared/layout/useWideScreen'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** The part of the backdrop above the sheet: pressing it closes. */
+    dismiss: { flex: 1 },
     backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.color.scrim },
     sheet: {
       backgroundColor: tokens.color.surface,
@@ -182,7 +184,7 @@ const MenuBody = ({
 export const BoardMenu = ({ onDismiss, ...body }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const sheetPadding = useSafeAreaPadding({ bottom: tokens.space.lg })
   const isWide = useWideScreen()
 
   if (isWide) {
@@ -205,15 +207,12 @@ export const BoardMenu = ({ onDismiss, ...body }: Props): React.JSX.Element => {
     <Modal visible transparent animationType="slide" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <Pressable
-          style={{ flex: 1 }}
+          style={styles.dismiss}
           onPress={onDismiss}
           accessibilityRole="button"
           accessibilityLabel={t('plan.cancel')}
         />
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
-          testID="board-menu"
-        >
+        <View style={[styles.sheet, sheetPadding]} testID="board-menu">
           <View style={styles.grip} />
           <MenuBody {...body} />
         </View>

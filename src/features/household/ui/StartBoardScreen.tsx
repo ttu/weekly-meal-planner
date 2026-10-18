@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -34,6 +34,7 @@ type Props = {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    fieldTight: { marginBottom: tokens.space.xs },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
     /** Under a field, saying what it is for rather than what it must contain. */
@@ -90,7 +91,7 @@ export const StartBoardScreen = ({
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.xl })
   const [boardName, setBoardName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
@@ -99,7 +100,7 @@ export const StartBoardScreen = ({
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
+      contentContainerStyle={[formStyles.content, contentPadding]}
       testID="start-board-screen"
     >
       <Wordmark />
@@ -117,7 +118,7 @@ export const StartBoardScreen = ({
 
       <Text style={formStyles.label}>{t('board.yourName')}</Text>
       <Field
-        style={{ marginBottom: tokens.space.xs }}
+        style={styles.fieldTight}
         value={displayName}
         onChangeText={setDisplayName}
         placeholder={t('board.yourNamePlaceholder')}
@@ -134,7 +135,7 @@ export const StartBoardScreen = ({
         hasError={error === 'short-password'}
         testID="start-password"
       />
-      <Text style={[styles.hint, { marginTop: tokens.space.xs }]}>{t('board.passwordHint')}</Text>
+      <Text style={[styles.hint, formStyles.topXs]}>{t('board.passwordHint')}</Text>
 
       {askBetaKey && (
         <BetaKeyField

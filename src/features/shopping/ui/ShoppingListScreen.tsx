@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
@@ -307,7 +307,8 @@ export const ShoppingListScreen = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.md })
+  const barPadding = useSafeAreaPadding({ bottom: tokens.space.lg })
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
   /**
    * Ticked rows stay where they are by default, because the list must not
@@ -420,10 +421,7 @@ export const ShoppingListScreen = ({
 
   return (
     <View style={styles.page} testID="shopping-screen">
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
-      >
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, contentPadding]}>
         {onBack !== undefined && <BackLink onPress={onBack} />}
 
         <View style={styles.head}>
@@ -566,7 +564,7 @@ export const ShoppingListScreen = ({
       </ScrollView>
 
       <View style={styles.bar}>
-        <View style={[styles.barInner, { paddingBottom: insets.bottom + tokens.space.lg }]}>
+        <View style={[styles.barInner, barPadding]}>
           <Pressable
             style={({ pressed }) => [
               styles.copy,
