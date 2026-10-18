@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, use, useMemo, useState, type ReactNode } from 'react'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { weekStartFrom } from '../domain/week'
 import type { WeekStart } from '../domain/types'
@@ -45,7 +45,7 @@ export const SelectedWeekProvider = ({
  * story can render on its own.
  */
 export const useSelectedWeek = (clock: Clock = systemClock): SelectedWeek => {
-  const fromContext = useContext(Context)
+  const fromContext = use(Context)
   const standalone = useMemo(
     () => ({ weekStart: weekStartFrom(clock, 0), offset: 0, goToWeek: () => undefined }),
     [clock],

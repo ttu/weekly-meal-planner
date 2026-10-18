@@ -93,7 +93,7 @@ const sheets = themed((tokens) =>
     },
     cardGlyph: {
       fontFamily: tokens.type.body.fontFamily,
-      fontSize: 13,
+      fontSize: tokens.type.meta.fontSize,
       color: tokens.color.textGhost,
     },
     cardCountLink: { color: tokens.color.action, textDecorationLine: 'underline' },
@@ -101,7 +101,7 @@ const sheets = themed((tokens) =>
     cardCount: {
       ...tokens.type.labelTiny,
       fontWeight: '400',
-      fontSize: 12,
+      fontSize: tokens.type.label.fontSize,
       color: tokens.color.textSupport,
       paddingTop: 2,
     },
@@ -122,11 +122,15 @@ const sheets = themed((tokens) =>
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
-    removeLeftoverText: { ...tokens.type.labelTiny, fontSize: 12, color: tokens.color.textGhost },
+    removeLeftoverText: {
+      ...tokens.type.labelTiny,
+      fontSize: tokens.type.label.fontSize,
+      color: tokens.color.textGhost,
+    },
     leftoverWord: {
       fontFamily: tokens.type.dayHeading.fontFamily,
       fontStyle: 'italic',
-      fontSize: 15,
+      fontSize: tokens.type.body.fontSize,
     },
   }),
 )

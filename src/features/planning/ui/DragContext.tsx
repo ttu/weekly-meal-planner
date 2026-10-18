@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, use, useMemo, useRef, useState, type ReactNode } from 'react'
 import { makeMutable, useSharedValue, type SharedValue } from 'react-native-reanimated'
 import type { DragPayload, DropTarget } from '../domain/drop'
 
@@ -186,7 +178,7 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
   return <DragContext.Provider value={value}>{children}</DragContext.Provider>
 }
 
-export const useDrag = (): DragValue => useContext(DragContext)
+export const useDrag = (): DragValue => use(DragContext)
 
 /** True when this Slot is the one the card would land in. */
 export const isSameTarget = (a: DropTarget | undefined, b: DropTarget): boolean =>
