@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
@@ -78,7 +78,7 @@ export const ShareSheet = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const sheetPadding = useSafeAreaPadding({ bottom: tokens.space.md })
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -89,10 +89,7 @@ export const ShareSheet = ({
           accessibilityRole="button"
           accessibilityLabel={t('board.shareClose')}
         />
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.md }]}
-          testID="share-sheet"
-        >
+        <View style={[styles.sheet, sheetPadding]} testID="share-sheet">
           <View style={styles.grip} />
           <Text style={styles.title}>{t('board.share')}</Text>
 

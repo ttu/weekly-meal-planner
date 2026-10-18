@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useLocale, useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
@@ -112,7 +112,7 @@ export const MealLibraryScreen = ({
   const theme = useTheme()
   const { t } = useTranslation()
   const locale = useLocale()
-  const insets = useSafeAreaInsets()
+  const screenPadding = useSafeAreaPadding({ top: 0 })
   const [query, setQuery] = useState('')
   const isPane = layout === 'pane'
 
@@ -156,7 +156,7 @@ export const MealLibraryScreen = ({
 
   return (
     <View
-      style={[isPane ? styles.pane : styles.screen, !isPane && { paddingTop: insets.top }]}
+      style={[isPane ? styles.pane : styles.screen, !isPane && screenPadding]}
       testID="meal-library-screen"
     >
       {!isPane && onBack !== undefined && (

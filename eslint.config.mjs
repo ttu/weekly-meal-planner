@@ -19,8 +19,9 @@ const designTokenRules = [
     message: 'Raw fontSize. Use a tokens.type.* size (src/shared/theme/tokens.ts).',
   },
   {
-    selector: 'JSXAttribute[name.name="style"] > JSXExpressionContainer > ObjectExpression',
-    message: 'Inline style. Put it in a themed() StyleSheet and reference it by name.',
+    selector: 'JSXAttribute[name.name=/[sS]tyle$/] ObjectExpression',
+    message:
+      'Inline style object (also inside style arrays and contentContainerStyle). Put it in a themed() StyleSheet; a runtime value goes through a themed(theme => ...) factory or a hook that returns a StyleSheet.',
   },
 ]
 

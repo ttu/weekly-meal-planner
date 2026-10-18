@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -304,7 +304,7 @@ export const PlanSheet = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const sheetPadding = useSafeAreaPadding({ bottom: tokens.space.lg })
 
   const [date, setDate] = useState(board[0]?.date ?? today)
   const [slotKey, setSlotKey] = useState<SlotKey | undefined>(slots[0]?.key)
@@ -332,7 +332,7 @@ export const PlanSheet = ({
         />
         <ScrollView
           style={styles.sheetScroll}
-          contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
+          contentContainerStyle={[styles.sheet, sheetPadding]}
           testID="plan-sheet"
         >
           <View style={styles.grip} />

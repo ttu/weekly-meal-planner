@@ -23,6 +23,7 @@ const sheets = themed((tokens) =>
       borderRightWidth: 1,
       borderRightColor: tokens.color.cardBorder,
     },
+    columnLast: { borderRightWidth: 0 },
     columnToday: { backgroundColor: tokens.color.todayTint },
     columnChanged: { boxShadow: `inset 0 0 0 2px ${tokens.color.todayEdge}` },
     head: {
@@ -342,7 +343,7 @@ export const WideDayColumn = ({
     <View
       style={[
         styles.column,
-        isLast && { borderRightWidth: 0 },
+        isLast && styles.columnLast,
         isToday && styles.columnToday,
         recentlyChanged && styles.columnChanged,
       ]}

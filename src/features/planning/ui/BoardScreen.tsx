@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
@@ -183,12 +183,8 @@ const Board = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
-  // The safe-area inset is only known at runtime, so this one sheet is built here.
-  const insetStyles = useMemo(
-    () => StyleSheet.create({ top: { paddingTop: insets.top } }),
-    [insets.top],
-  )
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.md })
+  const topInset = useSafeAreaPadding({ top: 0 })
   const session = useSession()
   const household = session.household
   const me = session.member
@@ -565,7 +561,7 @@ const Board = ({
   if (isWide) {
     return (
       <WideBoardLayout
-        style={insetStyles.top}
+        style={topInset}
         header={header}
         weekHeading={
           <View style={styles.wideWeekHeading}>
@@ -642,7 +638,7 @@ const Board = ({
           scrollEventThrottle={16}
           onScroll={autoScroll.onScroll}
           onContentSizeChange={autoScroll.onContentSizeChange}
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+          contentContainerStyle={[styles.content, contentPadding]}
         >
           <View style={styles.boardNameRow}>
             <BoardNameButton

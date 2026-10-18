@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
@@ -32,13 +32,10 @@ export const NoHouseholdScreen = ({
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const screenPadding = useSafeAreaPadding({ top: tokens.space.xl })
 
   return (
-    <View
-      style={[styles.screen, { paddingTop: insets.top + tokens.space.xl }]}
-      testID="no-household-screen"
-    >
+    <View style={[styles.screen, screenPadding]} testID="no-household-screen">
       <Text style={styles.title}>{t('noHousehold.title')}</Text>
       <Text style={styles.body}>{t('noHousehold.body')}</Text>
       <Pressable

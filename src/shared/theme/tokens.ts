@@ -86,7 +86,7 @@ export const tokens = {
       letterSpacing: 1,
     },
   },
-  space: { xs: 4, sm: 8, md: 16, lg: 24, xl: 40 },
+  space: { xs: 4, sm: 8, gutter: 12, md: 16, lg: 24, xl: 40 },
   /**
    * The widest a column of text is allowed to get. Without it the Shopping
    * List stretched the full 1400px of a laptop and the name sat a screen's
