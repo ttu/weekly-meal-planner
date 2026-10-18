@@ -2,6 +2,10 @@
   "app": {
     "name": "Menami"
   },
+  "field": {
+    "invalid": "Invalid",
+    "invalidBecause": "Invalid: {{message}}"
+  },
   "board": {
     "thisWeek": "This week",
     "today": "Today",
