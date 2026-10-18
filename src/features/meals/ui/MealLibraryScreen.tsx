@@ -54,14 +54,22 @@ const sheets = themed((tokens) =>
       outlineStyle: 'none',
     },
     searchScreen: { minHeight: 54, paddingHorizontal: tokens.space.md },
-    list: { paddingHorizontal: 12, paddingBottom: tokens.space.md, gap: 7 },
+    list: { paddingHorizontal: 12, paddingBottom: tokens.space.md },
     listScreen: {
       paddingHorizontal: tokens.space.md,
-      gap: tokens.space.sm,
       width: '100%',
       maxWidth: tokens.layout.readable,
       alignSelf: 'center',
     },
+    /**
+     * Spacing lives on the rows and headings, not in a container `gap`:
+     * SectionList wraps every item, header and footer in its own View, so a
+     * gap would apply around each of them and double.
+     */
+    rowPane: { paddingTop: 7 },
+    rowScreen: { paddingTop: tokens.space.sm },
+    sectionAfterRowsPane: { marginTop: 7 },
+    sectionAfterRowsScreen: { marginTop: tokens.space.sm },
     section: {
       ...tokens.type.labelSmall,
       color: tokens.color.textGhost,
@@ -164,7 +172,11 @@ export const MealLibraryScreen = ({
       </Row>
     )
 
-    return <View>{wrapRow === undefined ? row : wrapRow(meal, row)}</View>
+    return (
+      <View style={isPane ? styles.rowPane : styles.rowScreen}>
+        {wrapRow === undefined ? row : wrapRow(meal, row)}
+      </View>
+    )
   }
 
   return (
@@ -208,10 +220,21 @@ export const MealLibraryScreen = ({
       </View>
 
       <SectionList
+        testID="library-list"
         sections={sections}
         keyExtractor={(meal) => meal.id}
         renderItem={({ item }) => <>{renderMeal(item)}</>}
-        renderSectionHeader={({ section }) => <Text style={styles.section}>{section.title}</Text>}
+        renderSectionHeader={({ section }) => (
+          <Text
+            style={[
+              styles.section,
+              section.key !== sections[0]?.key &&
+                (isPane ? styles.sectionAfterRowsPane : styles.sectionAfterRowsScreen),
+            ]}
+          >
+            {section.title}
+          </Text>
+        )}
         stickySectionHeadersEnabled={false}
         ListEmptyComponent={
           meals.length === 0 ? (

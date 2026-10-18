@@ -30,9 +30,9 @@ describe('MealCard', () => {
     expect(view.queryByTestId('meal-card-initial')).toBeNull()
   })
 
-  // Remote photos in a long list must survive a scroll and a relaunch without a
-  // refetch: expo-image caches on disk, React Native's Image does not.
-  it('caches a remote photo on disk', async () => {
+  // Only asks for disk caching. That the image is then actually cached is
+  // expo-image's behaviour and is not exercised here (jest renders a stub).
+  it('requests the disk cache policy for a remote photo', async () => {
     const view = await render(
       <MealCard name={NAME} photoUrl="https://example.test/chili.jpg" variant="library" />,
     )
