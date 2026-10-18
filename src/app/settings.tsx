@@ -55,7 +55,7 @@ export default function Settings(): React.JSX.Element {
         setError('write-failed')
         return
       }
-      refreshHousehold()
+      void refreshHousehold()
     })
   }
 
@@ -74,7 +74,7 @@ export default function Settings(): React.JSX.Element {
             setError('write-failed')
             return
           }
-          refreshHousehold()
+          void refreshHousehold()
         })
       }}
       size={household?.size ?? DEFAULT_SIZE}
@@ -82,13 +82,16 @@ export default function Settings(): React.JSX.Element {
         if (household === undefined) return
         setPending(true)
         setError(undefined)
-        void saveSize(client, household.id, next).then((written) => {
-          setPending(false)
+        // Pending until the Household has been read again: in between it is
+        // briefly undefined, and a tap then would be dropped.
+        void saveSize(client, household.id, next).then(async (written) => {
           if (!isOk(written)) {
             setError('write-failed')
+            setPending(false)
             return
           }
-          refreshHousehold()
+          await refreshHousehold()
+          setPending(false)
         })
       }}
       account={{

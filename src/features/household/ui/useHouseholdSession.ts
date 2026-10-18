@@ -66,9 +66,7 @@ export const useHouseholdSession = (
  * the "no Household" screen. Reset cancels the fetch in flight and starts a
  * new one, which can only see the world after the board exists.
  */
-export const useRefreshHousehold = (): (() => void) => {
+export const useRefreshHousehold = (): (() => Promise<void>) => {
   const queryClient = useQueryClient()
-  return () => {
-    void queryClient.resetQueries({ queryKey: HOUSEHOLD_QUERY_KEY })
-  }
+  return () => queryClient.resetQueries({ queryKey: HOUSEHOLD_QUERY_KEY })
 }
