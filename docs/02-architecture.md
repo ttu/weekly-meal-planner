@@ -95,3 +95,12 @@ Server state and client state never mix. Server state is TanStack Query over the
 Supabase client, with realtime subscriptions invalidating it. Client state
 (drag in progress, sheet open, which day is scrolled to) is local component
 state or a small store. A cook event never lives in both.
+
+Query defaults live in `src/shared/net/queryClient.ts`: a 30 s `staleTime`
+(realtime does the real invalidating), two query retries, and mutations on
+`networkMode: 'online'` so an optimistic tick made offline waits and flushes on
+reconnect. The queue is in memory only. On native, `useQueryLifecycle` points
+TanStack Query's `focusManager` at `AppState` and its `onlineManager` at the
+injected `NetworkSource` (expo-network on device, `navigator.onLine` on web), so
+returning from the background or regaining signal refetches what is on screen.
+`useIsOnline` reads the same source.
