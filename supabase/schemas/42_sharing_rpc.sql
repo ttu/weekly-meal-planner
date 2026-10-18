@@ -52,7 +52,7 @@ $fn$;
 -- The attempt tables are write-mostly: every wrong guess adds a row, and nothing
 -- else removes one. Rows older than a day are past every window above, so they
 -- count for nothing. Run from the two functions that write them, so no scheduler
--- is needed.
+-- is needed. Called through purge_stale_attempts_sometimes below.
 create or replace function app.purge_stale_attempts()
 returns void
 language sql
@@ -64,6 +64,22 @@ as $fn$
 $fn$;
 
 revoke execute on function app.purge_stale_attempts() from public;
+
+-- One call in twenty, so the three deletes are not paid on every request. A row
+-- lives a little longer than a day on average; nothing reads them past an hour.
+create or replace function app.purge_stale_attempts_sometimes()
+returns void
+language plpgsql
+set search_path = public, pg_temp
+as $fn$
+begin
+  if random() < 0.05 then
+    perform app.purge_stale_attempts();
+  end if;
+end;
+$fn$;
+
+revoke execute on function app.purge_stale_attempts_sometimes() from public;
 revoke execute on function app.caller_ip() from public;
 revoke execute on function app.beta_key_guesses_exhausted(uuid, text) from public;
 
@@ -142,7 +158,7 @@ begin
   end if;
 
   insert into household_creation_attempt (user_id, ip) values (auth.uid(), caller_ip);
-  perform app.purge_stale_attempts();
+  perform app.purge_stale_attempts_sometimes();
 
   insert into household (name, locale, join_password_hash)
   values (
@@ -223,7 +239,15 @@ begin
     return;
   end if;
 
-  perform app.purge_stale_attempts();
+  -- Per account, across tokens. The account lock taken by
+  -- beta_key_guesses_exhausted above is still held, so this count and the
+  -- insert below are one step.
+  if (select count(*) from household_join_attempt
+      where user_id = auth.uid() and attempted_at > now() - interval '1 hour') >= 20
+  then
+    return query select null::uuid, 'rate-limited'::join_board_status;
+    return;
+  end if;
 
   -- Same reason as the beta key lock: without it a burst of parallel guesses
   -- each reads the same count and all pass. After the account and address locks
@@ -247,7 +271,8 @@ begin
   if target is null
      or extensions.crypt(p_password, target.join_password_hash) <> target.join_password_hash
   then
-    insert into household_join_attempt (share_token) values (p_share_token);
+    insert into household_join_attempt (share_token, user_id) values (p_share_token, auth.uid());
+    perform app.purge_stale_attempts_sometimes();
     return query select null::uuid, 'rejected'::join_board_status;
     return;
   end if;

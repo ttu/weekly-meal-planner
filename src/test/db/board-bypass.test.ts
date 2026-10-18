@@ -105,20 +105,35 @@ describe('board creation bypass', () => {
     ).toHaveLength(0)
   })
 
-  it('forgets attempts older than a day when the next one arrives', async () => {
+  it('forgets attempts older than a day', async () => {
     await db.asOwner()
     await db.sql(
       `insert into household_join_attempt (share_token, attempted_at)
-       values ('stale', now() - interval '2 days')`,
+       values ('stale', now() - interval '2 days'), ('fresh', now())`,
     )
-    await db.asMember(OUTSIDER)
-    await db.sql('select * from join_board($1, $2)', [token, 'wrong-password'])
-    await db.asOwner()
+    await db.sql('select app.purge_stale_attempts()')
     expect(
       await db.sql("select 1 from household_join_attempt where share_token = 'stale'"),
     ).toHaveLength(0)
     expect(
-      await db.sql('select 1 from household_join_attempt where share_token = $1', [token]),
+      await db.sql("select 1 from household_join_attempt where share_token = 'fresh'"),
     ).toHaveLength(1)
+  })
+
+  it('stops one account guessing across many tokens', async () => {
+    const SPRAYER = '55555555-5555-5555-5555-555555555555'
+    await db.asMember(SPRAYER)
+    const statuses: string[] = []
+    for (let n = 0; n < 22; n++) {
+      const [row] = (await db.sql('select * from join_board($1, $2)', [
+        `token-${String(n)}`,
+        'pw',
+      ])) as {
+        out_status: string
+      }[]
+      statuses.push(row!.out_status)
+    }
+    expect(statuses.slice(0, 20).every((status) => status === 'rejected')).toBe(true)
+    expect(statuses.slice(20)).toEqual(['rate-limited', 'rate-limited'])
   })
 })

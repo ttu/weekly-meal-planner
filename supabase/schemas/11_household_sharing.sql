@@ -15,10 +15,14 @@ create unique index household_share_token_idx on household (share_token);
 -- not joined yet must not learn whether the id exists.
 create table household_join_attempt (
   share_token text not null,
+  -- Who guessed, so one account cannot spread wrong guesses over many tokens:
+  -- each token stays under its own limit while the table fills.
+  user_id uuid,
   attempted_at timestamptz not null default now()
 );
 
 create index household_join_attempt_idx on household_join_attempt (share_token, attempted_at);
+create index household_join_attempt_user_idx on household_join_attempt (user_id, attempted_at);
 create index household_join_attempt_age_idx on household_join_attempt (attempted_at);
 
 create table household_creation_attempt (

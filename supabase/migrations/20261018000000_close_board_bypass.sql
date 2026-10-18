@@ -14,6 +14,10 @@ drop policy if exists household_member_insert on household_member;
 revoke update on household from anon, authenticated;
 grant update (name, locale, slots) on household to authenticated;
 
+-- Wrong joins are counted per account as well as per token.
+alter table household_join_attempt add column if not exists user_id uuid;
+create index if not exists household_join_attempt_user_idx on household_join_attempt (user_id, attempted_at);
+
 -- Foreign keys read by cascades and RLS joins, and the age of attempt rows.
 create index if not exists meal_copied_from_idx on meal (copied_from_meal_id) where copied_from_meal_id is not null;
 create index if not exists meal_ingredient_ingredient_idx on meal_ingredient (ingredient_id);
@@ -35,6 +39,22 @@ as $fn$
 $fn$;
 
 revoke execute on function app.purge_stale_attempts() from public;
+
+-- One call in twenty, so the three deletes are not paid on every request. A row
+-- lives a little longer than a day on average; nothing reads them past an hour.
+create or replace function app.purge_stale_attempts_sometimes()
+returns void
+language plpgsql
+set search_path = public, pg_temp
+as $fn$
+begin
+  if random() < 0.05 then
+    perform app.purge_stale_attempts();
+  end if;
+end;
+$fn$;
+
+revoke execute on function app.purge_stale_attempts_sometimes() from public;
 
 create or replace function public.create_board(
   p_name text,
@@ -98,7 +118,7 @@ begin
   end if;
 
   insert into household_creation_attempt (user_id, ip) values (auth.uid(), caller_ip);
-  perform app.purge_stale_attempts();
+  perform app.purge_stale_attempts_sometimes();
 
   insert into household (name, locale, join_password_hash)
   values (
@@ -157,7 +177,15 @@ begin
     return;
   end if;
 
-  perform app.purge_stale_attempts();
+  -- Per account, across tokens. The account lock taken by
+  -- beta_key_guesses_exhausted above is still held, so this count and the
+  -- insert below are one step.
+  if (select count(*) from household_join_attempt
+      where user_id = auth.uid() and attempted_at > now() - interval '1 hour') >= 20
+  then
+    return query select null::uuid, 'rate-limited'::join_board_status;
+    return;
+  end if;
 
   -- Same reason as the beta key lock: without it a burst of parallel guesses
   -- each reads the same count and all pass. After the account and address locks
@@ -181,7 +209,8 @@ begin
   if target is null
      or extensions.crypt(p_password, target.join_password_hash) <> target.join_password_hash
   then
-    insert into household_join_attempt (share_token) values (p_share_token);
+    insert into household_join_attempt (share_token, user_id) values (p_share_token, auth.uid());
+    perform app.purge_stale_attempts_sometimes();
     return query select null::uuid, 'rejected'::join_board_status;
     return;
   end if;
