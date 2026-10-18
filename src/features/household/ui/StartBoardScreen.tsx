@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View, type TextInput } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -96,6 +96,9 @@ export const StartBoardScreen = ({
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
   const [betaKey, setBetaKey] = useState('')
+  const nameRef = useRef<TextInput>(null)
+  const passwordRef = useRef<TextInput>(null)
+  const betaKeyRef = useRef<TextInput>(null)
 
   return (
     <KeyboardAvoiding>
@@ -115,6 +118,8 @@ export const StartBoardScreen = ({
           onChangeText={setBoardName}
           autoCapitalize="words"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => nameRef.current?.focus()}
           placeholder={t('board.boardNamePlaceholder')}
           accessibilityLabel={t('board.boardName')}
           testID="start-board-name"
@@ -122,12 +127,15 @@ export const StartBoardScreen = ({
 
         <Text style={formStyles.label}>{t('board.yourName')}</Text>
         <Field
+          ref={nameRef}
           style={{ marginBottom: tokens.space.xs }}
           value={displayName}
           onChangeText={setDisplayName}
           autoComplete="name"
           autoCapitalize="words"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordRef.current?.focus()}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
           testID="start-your-name"
@@ -139,6 +147,10 @@ export const StartBoardScreen = ({
           value={password}
           onChangeText={setPassword}
           isNew
+          inputRef={passwordRef}
+          returnKeyType={askBetaKey ? 'next' : 'done'}
+          submitBehavior={askBetaKey ? 'submit' : 'blurAndSubmit'}
+          onSubmitEditing={askBetaKey ? () => betaKeyRef.current?.focus() : undefined}
           placeholder={t('board.passwordPlaceholder')}
           hasError={error === 'short-password'}
           testID="start-password"
@@ -149,6 +161,7 @@ export const StartBoardScreen = ({
           <BetaKeyField
             value={betaKey}
             onChangeText={setBetaKey}
+            inputRef={betaKeyRef}
             hasError={error === 'invalid-beta-key'}
             testID="start-beta-key"
           />

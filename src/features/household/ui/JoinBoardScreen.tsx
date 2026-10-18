@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View, type TextInput } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
@@ -67,6 +67,8 @@ export const JoinBoardScreen = ({
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [betaKey, setBetaKey] = useState('')
+  const passwordRef = useRef<TextInput>(null)
+  const betaKeyRef = useRef<TextInput>(null)
 
   const names = preview?.members.map((m) => m.name) ?? []
   // "Dad and Mum are already planning", but "check with Dad or Mum" — either
@@ -127,6 +129,8 @@ export const JoinBoardScreen = ({
           autoComplete="name"
           autoCapitalize="words"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordRef.current?.focus()}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
           testID="join-your-name"
@@ -136,6 +140,10 @@ export const JoinBoardScreen = ({
         <PasswordField
           value={password}
           onChangeText={setPassword}
+          inputRef={passwordRef}
+          returnKeyType={askBetaKey ? 'next' : 'done'}
+          submitBehavior={askBetaKey ? 'submit' : 'blurAndSubmit'}
+          onSubmitEditing={askBetaKey ? () => betaKeyRef.current?.focus() : undefined}
           hasError={error !== undefined && error !== 'invalid-beta-key'}
           testID="join-password"
         />
@@ -146,6 +154,7 @@ export const JoinBoardScreen = ({
             <BetaKeyField
               value={betaKey}
               onChangeText={setBetaKey}
+              inputRef={betaKeyRef}
               hasError={error === 'invalid-beta-key'}
               testID="join-beta-key"
             />

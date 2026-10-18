@@ -1,4 +1,5 @@
-import { StyleSheet, Text } from 'react-native'
+import type { Ref } from 'react'
+import { StyleSheet, Text, type TextInput } from 'react-native'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
@@ -9,6 +10,7 @@ type Props = {
   readonly onChangeText: (value: string) => void
   readonly hasError: boolean
   readonly testID: string
+  readonly inputRef?: Ref<TextInput> | undefined
 }
 
 const sheets = themed((tokens) =>
@@ -28,6 +30,7 @@ export const BetaKeyField = ({
   onChangeText,
   hasError,
   testID,
+  inputRef,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
@@ -44,6 +47,8 @@ export const BetaKeyField = ({
         autoCorrect={false}
         hasError={hasError}
         accessibilityLabel={t('board.betaKey')}
+        ref={inputRef}
+        returnKeyType="done"
         testID={testID}
       />
       <Text style={styles.hint}>{t('board.betaKeyHint')}</Text>
