@@ -78,4 +78,37 @@ describe('MealLibraryScreen', () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={[]} />)
     expect(view.getByText('No Meals yet. Add the first one.')).toBeTruthy()
   })
+
+  describe('load states', () => {
+    it('never says the library is empty while it is loading', async () => {
+      const view = await renderWithProviders(<MealLibraryScreen meals={[]} loadState="loading" />)
+      expect(view.queryByTestId('library-empty')).toBeNull()
+      expect(view.getByTestId('loading')).toBeTruthy()
+    })
+
+    it('shows an error with a retry, not an empty library, when the first load failed', async () => {
+      const onRetry = jest.fn()
+      const view = await renderWithProviders(
+        <MealLibraryScreen meals={[]} loadState="failed" onRetry={onRetry} />,
+      )
+      expect(view.queryByTestId('library-empty')).toBeNull()
+      await fireEvent.press(view.getByTestId('load-error-retry'))
+      expect(onRetry).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the Meals and adds a notice with a retry when a refresh failed', async () => {
+      const onRetry = jest.fn()
+      const view = await renderWithProviders(
+        <MealLibraryScreen meals={meals} loadState="stale" onRetry={onRetry} />,
+      )
+      expect(view.getByText('Shakshuka')).toBeTruthy()
+      await fireEvent.press(view.getByTestId('load-stale-action'))
+      expect(onRetry).toHaveBeenCalledTimes(1)
+    })
+
+    it('still says the library is empty once a load has found nothing', async () => {
+      const view = await renderWithProviders(<MealLibraryScreen meals={[]} loadState="ready" />)
+      expect(view.getByTestId('library-empty')).toBeTruthy()
+    })
+  })
 })

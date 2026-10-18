@@ -32,7 +32,7 @@ const extraRow = z.object({
   checked_at: z.string().nullable(),
 })
 
-export type LoadShoppingError = 'invalid-row'
+export type LoadShoppingError = 'query-failed' | 'invalid-row'
 
 /**
  * Everything the pure derivation needs, in one read. The derivation itself
@@ -44,12 +44,12 @@ export const loadShoppingData = async (
   locale: Locale,
 ): Promise<Result<DeriveInput, LoadShoppingError>> => {
   const [
-    { data: cookEvents },
+    { data: cookEvents, error: cookEventError },
     ingredientResult,
-    { data: staples },
-    { data: checks },
-    { data: overrides },
-    { data: extras },
+    { data: staples, error: stapleError },
+    { data: checks, error: checkError },
+    { data: overrides, error: overrideError },
+    { data: extras, error: extraError },
   ] = await Promise.all([
     client
       .from('cook_event')
@@ -72,6 +72,15 @@ export const loadShoppingData = async (
       .eq('week_plan_id', weekPlanId)
       .order('created_at', { ascending: true }),
   ])
+
+  // An error leaves `data` null, which the parsing below would happily read as
+  // "nothing planned" and derive an empty list from.
+  const queryFailed = [cookEventError, stapleError, checkError, overrideError, extraError].some(
+    (e) => e !== null,
+  )
+  if (queryFailed || (isErr(ingredientResult) && ingredientResult.error === 'query-failed')) {
+    return err('query-failed')
+  }
 
   const parsedEvents = z.array(cookEventRow).safeParse(cookEvents ?? [])
   const parsedStaples = z.array(stapleRow).safeParse(staples ?? [])

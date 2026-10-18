@@ -15,6 +15,12 @@ export type WeekBoard = {
   readonly weekStart: WeekStart
   readonly householdName: string
   readonly isLoading: boolean
+  /** The last load failed. With `hasData` this is a refresh that failed over a
+   *  board still worth showing; without it, there is no board to show. */
+  readonly isError: boolean
+  /** An answer has arrived, so an empty board really is empty. */
+  readonly hasData: boolean
+  readonly refetch: () => void
 }
 
 /**
@@ -25,22 +31,25 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
   const { client, household } = useSession()
   const { weekStart } = useSelectedWeek(clock)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['week', household?.id, weekStart],
     enabled: household !== undefined,
     queryFn: async () => {
       const result = await loadWeek(client, weekStart)
-      // A Week Plan that does not exist yet is an expected outcome, not an
-      // error: nobody has planned this week. Render an empty board.
       if (isErr(result)) {
-        return { weekPlanId: undefined, cookEvents: [], leftovers: [], backlog: [] }
+        // A Week Plan that does not exist yet is an expected outcome, not an
+        // error: nobody has planned this week. Render an empty board.
+        if (result.error === 'no-week-plan') {
+          return { weekPlanId: undefined, cookEvents: [], leftovers: [], backlog: [] }
+        }
+        // Anything else is a failure, and failures throw: Query then keeps the
+        // last good board instead of replacing it with an empty one.
+        throw new Error(`Could not load the week: ${result.error}`)
       }
 
       const backlog = await loadBacklog(client, result.value.weekPlanId)
-      return {
-        ...result.value,
-        backlog: isErr(backlog) ? [] : backlog.value,
-      }
+      if (isErr(backlog)) throw new Error(`Could not load the Backlog: ${backlog.error}`)
+      return { ...result.value, backlog: backlog.value }
     },
   })
 
@@ -56,5 +65,10 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
     weekStart,
     householdName: household?.name ?? '',
     isLoading: isLoading || household === undefined,
+    isError,
+    hasData: data !== undefined,
+    refetch: () => {
+      void refetch()
+    },
   }
 }

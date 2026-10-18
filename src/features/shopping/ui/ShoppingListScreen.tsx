@@ -6,6 +6,9 @@ import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 import { useIsOnline } from '@/shared/net/useIsOnline'
 import { BackLink } from '@/shared/ui/BackLink'
+import { LoadError, Loading } from '@/shared/ui/LoadState'
+import { Notice } from '@/shared/ui/Notice'
+import type { LoadState } from '@/shared/query/load-state'
 import type { IngredientId } from '@/shared/types/ids'
 import { groupBuyLines } from '../domain/group'
 import type { BuyLine, Extra, ExtraId, ShoppingList } from '../domain/types'
@@ -221,6 +224,10 @@ type Props = {
   readonly onCopyPrompt: () => void
   readonly justCopied: boolean
   readonly onBack?: (() => void) | undefined
+  /** Whether the list has arrived. Only a loaded list may say "nothing to
+   *  buy"; a failed one must not look like an empty one. */
+  readonly loadState?: LoadState | undefined
+  readonly onRetry?: (() => void) | undefined
 }
 
 /** An Extra is a Buy Line nobody derived: milk, bin bags, the thing someone
@@ -304,6 +311,8 @@ export const ShoppingListScreen = ({
   onCopyPrompt,
   justCopied,
   onBack,
+  loadState = 'ready',
+  onRetry,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
@@ -326,6 +335,27 @@ export const ShoppingListScreen = ({
 
   const isEmpty =
     list.buy.length === 0 && list.cupboard.length === 0 && list.incomplete.length === 0
+
+  if (loadState === 'loading' || loadState === 'failed') {
+    return (
+      <View style={styles.page} testID="shopping-screen">
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+        >
+          {onBack !== undefined && <BackLink onPress={onBack} />}
+          <View style={styles.head}>
+            <Text style={styles.title}>{t('shopping.title')}</Text>
+          </View>
+          {loadState === 'loading' ? (
+            <Loading />
+          ) : (
+            <LoadError onRetry={onRetry ?? (() => undefined)} />
+          )}
+        </ScrollView>
+      </View>
+    )
+  }
 
   const buyRow = (line: BuyLine, isLast: boolean): React.JSX.Element => {
     return (
@@ -585,6 +615,14 @@ export const ShoppingListScreen = ({
           </Pressable>
         </View>
       </View>
+
+      {loadState === 'stale' && (
+        <Notice
+          message={t('load.stale')}
+          testID="load-stale"
+          action={onRetry === undefined ? undefined : { label: t('load.retry'), onPress: onRetry }}
+        />
+      )}
     </View>
   )
 }
