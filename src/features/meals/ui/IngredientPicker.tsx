@@ -92,6 +92,7 @@ export const IngredientPicker = ({
         />
 
         <SectionList
+          testID="ingredient-results"
           sections={grouped}
           keyExtractor={(ingredient) => ingredient.id}
           renderSectionHeader={({ section }) => (

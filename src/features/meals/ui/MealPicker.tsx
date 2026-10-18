@@ -173,6 +173,7 @@ export const MealPicker = ({
         />
 
         <SectionList
+          testID="picker-results"
           sections={sections}
           keyExtractor={(meal) => meal.id}
           renderItem={({ item, section }) => renderMeal(item, section.key === 'catalogue')}
