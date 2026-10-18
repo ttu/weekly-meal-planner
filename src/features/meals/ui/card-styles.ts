@@ -43,7 +43,14 @@ export const cardStylesSheets = themed((tokens) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    chipImage: { width: 46, height: 46, borderRadius: tokens.radius.md },
+    /** The inset fill is the placeholder: the same tone as the initial chip, so a
+     *  photo that is still loading looks like a Meal without one. */
+    chipImage: {
+      width: 46,
+      height: 46,
+      borderRadius: tokens.radius.md,
+      backgroundColor: tokens.color.surfaceInset,
+    },
     /** The same row inside the wide board's library pane, where 284px has to
      *  hold a chip, a name and a servings count without wrapping every title. */
     baseCompact: { borderRadius: 11, paddingVertical: 10, paddingHorizontal: 12, gap: 6 },

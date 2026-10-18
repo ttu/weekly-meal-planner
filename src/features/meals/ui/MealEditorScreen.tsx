@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
@@ -60,7 +61,12 @@ const sheets = themed((tokens) =>
     },
     /** Bigger than the 46px chip on a card, because this is where you judge
      *  whether the picture is the right one. */
-    photo: { width: 72, height: 72, borderRadius: tokens.radius.md },
+    photo: {
+      width: 72,
+      height: 72,
+      borderRadius: tokens.radius.md,
+      backgroundColor: tokens.color.surfaceInset,
+    },
     photoEmpty: {
       backgroundColor: tokens.color.surfaceInset,
       alignItems: 'center',
@@ -208,6 +214,9 @@ export const MealEditorScreen = ({
           <Image
             style={styles.photo}
             source={{ uri: shownPhoto }}
+            contentFit="cover"
+            cachePolicy="disk"
+            accessibilityIgnoresInvertColors
             accessibilityLabel={t('meal.photo')}
             testID="editor-photo"
           />

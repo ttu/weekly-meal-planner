@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useLocale, useTranslation } from '@/shared/i18n'
@@ -121,6 +121,19 @@ export const MealLibraryScreen = ({
     [meals, query, locale],
   )
 
+  // An empty library says so; a search that finds nothing leaves the list bare,
+  // as it always has.
+  const sections = useMemo(
+    () =>
+      meals.length === 0
+        ? []
+        : [
+            { key: 'ours', title: t('picker.oursCount', { count: ours.length }), data: ours },
+            { key: 'catalogue', title: t('picker.catalogue'), data: catalogue },
+          ].filter((section) => section.data.length > 0),
+    [meals.length, ours, catalogue, t],
+  )
+
   const detailFor = (meal: Meal): string =>
     isCatalogueMeal(meal) && meal.ingredientCount === 0
       ? t('picker.catalogueHint')
@@ -151,7 +164,7 @@ export const MealLibraryScreen = ({
       </Row>
     )
 
-    return <View key={meal.id}>{wrapRow === undefined ? row : wrapRow(meal, row)}</View>
+    return <View>{wrapRow === undefined ? row : wrapRow(meal, row)}</View>
   }
 
   return (
@@ -194,28 +207,24 @@ export const MealLibraryScreen = ({
         />
       </View>
 
-      <ScrollView contentContainerStyle={isPane ? styles.list : styles.listScreen}>
-        {meals.length === 0 ? (
-          <Text style={styles.empty} testID="library-empty">
-            {t('meal.emptyLibrary')}
-          </Text>
-        ) : (
-          <>
-            {ours.length > 0 && (
-              <>
-                <Text style={styles.section}>{t('picker.oursCount', { count: ours.length })}</Text>
-                {ours.map(renderMeal)}
-              </>
-            )}
-            {catalogue.length > 0 && (
-              <>
-                <Text style={styles.section}>{t('picker.catalogue')}</Text>
-                {catalogue.map(renderMeal)}
-              </>
-            )}
-          </>
-        )}
-      </ScrollView>
+      <SectionList
+        sections={sections}
+        keyExtractor={(meal) => meal.id}
+        renderItem={({ item }) => <>{renderMeal(item)}</>}
+        renderSectionHeader={({ section }) => <Text style={styles.section}>{section.title}</Text>}
+        stickySectionHeadersEnabled={false}
+        ListEmptyComponent={
+          meals.length === 0 ? (
+            <Text style={styles.empty} testID="library-empty">
+              {t('meal.emptyLibrary')}
+            </Text>
+          ) : null
+        }
+        contentContainerStyle={isPane ? styles.list : styles.listScreen}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={12}
+        windowSize={7}
+      />
 
       {isPane && (
         <Pressable

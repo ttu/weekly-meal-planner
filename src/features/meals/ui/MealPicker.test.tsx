@@ -82,4 +82,30 @@ describe('MealPicker', () => {
     await fireEvent.press(view.getByTestId('picker-cancel'))
     expect(onDismiss).toHaveBeenCalled()
   })
+
+  // The Catalogue and a long library must not mount every row at once.
+  it('virtualises a long list instead of mounting every row', async () => {
+    const many = Array.from({ length: 400 }, (_, i) => own(`m${String(i)}`, `Meal ${String(i)}`))
+    const view = await renderWithProviders(
+      <MealPicker visible meals={many} onSelect={jest.fn()} onDismiss={jest.fn()} />,
+    )
+    expect(view.getByTestId('picker-meal-m0')).toBeTruthy()
+    expect(view.queryByTestId('picker-meal-m399')).toBeNull()
+  })
+
+  it('offers to write the name down when nothing matches', async () => {
+    const onWriteItDown = jest.fn()
+    const view = await renderWithProviders(
+      <MealPicker
+        visible
+        meals={meals}
+        onSelect={jest.fn()}
+        onDismiss={jest.fn()}
+        onWriteItDown={onWriteItDown}
+      />,
+    )
+    await fireEvent.changeText(view.getByTestId('picker-search'), 'zzzz')
+    await fireEvent.press(view.getByTestId('picker-write-it-down'))
+    expect(onWriteItDown).toHaveBeenCalledWith('zzzz')
+  })
 })

@@ -1,4 +1,5 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
@@ -126,7 +127,12 @@ const Chip = ({ name, photoUrl, compact }: ChipProps): React.JSX.Element => {
     <Image
       source={{ uri: photoUrl }}
       style={[cardStyles.chipImage, compact && cardStyles.chipSmall]}
+      contentFit="cover"
+      cachePolicy="disk"
+      transition={150}
+      recyclingKey={photoUrl}
       accessibilityIgnoresInvertColors
+      testID="meal-card-photo"
     />
   )
 }

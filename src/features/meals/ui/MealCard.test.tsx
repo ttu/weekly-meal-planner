@@ -30,6 +30,15 @@ describe('MealCard', () => {
     expect(view.queryByTestId('meal-card-initial')).toBeNull()
   })
 
+  // Remote photos in a long list must survive a scroll and a relaunch without a
+  // refetch: expo-image caches on disk, React Native's Image does not.
+  it('caches a remote photo on disk', async () => {
+    const view = await render(
+      <MealCard name={NAME} photoUrl="https://example.test/chili.jpg" variant="library" />,
+    )
+    expect(view.getByTestId('meal-card-photo').props.cachePolicy).toBe('disk')
+  })
+
   it('shows who added it on a backlog card, because that is the point', async () => {
     const view = await render(<MealCard name={NAME} variant="backlog" addedBy="Aino" />)
     expect(view.getByText('Aino')).toBeTruthy()
