@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -44,7 +44,7 @@ export const IngredientPicker = ({
   const theme = useTheme()
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const screenPadding = useSafeAreaPadding({ top: tokens.space.md })
   const [query, setQuery] = useState('')
 
   const grouped = useMemo(() => {
@@ -62,10 +62,7 @@ export const IngredientPicker = ({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
-      <View
-        style={[formStyles.screen, { paddingTop: insets.top + tokens.space.md }]}
-        testID="ingredient-picker"
-      >
+      <View style={[formStyles.screen, screenPadding]} testID="ingredient-picker">
         <View style={formStyles.header}>
           <Text style={formStyles.title}>{t('ingredient.pick')}</Text>
           <Pressable

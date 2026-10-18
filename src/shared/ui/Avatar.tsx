@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import { StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 
 /**
@@ -20,9 +21,25 @@ const metrics = {
   large: { box: 30, font: 12 },
 } as const
 
+const sizeSheet = (size: keyof typeof metrics): { box: ViewStyle; initial: TextStyle } => ({
+  box: {
+    width: metrics[size].box,
+    height: metrics[size].box,
+    borderRadius: metrics[size].box / 2,
+  },
+  initial: { fontSize: metrics[size].font },
+})
+
 const sheets = themed((tokens) =>
   StyleSheet.create({
     avatar: { alignItems: 'center', justifyContent: 'center' },
+    ring: { borderWidth: 2 },
+    smallBox: sizeSheet('small').box,
+    mediumBox: sizeSheet('medium').box,
+    largeBox: sizeSheet('large').box,
+    smallInitial: sizeSheet('small').initial,
+    mediumInitial: sizeSheet('medium').initial,
+    largeInitial: sizeSheet('large').initial,
     initial: {
       fontFamily: tokens.type.label.fontFamily,
       fontWeight: '600',
@@ -34,23 +51,28 @@ const sheets = themed((tokens) =>
 export const Avatar = ({ name, colour, size = 'medium', ringColour }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const theme = useTheme()
-  const { box, font } = metrics[size]
+  // Member and ring colours are data, not tokens, so their sheet is built here.
+  const colours = useMemo(
+    () =>
+      StyleSheet.create({
+        fill: { backgroundColor: colour === '' ? theme.color.textSupport : colour },
+        ring: { borderColor: ringColour },
+      }),
+    [colour, ringColour, theme.color.textSupport],
+  )
 
   return (
     <View
       style={[
         styles.avatar,
-        {
-          width: box,
-          height: box,
-          borderRadius: box / 2,
-          backgroundColor: colour === '' ? theme.color.textSupport : colour,
-        },
-        ringColour !== undefined && { borderWidth: 2, borderColor: ringColour },
+        styles[`${size}Box`],
+        colours.fill,
+        ringColour !== undefined && styles.ring,
+        ringColour !== undefined && colours.ring,
       ]}
       accessibilityLabel={name}
     >
-      <Text style={[styles.initial, { fontSize: font }]}>
+      <Text style={[styles.initial, styles[`${size}Initial`]]}>
         {(name.slice(0, 1) || '?').toUpperCase()}
       </Text>
     </View>

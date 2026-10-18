@@ -82,6 +82,12 @@ export const formStylesSheets = themed((tokens) =>
     },
     chipSelected: { borderColor: tokens.color.action, borderWidth: 2 },
     chipText: { ...tokens.type.body, color: tokens.color.textPrimary },
+    /** Spacing a form screen adds above or below a single element. */
+    topXs: { marginTop: tokens.space.xs },
+    topSm: { marginTop: tokens.space.sm },
+    topLg: { marginTop: tokens.space.lg },
+    topXl: { marginTop: tokens.space.xl },
+    bottomLg: { marginBottom: tokens.space.lg },
     muted: { ...tokens.type.body, color: tokens.color.textMuted },
   }),
 )

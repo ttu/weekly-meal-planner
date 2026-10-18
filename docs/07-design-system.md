@@ -5,9 +5,15 @@ Source of truth for appearance: the Claude Design project _Meal Planner_
 `Meal Planner - Design Direction.dc.html`. This document is the translation of
 that canvas into tokens. The canvas is inline-styled because it is a mockup;
 application code uses tokens only. Inline style objects and literal `fontSize`
-values are lint errors (`no-restricted-syntax`): sizes come from
-`tokens.type.*`, and a runtime value such as a safe-area inset goes in a
-`StyleSheet.create` built where it is known.
+values are lint errors (`no-restricted-syntax`). The inline-style selector
+matches any object literal anywhere inside a `style`, `contentContainerStyle`
+or other `*Style` JSX attribute, so `style={[styles.x, { ... }]}` is caught as
+well as `style={{ ... }}`. Sizes come from `tokens.type.*`, spacing from
+`tokens.space.*`, and a runtime value goes in a `StyleSheet.create` built where
+it is known: a safe-area inset through `useSafeAreaPadding`
+(`src/shared/theme/safe-area-padding.ts`), data colours through a `useMemo`'d
+sheet. Raw numbers in a `themed()` sheet other than `fontSize` are not linted;
+review catches them.
 
 ## Colour tokens (light)
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -122,7 +122,7 @@ export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.xl })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<SignInError | undefined>(undefined)
@@ -139,11 +139,11 @@ export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX
 
   return (
     <View style={formStyles.screen} testID="sign-in-screen">
-      <View style={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}>
+      <View style={[formStyles.content, contentPadding]}>
         {onBack !== undefined && <BackLink onPress={onBack} label={t('auth.back')} />}
         <Wordmark />
 
-        <Text style={[formStyles.title, { marginBottom: tokens.space.lg }]}>{t('auth.title')}</Text>
+        <Text style={[formStyles.title, formStyles.bottomLg]}>{t('auth.title')}</Text>
 
         <Text style={formStyles.label}>{t('auth.email')}</Text>
         <TextInput
