@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -12,6 +12,7 @@ import { Wordmark } from '@/shared/ui/Wordmark'
 import type { DemoAccount } from '../domain/demo-accounts'
 import { signIn, type SignInError } from '../application/sign-in'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -128,18 +129,33 @@ export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX
   const [error, setError] = useState<SignInError | undefined>(undefined)
   const [isPending, setIsPending] = useState(false)
 
+  const passwordRef = useRef<TextInput>(null)
+  // A ref as well as state: two submits in one tick (Go, then the button) both
+  // see isPending as false from the same render.
+  const inFlight = useRef(false)
+
   const submit = (): void => {
+    if (inFlight.current) return
+    inFlight.current = true
     setIsPending(true)
     setError(undefined)
     void signIn(client, email.trim(), password).then((result) => {
+      inFlight.current = false
       setIsPending(false)
       if (isErr(result)) setError(result.error)
     })
   }
 
   return (
-    <View style={formStyles.screen} testID="sign-in-screen">
-      <View style={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}>
+    <KeyboardAvoiding>
+      {/* Scrolls: with the demo logins shown the button can sit under the
+          keyboard on a small phone, and there must be a way to reach it. */}
+      <ScrollView
+        style={formStyles.screen}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
+        testID="sign-in-screen"
+      >
         {onBack !== undefined && <BackLink onPress={onBack} label={t('auth.back')} />}
         <Wordmark />
 
@@ -152,18 +168,26 @@ export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX
           onChangeText={setEmail}
           autoCapitalize="none"
           autoComplete="email"
+          textContentType="emailAddress"
           keyboardType="email-address"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordRef.current?.focus()}
           accessibilityLabel={t('auth.email')}
           testID="sign-in-email"
         />
 
         <Text style={formStyles.label}>{t('auth.password')}</Text>
         <TextInput
+          ref={passwordRef}
           style={formStyles.field}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={submit}
           accessibilityLabel={t('auth.password')}
           testID="sign-in-password"
         />
@@ -195,7 +219,7 @@ export const SignInScreen = ({ client, demoAccounts, onBack }: Props): React.JSX
             }}
           />
         )}
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoiding>
   )
 }

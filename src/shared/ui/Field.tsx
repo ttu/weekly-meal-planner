@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type Ref } from 'react'
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -10,7 +10,11 @@ import { useFormStyles } from '@/shared/theme/form-styles'
  * does not contain — the design puts a terracotta edge on the field being
  * filled in. Tracked here rather than per screen so every form agrees.
  */
-type Props = TextInputProps & { readonly hasError?: boolean | undefined }
+type Props = TextInputProps & {
+  readonly hasError?: boolean | undefined
+  /** React 19 passes `ref` as a prop; named here so callers can chain focus. */
+  readonly ref?: Ref<TextInput> | undefined
+}
 
 const sheets = themed((tokens) =>
   StyleSheet.create({

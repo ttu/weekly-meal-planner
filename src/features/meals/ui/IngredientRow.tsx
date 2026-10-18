@@ -72,6 +72,7 @@ export const IngredientRow = ({
           value={quantityText}
           onChangeText={onQuantityChange}
           keyboardType="decimal-pad"
+          returnKeyType="done"
           accessibilityLabel={`${t('ingredient.quantity')} ${ingredient.name}`}
           testID={`ingredient-quantity-${ingredient.slug}`}
         />

@@ -7,6 +7,7 @@ import { useLocale, useTranslation } from '@/shared/i18n'
 import { partitionMeals } from '../domain/partition'
 import type { Meal, MealId } from '../domain/types'
 import { MealCard } from './MealCard'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -114,7 +115,7 @@ export const MealPicker = ({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
-      <View
+      <KeyboardAvoiding
         style={[styles.sheet, { paddingTop: insets.top + tokens.space.md }]}
         testID="meal-picker"
       >
@@ -137,11 +138,12 @@ export const MealPicker = ({
           placeholder={t('picker.search')}
           placeholderTextColor={theme.color.textMuted}
           autoCapitalize="none"
+          returnKeyType="search"
           accessibilityLabel={t('picker.search')}
           testID="picker-search"
         />
 
-        <ScrollView>
+        <ScrollView keyboardShouldPersistTaps="handled" testID="picker-results">
           {nothingMatches ? (
             <>
               <Text style={styles.empty} testID="picker-no-results">
@@ -180,7 +182,7 @@ export const MealPicker = ({
             </>
           )}
         </ScrollView>
-      </View>
+      </KeyboardAvoiding>
     </Modal>
   )
 }

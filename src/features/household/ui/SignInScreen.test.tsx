@@ -1,5 +1,6 @@
 import { fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
+import { clearFocusCalls, focusedTestIDs } from '@/test/focus'
 import { initI18n } from '@/shared/i18n'
 import { DEMO_ACCOUNTS } from '../domain/demo-accounts'
 import { SignInScreen } from './SignInScreen'
@@ -59,5 +60,48 @@ describe('SignInScreen', () => {
     const view = await renderWithProviders(<SignInScreen client={client} onBack={onBack} />)
     await fireEvent.press(view.getByText('← Back to the start'))
     expect(onBack).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('SignInScreen keyboard flow', () => {
+  beforeEach(clearFocusCalls)
+
+  it('Next on the email field moves to the password field', async () => {
+    const view = await renderWithProviders(<SignInScreen client={client} />)
+    await fireEvent(view.getByTestId('sign-in-email'), 'submitEditing')
+    expect(focusedTestIDs()).toEqual(['sign-in-password'])
+  })
+
+  // Go on the keyboard and then the button (or Go twice) must not start two
+  // sign-ins: the second would race the first and could show a stale error.
+  it('starts one sign-in however many times it is submitted while pending', async () => {
+    const signInWithPassword = jest.fn(() => new Promise<never>(() => undefined))
+    const pendingClient = { auth: { signInWithPassword } } as never
+    const view = await renderWithProviders(<SignInScreen client={pendingClient} />)
+
+    const password = view.getByTestId('sign-in-password')
+    await fireEvent(password, 'submitEditing')
+    await fireEvent(password, 'submitEditing')
+    await fireEvent.press(view.getByTestId('sign-in-submit'))
+
+    expect(signInWithPassword).toHaveBeenCalledTimes(1)
+  })
+
+  it('can sign in again once the first attempt has failed', async () => {
+    const signInWithPassword = jest.fn(() => Promise.resolve({ error: { status: 400 } }))
+    const view = await renderWithProviders(
+      <SignInScreen client={{ auth: { signInWithPassword } } as never} />,
+    )
+    const password = view.getByTestId('sign-in-password')
+    await fireEvent(password, 'submitEditing')
+    await view.findByTestId('sign-in-error')
+    await fireEvent(password, 'submitEditing')
+
+    expect(signInWithPassword).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the form scrollable and taps working with the keyboard up', async () => {
+    const view = await renderWithProviders(<SignInScreen client={client} />)
+    expect(view.getByTestId('sign-in-screen').props.keyboardShouldPersistTaps).toBe('handled')
   })
 })
