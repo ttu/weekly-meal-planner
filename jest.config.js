@@ -17,6 +17,9 @@ module.exports = {
       displayName: 'native',
       modulePathIgnorePatterns: ['<rootDir>/.worktrees/'],
       preset: 'jest-expo',
+      // Gesture Handler's native module does not exist under a test renderer;
+      // its own setup file stands in for it.
+      setupFiles: ['react-native-gesture-handler/jestSetup'],
       testMatch: ['<rootDir>/src/**/*.test.tsx'],
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
