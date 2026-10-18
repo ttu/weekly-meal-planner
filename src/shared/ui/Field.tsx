@@ -1,7 +1,16 @@
 import { useState } from 'react'
-import { StyleSheet, Text, TextInput, type TextInputProps } from 'react-native'
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
+import { useTranslation } from '@/shared/i18n'
 
 /**
  * A text field that shows where you are.
@@ -22,20 +31,55 @@ type Props = TextInputProps & {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** Input and message share one column, so a caller that lays Field out in a
+     *  row gets the message under the input, not beside it. The wrapper owns the
+     *  outer bottom margin the input used to carry. */
+    wrap: { marginBottom: tokens.space.md },
     /** The browser's own ring is suppressed because this replaces it; see
      *  src/types/react-native-web.d.ts. */
-    field: { outlineStyle: 'none' },
+    field: { outlineStyle: 'none', marginBottom: 0 },
     focused: { borderColor: tokens.color.action, borderWidth: 2 },
     error: { borderColor: tokens.color.actionPressed, borderWidth: 3 },
-    /** Sits close under its field, which gives up its own bottom margin. */
-    withMessage: { marginBottom: tokens.space.xs },
     message: {
       ...tokens.type.support,
       color: tokens.color.actionPressed,
-      marginBottom: tokens.space.md,
+      marginTop: tokens.space.xs,
     },
   }),
 )
+
+/** Style keys that place the Field in its parent rather than style the input. */
+const LAYOUT_KEYS: ReadonlySet<string> = new Set([
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'alignSelf',
+  'width',
+  'minWidth',
+  'maxWidth',
+  'margin',
+  'marginTop',
+  'marginBottom',
+  'marginLeft',
+  'marginRight',
+  'marginHorizontal',
+  'marginVertical',
+  'marginStart',
+  'marginEnd',
+])
+
+/** Splits a caller's style into what positions the Field and what styles the input. */
+const splitLayout = (style: TextInputProps['style']): { wrapper: ViewStyle; input: TextStyle } => {
+  const wrapper: Record<string, unknown> = {}
+  // flatten(undefined) is undefined at runtime, whatever its signature says.
+  const flat = style ? StyleSheet.flatten(style) : {}
+  const input: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(flat)) {
+    ;(LAYOUT_KEYS.has(key) ? wrapper : input)[key] = value
+  }
+  return { wrapper, input }
+}
 
 export const Field = ({
   hasError = false,
@@ -48,20 +92,31 @@ export const Field = ({
   const formStyles = useFormStyles()
   const [focused, setFocused] = useState(false)
 
+  const { t } = useTranslation()
+  const { wrapper, input } = splitLayout(style)
+
   const showMessage = hasError && errorMessage !== undefined
+  const invalidHint = showMessage
+    ? t('field.invalidBecause', { message: errorMessage })
+    : t('field.invalid')
+  // aria-invalid is only mapped by react-native-web; VoiceOver and TalkBack have
+  // no invalid state on accessibilityState, so say it in the hint as well.
+  const accessibilityHint = hasError
+    ? [props.accessibilityHint, invalidHint].filter(Boolean).join('. ')
+    : props.accessibilityHint
 
   return (
-    <>
+    <View style={[styles.wrap, wrapper]}>
       <TextInput
         {...props}
         aria-invalid={hasError || undefined}
+        accessibilityHint={accessibilityHint}
         style={[
           formStyles.field,
           styles.field,
           focused && styles.focused,
           hasError && styles.error,
-          showMessage && styles.withMessage,
-          style,
+          input,
         ]}
         placeholderTextColor={theme.color.textGhost}
         onFocus={(event) => {
@@ -78,6 +133,6 @@ export const Field = ({
           {errorMessage}
         </Text>
       )}
-    </>
+    </View>
   )
 }

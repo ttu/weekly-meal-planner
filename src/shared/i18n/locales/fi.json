@@ -2,6 +2,10 @@
   "app": {
     "name": "Menami"
   },
+  "field": {
+    "invalid": "Virheellinen",
+    "invalidBecause": "Virheellinen: {{message}}"
+  },
   "board": {
     "thisWeek": "Tämä viikko",
     "today": "Tänään",
