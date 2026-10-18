@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
@@ -50,6 +50,7 @@ import type { BacklogItem, CookEvent, CookEventId, LeftoverId } from '../domain/
 const sheets = themed((tokens) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: tokens.color.surface },
+    wideBoard: { flex: 1, flexDirection: 'row' },
     dragHint: { ...tokens.type.meta, color: tokens.color.textSupport },
     /**
      * Padding out to 44 and then pulled back in by the same amount, so the
@@ -183,6 +184,11 @@ const Board = ({
   const styles = useThemed(sheets)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  // The safe-area inset is only known at runtime, so this one sheet is built here.
+  const insetStyles = useMemo(
+    () => StyleSheet.create({ top: { paddingTop: insets.top } }),
+    [insets.top],
+  )
   const session = useSession()
   const household = session.household
   const me = session.member
@@ -559,7 +565,7 @@ const Board = ({
   if (isWide) {
     return (
       <WideBoardLayout
-        style={{ paddingTop: insets.top }}
+        style={insetStyles.top}
         header={header}
         weekHeading={
           <View style={styles.wideWeekHeading}>
@@ -593,7 +599,7 @@ const Board = ({
         }
         backlog={shelf('pane')}
         board={
-          <View style={{ flex: 1, flexDirection: 'row' }} testID="board">
+          <View style={styles.wideBoard} testID="board">
             {board.map((day, index) => (
               <WideDayColumn
                 key={day.date}
