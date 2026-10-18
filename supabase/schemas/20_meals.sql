@@ -32,6 +32,7 @@ create table meal (
 );
 
 create index meal_household_idx on meal (household_id);
+create index meal_copied_from_idx on meal (copied_from_meal_id) where copied_from_meal_id is not null;
 
 -- A Meal with no rows here is legal: the day-one quick-add path creates exactly
 -- that, and the Shopping List surfaces it as an incomplete-Meal line rather
@@ -44,3 +45,7 @@ create table meal_ingredient (
   optional boolean not null default false,
   primary key (meal_id, ingredient_id)
 );
+
+-- The primary key serves lookups by Meal; deleting an Ingredient checks this
+-- column, and without an index of its own that is a scan of every Meal's rows.
+create index meal_ingredient_ingredient_idx on meal_ingredient (ingredient_id);

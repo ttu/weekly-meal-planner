@@ -40,8 +40,22 @@ you want to overturn one, change the spec first.
   root-owned file in `/etc` that `post-create.sh` writes and then locks, so
   neither Bash nor Edit/Write can add an alias, include or autocorrect.
 
+## Household
+
+- A Member cannot leave a board or change their own name or colour:
+  `household_member` has no update or delete policy, and the only writers are
+  `create_board` and `join_board`. Needs a decision on what leaving means for
+  the last Member and for their Backlog Items, then a `leave_board` /
+  `update_member` RPC. Found in the Supabase review that closed the direct
+  `household_insert` door.
+
 ## Tests
 
+- Nothing compares the policies, grants and indexes of the migrated database
+  with `supabase/schemas`, and the pglite tests only see the schemas. A policy
+  that lives only in a migration (`household_insert` did, until 20261018000000) is invisible to every test. Add a check that diffs the two
+  (`supabase db diff --local`) and fails on any difference; `schema_paths` in
+  `config.toml` is empty, so nothing generates one from the other today.
 - The e2e suite waits out animations, navigation and the auto-scroll dwell with
   `page.waitForTimeout` in six places, so `sonarjs/no-fixed-wait-in-tests` is
   off for `e2e/**`. Found when the sonarjs rules were added. Replace each with

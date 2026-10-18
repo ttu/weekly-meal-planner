@@ -70,6 +70,9 @@ Two functions are `SECURITY DEFINER`, and they are the only ones in the system:
   anything, so no policy has anything to check. Making this the only way to
   create a Household is stronger than a permissive insert policy: a client
   cannot write a household row at all.
+  The same goes for `household_member`: neither table has an insert policy,
+  and `household` allows updating only `name`, `locale` and `slots` (column
+  grants), so a Member cannot rotate the share token or overwrite the hash.
 - **`join_board`** — someone holding a link is not yet a Member, so RLS
   correctly hides the row they are trying to join. It returns `rejected` for a
   wrong token and a wrong password alike, so it cannot be used to discover which

@@ -10,6 +10,7 @@ export default defineConfig([
     // Build output, assets and CommonJS tool configs are not application code.
     ignores: [
       '.worktrees/**',
+      '.claude/worktrees/**',
       'dist/**',
       '.expo/**',
       'node_modules/**',

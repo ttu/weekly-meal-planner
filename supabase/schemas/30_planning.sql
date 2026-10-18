@@ -33,6 +33,10 @@ create table cook_event (
 );
 
 create index cook_event_week_idx on cook_event (week_plan_id, date);
+-- Deleting a Meal cascades here and to backlog_item; both look rows up by it.
+create index cook_event_meal_idx on cook_event (meal_id);
+create index backlog_item_week_idx on backlog_item (week_plan_id);
+create index backlog_item_meal_idx on backlog_item (meal_id);
 
 -- No unique constraint on (date, slot_key): two Meals on Tuesday dinner is a
 -- supported outcome, not a conflict. Refusing a Member's edit is worse than

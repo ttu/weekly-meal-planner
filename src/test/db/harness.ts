@@ -49,13 +49,21 @@ export const createTestDb = async (): Promise<TestDb> => {
   await db.exec('create role authenticated nologin; create role anon nologin;')
   await db.exec('create schema if not exists extensions;')
 
+  // Supabase gives anon and authenticated every privilege on each new table in
+  // public; the schema files then narrow that where they must (a revoke). Set
+  // the same defaults first so those revokes are tested rather than papered
+  // over by a blanket grant afterwards.
+  await db.exec(`
+    alter default privileges in schema public
+      grant select, insert, update, delete on tables to authenticated, anon;
+  `)
+
   for (const file of SCHEMA_FILES) await db.exec(read(file))
 
   // Policies do not apply to the table owner, so tests must run as a role that
   // is subject to them — exactly as anon/authenticated are in production.
   await db.exec(`
     grant usage on schema public, app, auth, extensions to authenticated, anon;
-    grant select, insert, update, delete on all tables in schema public to authenticated, anon;
     grant execute on all functions in schema app to authenticated, anon;
     grant execute on all functions in schema auth to authenticated, anon;
     grant execute on all functions in schema extensions to authenticated, anon;

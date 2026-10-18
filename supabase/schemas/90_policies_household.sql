@@ -27,17 +27,19 @@ create policy household_select on household
 create policy household_update on household
   for update using (app.is_member(id)) with check (app.is_member(id));
 
+-- A policy decides which rows, not which columns. Supabase grants every column
+-- to authenticated by default, so without this a Member could rewrite
+-- share_token or join_password_hash. The app edits exactly these four
+-- (Settings: slots, locale and size; name for a rename). A new column a Member
+-- should edit has to be added here, in the same change.
+revoke update on household from anon, authenticated;
+grant update (name, locale, slots, size) on household to authenticated;
+
 create policy household_member_select on household_member
   for select using (app.is_member(household_id));
 
--- The second branch lets the first Member of a brand-new Household create their
--- own membership. Without it, creating a Household is impossible: nobody is a
--- member yet, so app.is_member is false for everyone.
-create policy household_member_insert on household_member
-  for insert with check (
-    app.is_member(household_id)
-    or not exists (
-      select 1 from household_member existing
-      where existing.household_id = household_member.household_id
-    )
-  );
+-- No insert policy on household_member either. Memberships are written only by
+-- create_board and join_board (SECURITY DEFINER). The bootstrap branch this
+-- table once had ("a Household with no Members accepts one") let any signed-in
+-- caller make themselves owner of an empty Household, and let a Member add
+-- anyone, with any role.
