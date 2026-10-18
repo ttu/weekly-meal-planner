@@ -4,23 +4,13 @@ import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
+import { Sheet } from '@/shared/ui/Sheet'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.color.scrim },
-    sheet: {
-      backgroundColor: tokens.color.surface,
-      borderTopLeftRadius: tokens.radius.sheet,
-      borderTopRightRadius: tokens.radius.sheet,
-      padding: tokens.space.lg,
+    sheetContent: {
+      paddingHorizontal: tokens.space.lg,
       gap: tokens.space.md,
-    },
-    grip: {
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: tokens.color.dashed,
-      alignSelf: 'center',
     },
     /** Wide: the same sheet, anchored under the board name as a dropdown. */
     dropdownBackdrop: { flex: 1 },
@@ -202,22 +192,14 @@ export const BoardMenu = ({ onDismiss, ...body }: Props): React.JSX.Element => {
   }
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={styles.backdrop}>
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={onDismiss}
-          accessibilityRole="button"
-          accessibilityLabel={t('plan.cancel')}
-        />
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
-          testID="board-menu"
-        >
-          <View style={styles.grip} />
-          <MenuBody {...body} />
-        </View>
-      </View>
-    </Modal>
+    <Sheet
+      visible
+      onDismiss={onDismiss}
+      dismissLabel={t('plan.cancel')}
+      contentStyle={[styles.sheetContent, { paddingBottom: insets.bottom + tokens.space.lg }]}
+      testID="board-menu"
+    >
+      <MenuBody {...body} />
+    </Sheet>
   )
 }

@@ -1,18 +1,16 @@
 import { useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { brand } from '@/shared/types/brand'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
+import { Sheet } from '@/shared/ui/Sheet'
 import type { Servings } from '@/features/meals'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.color.scrim },
-    sheet: {
-      backgroundColor: tokens.color.surface,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-      padding: tokens.space.lg,
+    content: {
+      paddingHorizontal: tokens.space.lg,
+      paddingBottom: tokens.space.lg,
       gap: tokens.space.lg,
     },
     title: { ...tokens.type.mealName, color: tokens.color.textPrimary },
@@ -113,30 +111,26 @@ export const ServingsSheet = ({
   const [servings, setServings] = useState<number>(servingsCooked)
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={styles.backdrop}>
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={onDismiss}
-          accessibilityRole="button"
-          accessibilityLabel={t('plan.cancel')}
-        />
-        <View style={styles.sheet} testID="servings-sheet">
-          <Text style={styles.title}>{t('cookEvent.servingsTitle', { meal: mealName })}</Text>
-          <Stepper servings={servings} onChange={setServings} />
-          <Pressable
-            style={styles.save}
-            onPress={() => {
-              onSave(brand<number, 'Servings'>(servings))
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('cookEvent.servingsSave')}
-            testID="servings-save"
-          >
-            <Text style={styles.saveText}>{t('cookEvent.servingsSave')}</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
+    <Sheet
+      visible
+      onDismiss={onDismiss}
+      dismissLabel={t('plan.cancel')}
+      contentStyle={styles.content}
+      testID="servings-sheet"
+    >
+      <Text style={styles.title}>{t('cookEvent.servingsTitle', { meal: mealName })}</Text>
+      <Stepper servings={servings} onChange={setServings} />
+      <Pressable
+        style={styles.save}
+        onPress={() => {
+          onSave(brand<number, 'Servings'>(servings))
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('cookEvent.servingsSave')}
+        testID="servings-save"
+      >
+        <Text style={styles.saveText}>{t('cookEvent.servingsSave')}</Text>
+      </Pressable>
+    </Sheet>
   )
 }

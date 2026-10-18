@@ -61,3 +61,16 @@ you want to overturn one, change the spec first.
   off for `e2e/**`. Found when the sonarjs rules were added. Replace each with
   a wait on an observable condition and delete the exception from
   `eslint.config.mjs`; doing it as its own pass so a flake is attributable.
+
+## UI
+
+- `PlanSheet` still closes only by button, backdrop or Android back; it has no
+  swipe-down. It is a `ScrollView` that owns its surface, so moving it onto
+  `shared/ui/Sheet` means restructuring it (the ScrollView goes inside the
+  Sheet's `contentStyle` area). Left alone because other work is editing it.
+  Found in the client-side review of sheets.
+- `MealPicker` and `IngredientPicker` are full-screen, opaque modals with a
+  long scrolling list and a search field; a swipe-down would fight the list
+  for the gesture, so they were not moved onto `Sheet`. They want a visible
+  close/back control checked instead. `ConfirmSheet` is a centred confirmation
+  and stays as is.
