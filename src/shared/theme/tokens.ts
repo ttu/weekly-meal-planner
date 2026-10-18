@@ -63,6 +63,8 @@ export const tokens = {
       fontWeight: '400' as const,
       lineHeight: 25,
     },
+    /** The initial standing in for a Meal's photo. */
+    chipInitial: { fontFamily: FONT.serif, fontSize: 20 },
     label: {
       fontFamily: FONT.sans,
       fontSize: 12,

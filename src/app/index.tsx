@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { Redirect, router } from 'expo-router'
-import { Platform, Share, View } from 'react-native'
+import { Share, StyleSheet, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
-import { useTheme } from '@/shared/theme/theme'
+import { themed, useThemed } from '@/shared/theme/theme'
 import { NoHouseholdScreen, useSession } from '@/features/household'
 import { BoardScreen } from '@/features/planning'
 import { useShoppingList } from '@/features/shopping'
 
+const sheets = themed((tokens) =>
+  StyleSheet.create({ loading: { flex: 1, backgroundColor: tokens.color.surface } }),
+)
+
 export default function Index(): React.JSX.Element {
-  const theme = useTheme()
+  const styles = useThemed(sheets)
   const { client, userId, household, householdChecked } = useSession()
   const [shared, setShared] = useState(false)
   // The badge on the Shopping destination: what is still to buy for the week
@@ -20,19 +24,19 @@ export default function Index(): React.JSX.Element {
   if (userId === undefined) return <Redirect href="/start" />
 
   if (!householdChecked) {
-    return <View style={{ flex: 1, backgroundColor: theme.color.surface }} testID="board-loading" />
+    return <View style={styles.loading} testID="board-loading" />
   }
 
   if (household === undefined) return <NoHouseholdScreen client={client} />
 
   return (
     <BoardScreen
-      origin={Platform.OS === 'web' ? window.location.origin : 'https://menami.app'}
+      origin={process.env.EXPO_OS === 'web' ? window.location.origin : 'https://menami.app'}
       shared={shared}
       onShare={(url) => {
         // Copy on web, the OS share sheet on a device: on a phone the link is
         // going straight into a family chat.
-        if (Platform.OS === 'web') {
+        if (process.env.EXPO_OS === 'web') {
           void Clipboard.setStringAsync(url).then(() => {
             setShared(true)
             setTimeout(() => {

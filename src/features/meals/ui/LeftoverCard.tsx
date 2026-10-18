@@ -47,10 +47,14 @@ const sheets = themed((tokens) =>
      *  this is a Leftover, and it must not be pushed out of the card. */
     parentCompact: { ...tokens.type.meta, color: tokens.color.textMuted },
     /** "leftovers" in italic serif — the word itself is the label. */
-    word: { fontFamily: tokens.type.dayHeading.fontFamily, fontSize: 17, fontStyle: 'italic' },
+    word: {
+      fontFamily: tokens.type.dayHeading.fontFamily,
+      fontSize: tokens.type.mealName.fontSize,
+      fontStyle: 'italic',
+    },
     wordCompact: {
       fontFamily: tokens.type.dayHeading.fontFamily,
-      fontSize: 15,
+      fontSize: tokens.type.body.fontSize,
       fontStyle: 'italic',
       color: tokens.color.textMuted,
     },

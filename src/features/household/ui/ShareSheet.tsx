@@ -24,6 +24,8 @@ type Props = {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** The part of the backdrop above the sheet: pressing it closes. */
+    dismiss: { flex: 1 },
     backdrop: { flex: 1, backgroundColor: tokens.color.scrim, justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: tokens.color.surface,
@@ -82,7 +84,7 @@ export const ShareSheet = ({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable
-          style={{ flex: 1 }}
+          style={styles.dismiss}
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel={t('board.shareClose')}

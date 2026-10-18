@@ -4,12 +4,13 @@ import { useFonts } from 'expo-font'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { StyleSheet } from 'react-native'
 import { Blank } from '@/shared/ui/Blank'
 import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
 import { DEFAULT_LOCALE, initI18n } from '@/shared/i18n'
-import { ThemeProvider, useTheme } from '@/shared/theme/theme'
+import { ThemeProvider, themed, useThemed } from '@/shared/theme/theme'
 import { SelectedWeekProvider } from '@/features/planning'
 import {
   createSupabaseClient,
@@ -20,6 +21,10 @@ import {
 } from '@/features/household'
 
 initI18n(DEFAULT_LOCALE)
+
+const sheets = themed((tokens) =>
+  StyleSheet.create({ root: { flex: 1, backgroundColor: tokens.color.surface } }),
+)
 
 /**
  * Inside the QueryClientProvider so the Household can be a query, and every
@@ -52,7 +57,7 @@ const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.J
 }
 
 const App = (): React.JSX.Element => {
-  const theme = useTheme()
+  const styles = useThemed(sheets)
   // Held before first paint so text never swaps face mid-read.
   const [fontsLoaded] = useFonts({
     'InstrumentSerif-Regular': InstrumentSerif,
@@ -65,7 +70,7 @@ const App = (): React.JSX.Element => {
     // The ground the whole app sits on. Screens that cap their own width —
     // the forms, the Shopping List — would otherwise show the browser's
     // default grey either side of their column.
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.color.surface }}>
+    <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           {fontsLoaded ? <AppSession client={client} /> : <Blank />}

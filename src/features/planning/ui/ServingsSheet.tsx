@@ -7,6 +7,8 @@ import type { Servings } from '@/features/meals'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** The part of the backdrop above the sheet: pressing it closes. */
+    dismiss: { flex: 1 },
     backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.color.scrim },
     sheet: {
       backgroundColor: tokens.color.surface,
@@ -116,7 +118,7 @@ export const ServingsSheet = ({
     <Modal visible transparent animationType="slide" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <Pressable
-          style={{ flex: 1 }}
+          style={styles.dismiss}
           onPress={onDismiss}
           accessibilityRole="button"
           accessibilityLabel={t('plan.cancel')}

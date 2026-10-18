@@ -18,6 +18,10 @@ import type { BoardDay } from '../domain/board'
  */
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** The part of the backdrop above the sheet: pressing it closes. */
+    dismiss: { flex: 1 },
+    sheetScroll: { flexGrow: 0 },
+    headerText: { flexShrink: 1, gap: tokens.space.xs },
     backdrop: { flex: 1, backgroundColor: tokens.color.scrim, justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: tokens.color.surface,
@@ -76,12 +80,12 @@ const sheets = themed((tokens) =>
     },
     stepperSign: {
       fontFamily: tokens.type.body.fontFamily,
-      fontSize: 22,
+      fontSize: tokens.type.dayHeading.fontSize,
       color: tokens.color.textPrimary,
     },
     stepperValue: {
       fontFamily: tokens.type.mealName.fontFamily,
-      fontSize: 24,
+      fontSize: tokens.type.wordmark.fontSize,
       fontWeight: '600',
       color: tokens.color.textPrimary,
       minWidth: 28,
@@ -144,7 +148,7 @@ const PlanHeader = ({
 
   return (
     <View style={styles.headerRow}>
-      <View style={{ flexShrink: 1, gap: 4 }}>
+      <View style={styles.headerText}>
         <Text style={styles.title}>{t('plan.title', { meal: mealName })}</Text>
         {addedByName !== undefined && addedByName !== '' && (
           <Text style={styles.addedBy}>
@@ -321,13 +325,13 @@ export const PlanSheet = ({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <Pressable
-          style={{ flex: 1 }}
+          style={styles.dismiss}
           onPress={onDismiss}
           accessibilityRole="button"
           accessibilityLabel={t('plan.cancel')}
         />
         <ScrollView
-          style={{ flexGrow: 0 }}
+          style={styles.sheetScroll}
           contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
           testID="plan-sheet"
         >

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, use, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useColorScheme } from 'react-native'
 import { tokens } from './tokens'
 import { coloursFor, shadowsFor, type Colours, type Scheme, type Shadows } from './palette'
@@ -82,7 +82,7 @@ export const useSchemeChoice = (): {
   readonly choice: SchemeChoice
   readonly setChoice: (choice: SchemeChoice) => void
 } => {
-  const value = useContext(SchemeContext)
+  const value = use(SchemeContext)
   return {
     choice: value?.choice ?? DEFAULT_SCHEME_CHOICE,
     setChoice: value?.setChoice ?? (() => undefined),
@@ -90,7 +90,7 @@ export const useSchemeChoice = (): {
 }
 
 export const useScheme = (): Scheme => {
-  const value = useContext(SchemeContext)
+  const value = use(SchemeContext)
   const device = useColorScheme()
   return resolveScheme({
     ...(value?.pinned === undefined ? {} : { pinned: value.pinned }),

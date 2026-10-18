@@ -34,6 +34,7 @@ type Props = {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    fieldTight: { marginBottom: tokens.space.xs },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
     /** Under a field, saying what it is for rather than what it must contain. */
@@ -117,7 +118,7 @@ export const StartBoardScreen = ({
 
       <Text style={formStyles.label}>{t('board.yourName')}</Text>
       <Field
-        style={{ marginBottom: tokens.space.xs }}
+        style={styles.fieldTight}
         value={displayName}
         onChangeText={setDisplayName}
         placeholder={t('board.yourNamePlaceholder')}

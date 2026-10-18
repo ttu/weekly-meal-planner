@@ -17,6 +17,7 @@ type Props = {
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    fieldTight: { marginBottom: tokens.space.xs },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     body: { ...tokens.type.body, color: tokens.color.textMuted, marginBottom: tokens.space.lg },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
@@ -51,7 +52,7 @@ export const EnterInviteScreen = ({ onOpen, onBack }: Props): React.JSX.Element 
 
       <Text style={formStyles.label}>{t('board.inviteLabel')}</Text>
       <Field
-        style={{ marginBottom: tokens.space.xs }}
+        style={styles.fieldTight}
         value={pasted}
         onChangeText={(next) => {
           setPasted(next)

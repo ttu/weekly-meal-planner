@@ -88,7 +88,7 @@ const sheets = themed((tokens) =>
     servingsHit: { paddingVertical: 11, marginVertical: -11, alignSelf: 'flex-start' },
     actionGlyph: {
       fontFamily: tokens.type.body.fontFamily,
-      fontSize: 15,
+      fontSize: tokens.type.body.fontSize,
       lineHeight: 18,
       color: tokens.color.textSupport,
     },
