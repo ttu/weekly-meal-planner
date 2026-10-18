@@ -12,7 +12,7 @@ drop policy if exists household_member_insert on household_member;
 -- A policy decides rows, not columns: a Member could rewrite share_token and
 -- join_password_hash.
 revoke update on household from anon, authenticated;
-grant update (name, locale, slots) on household to authenticated;
+grant update (name, locale, slots, size) on household to authenticated;
 
 -- Wrong joins are counted per account as well as per token.
 alter table household_join_attempt add column if not exists user_id uuid;

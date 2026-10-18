@@ -29,10 +29,11 @@ create policy household_update on household
 
 -- A policy decides which rows, not which columns. Supabase grants every column
 -- to authenticated by default, so without this a Member could rewrite
--- share_token or join_password_hash. The app edits exactly these three
--- (Settings: slots and locale; name for a rename).
+-- share_token or join_password_hash. The app edits exactly these four
+-- (Settings: slots, locale and size; name for a rename). A new column a Member
+-- should edit has to be added here, in the same change.
 revoke update on household from anon, authenticated;
-grant update (name, locale, slots) on household to authenticated;
+grant update (name, locale, slots, size) on household to authenticated;
 
 create policy household_member_select on household_member
   for select using (app.is_member(household_id));

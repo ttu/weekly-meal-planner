@@ -64,9 +64,9 @@ describe('board creation bypass', () => {
     ).rejects.toThrow(/row-level security/)
   })
 
-  it('lets a Member change the slots and the locale', async () => {
+  it('lets a Member change the slots, the locale and the size', async () => {
     await db.asMember(OWNER)
-    await db.sql("update household set locale = 'en' where id = $1", [householdId])
+    await db.sql("update household set locale = 'en', size = 6 where id = $1", [householdId])
     await db.sql(`update household set slots = '[{"key":"x","labelKey":"x"}]'::jsonb`)
     const [row] = (await db.sql('select locale from household where id = $1', [householdId])) as {
       locale: string
