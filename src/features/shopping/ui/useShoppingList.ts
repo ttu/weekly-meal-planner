@@ -51,7 +51,11 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     queryKey,
     enabled: weekPlanId !== undefined && household !== undefined,
     queryFn: async () => {
-      if (weekPlanId === undefined || household === undefined) return EMPTY
+      // refetch() ignores `enabled`, so this can run with no Week Plan. Throw:
+      // returning EMPTY would cache a failed load as "nothing to buy".
+      if (weekPlanId === undefined || household === undefined) {
+        throw new Error('Could not load the Shopping List: no Week Plan yet')
+      }
       const result = await loadShoppingData(client, weekPlanId, household.locale)
       // Derived on every render, never stored: a stored list goes stale exactly
       // when someone changes Thursday's dinner (ADR 0003).
@@ -168,7 +172,9 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     hasData: data !== undefined || (week.hasData && weekPlanId === undefined),
     refetch: () => {
       week.refetch()
-      void refetch()
+      // Without a Week Plan there is no list to fetch; the week retry comes
+      // first, and the list loads on its own once the plan id arrives.
+      if (weekPlanId !== undefined) void refetch()
     },
     toggle: (id, checked) => {
       toggleMutation.mutate({ id, checked })
