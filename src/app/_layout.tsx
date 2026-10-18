@@ -4,7 +4,7 @@ import { useFonts } from 'expo-font'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { View } from 'react-native'
+import { Blank } from '@/shared/ui/Blank'
 import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readAppEnv } from '@/shared/env'
@@ -20,12 +20,6 @@ import {
 } from '@/features/household'
 
 initI18n(DEFAULT_LOCALE)
-
-const Blank = (): React.JSX.Element => {
-  const theme = useTheme()
-
-  return <View style={{ flex: 1, backgroundColor: theme.color.surface }} testID="app-loading" />
-}
 
 /**
  * Inside the QueryClientProvider so the Household can be a query, and every

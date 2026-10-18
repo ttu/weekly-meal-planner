@@ -47,7 +47,7 @@ export default function Start(): React.JSX.Element {
             setError(result.error)
             return
           }
-          refreshHousehold()
+          void refreshHousehold()
           router.replace('/')
         })
       }}

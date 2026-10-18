@@ -28,6 +28,8 @@ const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
       account={ANONYMOUS}
       locale="en"
       onChangeLocale={jest.fn()}
+      size={brand<number, 'HouseholdSize'>(4)}
+      onChangeSize={jest.fn()}
       slots={DEFAULTS}
       isPending={false}
       onAddPreset={jest.fn()}
@@ -40,6 +42,29 @@ const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
   )
 
 describe('SettingsScreen', () => {
+  it('shows how many the household cooks for', async () => {
+    const view = await show({ size: brand<number, 'HouseholdSize'>(3) })
+    expect(view.getByTestId('settings-size-value').props.children).toBe('3')
+  })
+
+  it('asks for one more or one fewer', async () => {
+    const onChangeSize = jest.fn()
+    const view = await show({ size: brand<number, 'HouseholdSize'>(3), onChangeSize })
+
+    await fireEvent.press(view.getByTestId('settings-size-less'))
+    expect(onChangeSize).toHaveBeenLastCalledWith(2)
+    await fireEvent.press(view.getByTestId('settings-size-more'))
+    expect(onChangeSize).toHaveBeenLastCalledWith(4)
+  })
+
+  it('cannot go below one', async () => {
+    const onChangeSize = jest.fn()
+    const view = await show({ size: brand<number, 'HouseholdSize'>(1), onChangeSize })
+
+    await fireEvent.press(view.getByTestId('settings-size-less'))
+    expect(onChangeSize).not.toHaveBeenCalled()
+  })
+
   it('lists the Slots in the order the day runs', async () => {
     const view = await show()
     expect(view.getByText('Lunch')).toBeTruthy()

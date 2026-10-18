@@ -150,6 +150,7 @@ export type Database = {
           locale: string
           name: string
           share_token: string
+          size: number
           slots: Json
         }
         Insert: {
@@ -159,6 +160,7 @@ export type Database = {
           locale?: string
           name: string
           share_token?: string
+          size?: number
           slots?: Json
         }
         Update: {
@@ -168,6 +170,7 @@ export type Database = {
           locale?: string
           name?: string
           share_token?: string
+          size?: number
           slots?: Json
         }
         Relationships: []

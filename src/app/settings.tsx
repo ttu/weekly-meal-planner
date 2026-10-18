@@ -7,6 +7,8 @@ import {
   SettingsScreen,
   addEmail,
   saveLocale,
+  saveSize,
+  DEFAULT_SIZE,
   addNamedSlot,
   addPresetSlot,
   moveSlot,
@@ -53,7 +55,7 @@ export default function Settings(): React.JSX.Element {
         setError('write-failed')
         return
       }
-      refreshHousehold()
+      void refreshHousehold()
     })
   }
 
@@ -72,7 +74,24 @@ export default function Settings(): React.JSX.Element {
             setError('write-failed')
             return
           }
-          refreshHousehold()
+          void refreshHousehold()
+        })
+      }}
+      size={household?.size ?? DEFAULT_SIZE}
+      onChangeSize={(next) => {
+        if (household === undefined) return
+        setPending(true)
+        setError(undefined)
+        // Pending until the Household has been read again: in between it is
+        // briefly undefined, and a tap then would be dropped.
+        void saveSize(client, household.id, next).then(async (written) => {
+          if (!isOk(written)) {
+            setError('write-failed')
+            setPending(false)
+            return
+          }
+          await refreshHousehold()
+          setPending(false)
         })
       }}
       account={{

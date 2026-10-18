@@ -319,6 +319,10 @@
     "language": "Kieli",
     "language_en": "English",
     "language_fi": "Suomi",
+    "size": "Talouden koko",
+    "sizeFewer": "Yksi henkilö vähemmän",
+    "sizeMore": "Yksi henkilö lisää",
+    "sizeHint": "Uudet ateriat alkavat näin monella annoksella. Jo olemassa olevat ateriat pysyvät ennallaan.",
     "languageHint": "Koko taulu puhuu sitä — myös ruokalista ja ostoslista, kaikille taloudessa."
   },
   "dayOne": {
