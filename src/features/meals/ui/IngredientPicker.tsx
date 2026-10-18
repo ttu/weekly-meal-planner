@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
@@ -55,7 +55,9 @@ export const IngredientPicker = ({
       bucket.push(ingredient)
       byCategory.set(ingredient.category, bucket)
     }
-    return [...byCategory.entries()].sort(([a], [b]) => a.localeCompare(b))
+    return [...byCategory.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([category, data]) => ({ category, data }))
   }, [ingredients, query])
 
   return (
@@ -87,33 +89,35 @@ export const IngredientPicker = ({
           testID="ingredient-search"
         />
 
-        <ScrollView>
-          {grouped.length === 0 ? (
+        <SectionList
+          sections={grouped}
+          keyExtractor={(ingredient) => ingredient.id}
+          renderSectionHeader={({ section }) => (
+            <Text style={formStyles.section}>{t(`category.${section.category}`)}</Text>
+          )}
+          renderItem={({ item: ingredient }) => (
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                onSelect(ingredient.id)
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={ingredient.name}
+              testID={`ingredient-option-${ingredient.slug}`}
+            >
+              <Text style={styles.name}>{ingredient.name}</Text>
+            </Pressable>
+          )}
+          stickySectionHeadersEnabled={false}
+          ListEmptyComponent={
             <Text style={formStyles.muted} testID="ingredient-no-results">
               {t('ingredient.noResults')}
             </Text>
-          ) : (
-            grouped.map(([category, items]) => (
-              <View key={category}>
-                <Text style={formStyles.section}>{t(`category.${category}`)}</Text>
-                {items.map((ingredient) => (
-                  <Pressable
-                    key={ingredient.id}
-                    style={styles.row}
-                    onPress={() => {
-                      onSelect(ingredient.id)
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={ingredient.name}
-                    testID={`ingredient-option-${ingredient.slug}`}
-                  >
-                    <Text style={styles.name}>{ingredient.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ))
-          )}
-        </ScrollView>
+          }
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={20}
+          windowSize={7}
+        />
       </View>
     </Modal>
   )

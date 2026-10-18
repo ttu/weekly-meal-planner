@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
@@ -91,14 +91,43 @@ export const MealPicker = ({
     [meals, query, locale],
   )
 
-  const nothingMatches = ours.length === 0 && catalogue.length === 0
+  const sections = useMemo(
+    () =>
+      [
+        { key: 'ours', title: t('picker.ours'), data: ours },
+        { key: 'catalogue', title: t('picker.catalogue'), data: catalogue },
+      ].filter((section) => section.data.length > 0),
+    [ours, catalogue, t],
+  )
+
+  const noResults = (
+    <>
+      <Text style={styles.empty} testID="picker-no-results">
+        {t('picker.noResults')}
+      </Text>
+      {onWriteItDown !== undefined && query.trim() !== '' && (
+        <Pressable
+          style={styles.writeItDown}
+          onPress={() => {
+            onWriteItDown(query.trim())
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('picker.writeItDown', { name: query.trim() })}
+          testID="picker-write-it-down"
+        >
+          <Text style={styles.writeItDownText}>
+            {t('picker.writeItDown', { name: query.trim() })}
+          </Text>
+        </Pressable>
+      )}
+    </>
+  )
 
   // Catalogue rows carry the copy-on-add hint rather than a badge repeating the
   // section heading above them (ADR 0005).
   const renderMeal = (meal: Meal, fromCatalogue: boolean): React.JSX.Element => {
     return (
       <Pressable
-        key={meal.id}
         onPress={() => {
           onSelect(meal.id)
         }}
@@ -141,45 +170,17 @@ export const MealPicker = ({
           testID="picker-search"
         />
 
-        <ScrollView>
-          {nothingMatches ? (
-            <>
-              <Text style={styles.empty} testID="picker-no-results">
-                {t('picker.noResults')}
-              </Text>
-              {onWriteItDown !== undefined && query.trim() !== '' && (
-                <Pressable
-                  style={styles.writeItDown}
-                  onPress={() => {
-                    onWriteItDown(query.trim())
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('picker.writeItDown', { name: query.trim() })}
-                  testID="picker-write-it-down"
-                >
-                  <Text style={styles.writeItDownText}>
-                    {t('picker.writeItDown', { name: query.trim() })}
-                  </Text>
-                </Pressable>
-              )}
-            </>
-          ) : (
-            <>
-              {ours.length > 0 && (
-                <>
-                  <Text style={styles.section}>{t('picker.ours')}</Text>
-                  {ours.map((meal) => renderMeal(meal, false))}
-                </>
-              )}
-              {catalogue.length > 0 && (
-                <>
-                  <Text style={styles.section}>{t('picker.catalogue')}</Text>
-                  {catalogue.map((meal) => renderMeal(meal, true))}
-                </>
-              )}
-            </>
-          )}
-        </ScrollView>
+        <SectionList
+          sections={sections}
+          keyExtractor={(meal) => meal.id}
+          renderItem={({ item, section }) => renderMeal(item, section.key === 'catalogue')}
+          renderSectionHeader={({ section }) => <Text style={styles.section}>{section.title}</Text>}
+          stickySectionHeadersEnabled={false}
+          ListEmptyComponent={noResults}
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={12}
+          windowSize={7}
+        />
       </View>
     </Modal>
   )

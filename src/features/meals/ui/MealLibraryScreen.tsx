@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useLocale, useTranslation } from '@/shared/i18n'
@@ -54,14 +54,22 @@ const sheets = themed((tokens) =>
       outlineStyle: 'none',
     },
     searchScreen: { minHeight: 54, paddingHorizontal: tokens.space.md },
-    list: { paddingHorizontal: 12, paddingBottom: tokens.space.md, gap: 7 },
+    list: { paddingHorizontal: 12, paddingBottom: tokens.space.md },
     listScreen: {
       paddingHorizontal: tokens.space.md,
-      gap: tokens.space.sm,
       width: '100%',
       maxWidth: tokens.layout.readable,
       alignSelf: 'center',
     },
+    /**
+     * Spacing lives on the rows and headings, not in a container `gap`:
+     * SectionList wraps every item, header and footer in its own View, so a
+     * gap would apply around each of them and double.
+     */
+    rowPane: { paddingTop: 7 },
+    rowScreen: { paddingTop: tokens.space.sm },
+    sectionAfterRowsPane: { marginTop: 7 },
+    sectionAfterRowsScreen: { marginTop: tokens.space.sm },
     section: {
       ...tokens.type.labelSmall,
       color: tokens.color.textGhost,
@@ -121,6 +129,19 @@ export const MealLibraryScreen = ({
     [meals, query, locale],
   )
 
+  // An empty library says so; a search that finds nothing leaves the list bare,
+  // as it always has.
+  const sections = useMemo(
+    () =>
+      meals.length === 0
+        ? []
+        : [
+            { key: 'ours', title: t('picker.oursCount', { count: ours.length }), data: ours },
+            { key: 'catalogue', title: t('picker.catalogue'), data: catalogue },
+          ].filter((section) => section.data.length > 0),
+    [meals.length, ours, catalogue, t],
+  )
+
   const detailFor = (meal: Meal): string =>
     isCatalogueMeal(meal) && meal.ingredientCount === 0
       ? t('picker.catalogueHint')
@@ -151,7 +172,11 @@ export const MealLibraryScreen = ({
       </Row>
     )
 
-    return <View key={meal.id}>{wrapRow === undefined ? row : wrapRow(meal, row)}</View>
+    return (
+      <View style={isPane ? styles.rowPane : styles.rowScreen}>
+        {wrapRow === undefined ? row : wrapRow(meal, row)}
+      </View>
+    )
   }
 
   return (
@@ -194,28 +219,35 @@ export const MealLibraryScreen = ({
         />
       </View>
 
-      <ScrollView contentContainerStyle={isPane ? styles.list : styles.listScreen}>
-        {meals.length === 0 ? (
-          <Text style={styles.empty} testID="library-empty">
-            {t('meal.emptyLibrary')}
+      <SectionList
+        testID="library-list"
+        sections={sections}
+        keyExtractor={(meal) => meal.id}
+        renderItem={({ item }) => <>{renderMeal(item)}</>}
+        renderSectionHeader={({ section }) => (
+          <Text
+            style={[
+              styles.section,
+              section.key !== sections[0]?.key &&
+                (isPane ? styles.sectionAfterRowsPane : styles.sectionAfterRowsScreen),
+            ]}
+          >
+            {section.title}
           </Text>
-        ) : (
-          <>
-            {ours.length > 0 && (
-              <>
-                <Text style={styles.section}>{t('picker.oursCount', { count: ours.length })}</Text>
-                {ours.map(renderMeal)}
-              </>
-            )}
-            {catalogue.length > 0 && (
-              <>
-                <Text style={styles.section}>{t('picker.catalogue')}</Text>
-                {catalogue.map(renderMeal)}
-              </>
-            )}
-          </>
         )}
-      </ScrollView>
+        stickySectionHeadersEnabled={false}
+        ListEmptyComponent={
+          meals.length === 0 ? (
+            <Text style={styles.empty} testID="library-empty">
+              {t('meal.emptyLibrary')}
+            </Text>
+          ) : null
+        }
+        contentContainerStyle={isPane ? styles.list : styles.listScreen}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={12}
+        windowSize={7}
+      />
 
       {isPane && (
         <Pressable

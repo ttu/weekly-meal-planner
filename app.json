@@ -24,7 +24,8 @@
         {
           "photosPermission": "Menami uses your photos so a meal can carry a picture of itself."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "ios": {
       "supportsTablet": true,

@@ -30,6 +30,15 @@ describe('MealCard', () => {
     expect(view.queryByTestId('meal-card-initial')).toBeNull()
   })
 
+  // Only asks for disk caching. That the image is then actually cached is
+  // expo-image's behaviour and is not exercised here (jest renders a stub).
+  it('requests the disk cache policy for a remote photo', async () => {
+    const view = await render(
+      <MealCard name={NAME} photoUrl="https://example.test/chili.jpg" variant="library" />,
+    )
+    expect(view.getByTestId('meal-card-photo').props.cachePolicy).toBe('disk')
+  })
+
   it('shows who added it on a backlog card, because that is the point', async () => {
     const view = await render(<MealCard name={NAME} variant="backlog" addedBy="Aino" />)
     expect(view.getByText('Aino')).toBeTruthy()

@@ -1,3 +1,4 @@
+import { StyleSheet, View } from 'react-native'
 import { fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
 import { initI18n, setLocale } from '@/shared/i18n'
@@ -77,5 +78,36 @@ describe('MealLibraryScreen', () => {
   it('names the next action when the library is empty', async () => {
     const view = await renderWithProviders(<MealLibraryScreen meals={[]} />)
     expect(view.getByText('No Meals yet. Add the first one.')).toBeTruthy()
+  })
+
+  it('virtualises a long list instead of mounting every row', async () => {
+    const many = Array.from({ length: 400 }, (_, i) => own(`m${String(i)}`, `Meal ${String(i)}`, 1))
+    const view = await renderWithProviders(<MealLibraryScreen meals={many} />)
+    expect(view.getByTestId('library-meal-m0')).toBeTruthy()
+    expect(view.queryByTestId('library-meal-m399')).toBeNull()
+  })
+
+  // SectionList wraps each item/header/footer in its own View, so a container
+  // gap doubles; spacing must sit on the rows instead.
+  it('spaces rows without a container gap', async () => {
+    const view = await renderWithProviders(<MealLibraryScreen meals={meals} layout="pane" />)
+    const list = view.getByTestId('library-list')
+    expect(StyleSheet.flatten(list.props.contentContainerStyle)).not.toHaveProperty('gap')
+    let node = view.getByTestId('library-meal-1').parent
+    const paddingTop = (n: typeof node): unknown =>
+      (StyleSheet.flatten(n?.props.style) as { paddingTop?: unknown } | undefined)?.paddingTop
+    while (node !== null && paddingTop(node) !== 7) node = node.parent
+    expect(node).not.toBeNull()
+  })
+
+  it('lets the board wrap each row, for dragging', async () => {
+    const wrapRow = jest.fn((meal: Meal, row: React.ReactNode) => (
+      <View testID={`drag-${meal.id}`}>{row}</View>
+    ))
+    const view = await renderWithProviders(
+      <MealLibraryScreen meals={meals} layout="pane" wrapRow={wrapRow} />,
+    )
+    expect(wrapRow).toHaveBeenCalledTimes(3)
+    expect(view.getByTestId('drag-1')).toBeTruthy()
   })
 })
