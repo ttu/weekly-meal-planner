@@ -41,26 +41,29 @@ type Props = {
   readonly children: ReactNode
 }
 
+/** The gesture detector decides tap versus swipe; this only labels the handle
+ *  for a screen reader, whose double-tap arrives as onAccessibilityTap. */
 const GrabHandle = ({
-  onPress,
+  onDismiss,
   label,
   testID,
 }: {
-  readonly onPress: () => void
+  readonly onDismiss: () => void
   readonly label: string
   readonly testID: string | undefined
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
   return (
-    <Pressable
+    <View
       style={styles.handleZone}
-      onPress={onPress}
+      accessible
       accessibilityRole="button"
       accessibilityLabel={label}
+      onAccessibilityTap={onDismiss}
       testID={testID}
     >
       <View style={styles.grip} />
-    </Pressable>
+    </View>
   )
 }
 
@@ -105,6 +108,18 @@ export const Sheet = ({
       })
     })
 
+  /** A tap and a swipe on one handle: Exclusive means a touch that became a pan
+   *  can never also be a tap, on every platform (a Pressable's press responder
+   *  is not cancelled by the pan on web, so it closed the sheet twice or
+   *  ignored the spring-back). */
+  const tap = Gesture.Tap()
+    .withTestId('sheet-tap')
+    .runOnJS(true)
+    .onEnd((_event, success) => {
+      if (success) onDismiss()
+    })
+  const handleGesture = Gesture.Exclusive(pan, tap)
+
   const moved = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }))
 
   return (
@@ -118,9 +133,9 @@ export const Sheet = ({
           testID={testID === undefined ? undefined : `${testID}-backdrop`}
         />
         <Animated.View style={[styles.sheet, moved]} testID={testID}>
-          <GestureDetector gesture={pan}>
+          <GestureDetector gesture={handleGesture}>
             <GrabHandle
-              onPress={onDismiss}
+              onDismiss={onDismiss}
               label={dismissLabel}
               testID={testID === undefined ? undefined : `${testID}-handle`}
             />

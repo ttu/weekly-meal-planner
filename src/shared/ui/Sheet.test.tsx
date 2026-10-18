@@ -67,7 +67,27 @@ describe('Sheet', () => {
     const handle = view.getByTestId('the-sheet-handle')
     expect(handle.props.accessibilityLabel).toBe('Close')
     expect(handle.props.accessibilityRole).toBe('button')
-    await fireEvent.press(handle)
+    await fireEvent(handle, 'accessibilityTap')
     expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
+
+  it('dismisses on a tap on the handle', async () => {
+    const { onDismiss } = await setup()
+    fireGestureHandler(getByGestureTestId('sheet-tap'), [{ state: 2 }, { state: 4 }, { state: 5 }])
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not treat a handle drag as a press as well: one dismissal per touch', async () => {
+    const { view, onDismiss } = await setup()
+    drag(160)
+    // The handle is not a Pressable, so there is no press to follow the drag.
+    expect(view.getByTestId('the-sheet-handle').props.onPress).toBeUndefined()
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not dismiss when a sub-threshold drag ends', async () => {
+    const { onDismiss } = await setup()
+    drag(20)
+    expect(onDismiss).not.toHaveBeenCalled()
   })
 })
