@@ -2,6 +2,12 @@
   "app": {
     "name": "Menami"
   },
+  "load": {
+    "loading": "Loading…",
+    "failed": "Could not load this. Check your connection and try again.",
+    "retry": "Try again",
+    "stale": "Could not refresh. Showing what was loaded before."
+  },
   "board": {
     "thisWeek": "This week",
     "today": "Today",
