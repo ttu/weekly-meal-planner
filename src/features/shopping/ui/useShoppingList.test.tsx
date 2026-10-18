@@ -17,11 +17,13 @@ const extra = (label: string): FakeResponse =>
 const setup = async (initial: Record<string, FakeResponse>) => {
   let responses = initial
   const client = fakeSupabase(() => responses)
+  const queryClient = newQueryClient()
   const view = await renderHook(() => useShoppingList(testClock), {
-    wrapper: sessionWrapper(client, newQueryClient()),
+    wrapper: sessionWrapper(client, queryClient),
   })
   return {
     ...view,
+    queryClient,
     respondWith: (next: Record<string, FakeResponse>) => {
       responses = next
     },
@@ -88,5 +90,45 @@ describe('useShoppingList', () => {
       expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Tea'])
     })
     expect(view.result.current.isError).toBe(false)
+  })
+
+  // The bug: Try again refetched the shopping query while it was still disabled
+  // for want of a Week Plan; its guard returned an empty list, which was cached.
+  describe('retrying when the first Week Plan load failed', () => {
+    it('stays failed, and caches no empty list, when the Week Plan fails again', async () => {
+      const view = await setup({ week_plan: failure })
+      await waitFor(() => {
+        expect(view.result.current.isError).toBe(true)
+      })
+
+      await act(() => {
+        view.result.current.refetch()
+      })
+      await waitFor(() => {
+        expect(view.result.current.isLoading).toBe(false)
+      })
+
+      expect(view.result.current.isError).toBe(true)
+      expect(view.result.current.hasData).toBe(false)
+      expect(
+        view.queryClient.getQueriesData({ queryKey: ['shopping'] }).map(([, data]) => data),
+      ).toEqual([])
+    })
+
+    it('loads the list when the Week Plan succeeds on retry', async () => {
+      const view = await setup({ week_plan: failure })
+      await waitFor(() => {
+        expect(view.result.current.isError).toBe(true)
+      })
+
+      view.respondWith({ ...planned, shopping_extra: extra('Coffee') })
+      await act(() => {
+        view.result.current.refetch()
+      })
+      await waitFor(() => {
+        expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Coffee'])
+      })
+      expect(view.result.current.isError).toBe(false)
+    })
   })
 })
