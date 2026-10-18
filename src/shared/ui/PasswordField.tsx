@@ -17,6 +17,9 @@ type Props = {
   readonly onChangeText: (value: string) => void
   readonly placeholder?: string | undefined
   readonly hasError?: boolean | undefined
+  /** Choosing a password rather than entering one: tells the OS to offer a
+   *  strong one instead of filling in a saved one. */
+  readonly isNew?: boolean | undefined
   readonly testID: string
 }
 
@@ -34,6 +37,7 @@ export const PasswordField = ({
   onChangeText,
   placeholder,
   hasError = false,
+  isNew = false,
   testID,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
@@ -50,6 +54,8 @@ export const PasswordField = ({
         secureTextEntry={!shown}
         placeholder={placeholder}
         autoCapitalize="none"
+        autoComplete={isNew ? 'new-password' : 'current-password'}
+        textContentType={isNew ? 'newPassword' : 'password'}
         accessibilityLabel={t('board.password')}
         testID={testID}
       />
