@@ -214,6 +214,7 @@ export const MealLibraryScreen = ({
           placeholder={t('picker.search')}
           placeholderTextColor={theme.color.textGhost}
           autoCapitalize="none"
+          returnKeyType="search"
           accessibilityLabel={t('picker.search')}
           testID="library-search"
         />
