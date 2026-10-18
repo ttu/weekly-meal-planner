@@ -2,6 +2,12 @@
   "app": {
     "name": "Menami"
   },
+  "load": {
+    "loading": "Ladataan…",
+    "failed": "Lataus epäonnistui. Tarkista yhteys ja yritä uudelleen.",
+    "retry": "Yritä uudelleen",
+    "stale": "Päivitys epäonnistui. Näytetään aiemmin ladattu."
+  },
   "board": {
     "thisWeek": "Tämä viikko",
     "today": "Tänään",

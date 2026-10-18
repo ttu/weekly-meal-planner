@@ -15,7 +15,7 @@ const rowSchema = z.object({
   ingredient_name: localisedNameSchema,
 })
 
-export type LoadIngredientsError = 'invalid-row'
+export type LoadIngredientsError = 'query-failed' | 'invalid-row'
 
 /**
  * Resolves each Ingredient's display name for the Household's Locale, falling
@@ -25,11 +25,12 @@ export const loadIngredients = async (
   client: AppSupabaseClient,
   locale: Locale,
 ): Promise<Result<readonly Ingredient[], LoadIngredientsError>> => {
-  const { data } = await client
+  const { data, error } = await client
     .from('ingredient')
     .select('id,slug,category,dimension,base_unit,ingredient_name(locale,name)')
+  if (error !== null) return err('query-failed')
 
-  const rows = z.array(rowSchema).safeParse(data ?? [])
+  const rows = z.array(rowSchema).safeParse(data)
   if (!rows.success) return err('invalid-row')
 
   return ok(

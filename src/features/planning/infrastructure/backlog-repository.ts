@@ -17,7 +17,7 @@ const memberSchema = z.object({
   colour: z.string(),
 })
 
-export type LoadBacklogError = 'invalid-row'
+export type LoadBacklogError = 'query-failed' | 'invalid-row'
 
 /**
  * `added_by` is a user id, not a foreign key to household_member: a Member can
@@ -29,20 +29,24 @@ export const loadBacklog = async (
   client: AppSupabaseClient,
   weekPlanId: string,
 ): Promise<Result<readonly BacklogItem[], LoadBacklogError>> => {
-  const { data } = await client
+  const { data, error } = await client
     .from('backlog_item')
     .select('id,meal_id,added_by,meal(name,servings)')
     .eq('week_plan_id', weekPlanId)
     .order('created_at', { ascending: true })
 
-  const rows = z.array(rowSchema).safeParse(data ?? [])
+  if (error !== null) return err('query-failed')
+
+  const rows = z.array(rowSchema).safeParse(data)
   if (!rows.success) return err('invalid-row')
 
-  const { data: memberData } = await client
+  const { data: memberData, error: memberError } = await client
     .from('household_member')
     .select('user_id,display_name,colour')
 
-  const members = z.array(memberSchema).safeParse(memberData ?? [])
+  if (memberError !== null) return err('query-failed')
+
+  const members = z.array(memberSchema).safeParse(memberData)
   if (!members.success) return err('invalid-row')
 
   const byUserId = new Map(members.data.map((m) => [m.user_id, m]))
