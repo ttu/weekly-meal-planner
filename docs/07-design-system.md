@@ -4,7 +4,16 @@ Source of truth for appearance: the Claude Design project _Meal Planner_
 (`76fb2d88-5564-44c1-95c0-9a3f0d660448`), file
 `Meal Planner - Design Direction.dc.html`. This document is the translation of
 that canvas into tokens. The canvas is inline-styled because it is a mockup;
-application code uses tokens only, and inline styles are a lint error.
+application code uses tokens only. Inline style objects and literal `fontSize`
+values are lint errors (`no-restricted-syntax`). The inline-style selector
+matches any object literal anywhere inside a `style`, `contentContainerStyle`
+or other `*Style` JSX attribute, so `style={[styles.x, { ... }]}` is caught as
+well as `style={{ ... }}`. Sizes come from `tokens.type.*`, spacing from
+`tokens.space.*`, and a runtime value goes in a `StyleSheet.create` built where
+it is known: a safe-area inset through `useSafeAreaPadding`
+(`src/shared/theme/safe-area-padding.ts`), data colours through a `useMemo`'d
+sheet. Raw numbers in a `themed()` sheet other than `fontSize` are not linted;
+review catches them.
 
 ## Colour tokens (light)
 
@@ -76,6 +85,13 @@ from its quantity — for every line, on a list read while pushing a trolley.
 **Cap the content container, never the screen.** The screen carries the paper
 colour; capping it shrinks the paper too and leaves the browser's grey either
 side of the column. `formStyles.content` goes on `contentContainerStyle`.
+
+## Fields: focused is not invalid
+
+A focused `Field` has a 2px terracotta (`action`) edge. An invalid one has a
+3px `actionPressed` edge, wins over focus, and is marked `aria-invalid`. Pass
+`errorMessage` (through `t()`) so the reason is stated in words as well: colour
+alone is not an error state. Amber is never used for this; it means Backlog.
 
 ## Failures float
 

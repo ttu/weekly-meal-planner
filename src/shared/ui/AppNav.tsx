@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { themed, useThemed } from '@/shared/theme/theme'
+import { tokens } from '@/shared/theme/tokens'
 import { useTranslation } from '@/shared/i18n'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 
@@ -15,7 +16,7 @@ const sheets = themed((tokens) =>
       borderTopWidth: 1,
       borderTopColor: tokens.color.cardDivider,
       flexDirection: 'row',
-      paddingHorizontal: 12,
+      paddingHorizontal: tokens.space.gutter,
       paddingTop: 6,
     },
     tab: { flex: 1, alignItems: 'center', gap: 5, paddingVertical: 8, minHeight: 48 },
@@ -88,7 +89,7 @@ const Badge = ({ count }: { readonly count: number }): React.JSX.Element => {
 export const AppNav = ({ active, onGo, shoppingCount }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const barPadding = useSafeAreaPadding({ bottom: tokens.space.gutter })
   const isWide = useWideScreen()
 
   const destinations: readonly { id: NavDestination; label: string }[] = [
@@ -128,7 +129,7 @@ export const AppNav = ({ active, onGo, shoppingCount }: Props): React.JSX.Elemen
   }
 
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + 12 }]} testID="app-nav">
+    <View style={[styles.bar, barPadding]} testID="app-nav">
       {destinations.map((destination) => (
         <Pressable
           key={destination.id}

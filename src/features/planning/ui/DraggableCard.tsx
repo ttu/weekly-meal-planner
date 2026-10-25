@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Platform, View } from 'react-native'
+import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -66,8 +66,8 @@ export const DraggableCard = ({
   }
 
   const pan = Gesture.Pan()
-    .activateAfterLongPress(Platform.OS === 'web' ? 0 : 180)
-    .minDistance(Platform.OS === 'web' ? 6 : 0)
+    .activateAfterLongPress(process.env.EXPO_OS === 'web' ? 0 : 180)
+    .minDistance(process.env.EXPO_OS === 'web' ? 6 : 0)
     .onBegin((event) => {
       pointer.x.value = event.absoluteX
       pointer.y.value = event.absoluteY

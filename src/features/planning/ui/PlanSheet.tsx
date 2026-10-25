@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -18,6 +18,10 @@ import type { BoardDay } from '../domain/board'
  */
 const sheets = themed((tokens) =>
   StyleSheet.create({
+    /** The part of the backdrop above the sheet: pressing it closes. */
+    dismiss: { flex: 1 },
+    sheetScroll: { flexGrow: 0 },
+    headerText: { flexShrink: 1, gap: tokens.space.xs },
     backdrop: { flex: 1, backgroundColor: tokens.color.scrim, justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: tokens.color.surface,
@@ -76,12 +80,12 @@ const sheets = themed((tokens) =>
     },
     stepperSign: {
       fontFamily: tokens.type.body.fontFamily,
-      fontSize: 22,
+      fontSize: tokens.type.dayHeading.fontSize,
       color: tokens.color.textPrimary,
     },
     stepperValue: {
       fontFamily: tokens.type.mealName.fontFamily,
-      fontSize: 24,
+      fontSize: tokens.type.wordmark.fontSize,
       fontWeight: '600',
       color: tokens.color.textPrimary,
       minWidth: 28,
@@ -144,7 +148,7 @@ const PlanHeader = ({
 
   return (
     <View style={styles.headerRow}>
-      <View style={{ flexShrink: 1, gap: 4 }}>
+      <View style={styles.headerText}>
         <Text style={styles.title}>{t('plan.title', { meal: mealName })}</Text>
         {addedByName !== undefined && addedByName !== '' && (
           <Text style={styles.addedBy}>
@@ -300,7 +304,7 @@ export const PlanSheet = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const sheetPadding = useSafeAreaPadding({ bottom: tokens.space.lg })
 
   const [date, setDate] = useState(board[0]?.date ?? today)
   const [slotKey, setSlotKey] = useState<SlotKey | undefined>(slots[0]?.key)
@@ -321,14 +325,14 @@ export const PlanSheet = ({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <Pressable
-          style={{ flex: 1 }}
+          style={styles.dismiss}
           onPress={onDismiss}
           accessibilityRole="button"
           accessibilityLabel={t('plan.cancel')}
         />
         <ScrollView
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
+          style={styles.sheetScroll}
+          contentContainerStyle={[styles.sheet, sheetPadding]}
           testID="plan-sheet"
         >
           <View style={styles.grip} />

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Image } from 'expo-image'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -150,7 +150,7 @@ export const MealEditorScreen = ({
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.md })
   const [name, setName] = useState(initial?.name ?? '')
   const [servings, setServings] = useState<number>(initial?.servings ?? defaultServings)
   const [entries, setEntries] = useState<readonly IngredientEntry[]>(
@@ -178,7 +178,7 @@ export const MealEditorScreen = ({
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.md }]}
+      contentContainerStyle={[formStyles.content, contentPadding]}
       testID="meal-editor-screen"
     >
       <View style={formStyles.header}>

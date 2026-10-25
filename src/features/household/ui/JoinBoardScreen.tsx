@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaPadding } from '@/shared/theme/safe-area-padding'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -62,7 +62,7 @@ export const JoinBoardScreen = ({
   const theme = useTheme()
   const formStyles = useFormStyles()
   const { t } = useTranslation()
-  const insets = useSafeAreaInsets()
+  const contentPadding = useSafeAreaPadding({ top: tokens.space.xl })
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [betaKey, setBetaKey] = useState('')
@@ -87,7 +87,7 @@ export const JoinBoardScreen = ({
   return (
     <ScrollView
       style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
+      contentContainerStyle={[formStyles.content, contentPadding]}
       testID="join-board-screen"
     >
       <Wordmark />
@@ -147,7 +147,7 @@ export const JoinBoardScreen = ({
       )}
 
       {error !== undefined && (
-        <Text style={[formStyles.error, { marginTop: tokens.space.sm }]} testID="join-error">
+        <Text style={[formStyles.error, formStyles.topSm]} testID="join-error">
           {errorText()}
         </Text>
       )}
@@ -155,7 +155,7 @@ export const JoinBoardScreen = ({
       <Pressable
         style={({ pressed }) => [
           formStyles.primary,
-          { marginTop: tokens.space.lg },
+          formStyles.topLg,
           pressed && formStyles.primaryPressed,
         ]}
         disabled={isPending}
