@@ -4,6 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useLocale, useTranslation } from '@/shared/i18n'
 import { BackLink } from '@/shared/ui/BackLink'
+import { LoadError, Loading } from '@/shared/ui/LoadState'
+import { Notice } from '@/shared/ui/Notice'
+import type { LoadState } from '@/shared/query/load-state'
 import { partitionMeals } from '../domain/partition'
 import { isCatalogueMeal, type Meal, type MealId } from '../domain/types'
 import { MealCard } from './MealCard'
@@ -106,6 +109,9 @@ type Props = {
    * already depends on meals.
    */
   readonly wrapRow?: ((meal: Meal, row: React.ReactNode) => React.ReactNode) | undefined
+  /** Only a loaded library may say it has no Meals. */
+  readonly loadState?: LoadState | undefined
+  readonly onRetry?: (() => void) | undefined
 }
 
 export const MealLibraryScreen = ({
@@ -115,6 +121,8 @@ export const MealLibraryScreen = ({
   onAdd,
   onBack,
   wrapRow,
+  loadState = 'ready',
+  onRetry,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const theme = useTheme()
@@ -123,6 +131,7 @@ export const MealLibraryScreen = ({
   const insets = useSafeAreaInsets()
   const [query, setQuery] = useState('')
   const isPane = layout === 'pane'
+  const isEmpty = (loadState === 'ready' || loadState === 'stale') && meals.length === 0
 
   const { ours, catalogue } = useMemo(
     () => partitionMeals(meals, query, locale),
@@ -236,8 +245,14 @@ export const MealLibraryScreen = ({
           </Text>
         )}
         stickySectionHeadersEnabled={false}
+        ListHeaderComponent={
+          <>
+            {loadState === 'loading' && <Loading />}
+            {loadState === 'failed' && <LoadError onRetry={onRetry ?? (() => undefined)} />}
+          </>
+        }
         ListEmptyComponent={
-          meals.length === 0 ? (
+          isEmpty ? (
             <Text style={styles.empty} testID="library-empty">
               {t('meal.emptyLibrary')}
             </Text>
@@ -248,6 +263,14 @@ export const MealLibraryScreen = ({
         initialNumToRender={12}
         windowSize={7}
       />
+
+      {loadState === 'stale' && (
+        <Notice
+          message={t('load.stale')}
+          testID="load-stale"
+          action={onRetry === undefined ? undefined : { label: t('load.retry'), onPress: onRetry }}
+        />
+      )}
 
       {isPane && (
         <Pressable

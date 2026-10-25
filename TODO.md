@@ -74,3 +74,17 @@ you want to overturn one, change the spec first.
   for the gesture, so they were not moved onto `Sheet`. They want a visible
   close/back control checked instead. `ConfirmSheet` is a centred confirmation
   and stays as is.
+
+## Client
+
+- `MealPicker` still draws a failed or loading Meal library as "no results":
+  it takes `meals` as a prop and is not told the `loadState` that
+  `MealLibraryScreen` now receives from `useHouseholdMeals`. Found while making
+  failed loads stop looking empty; left because the picker was being edited
+  elsewhere. Pass `loadState`/`onRetry` through and use `Loading`/`LoadError`.
+- On the wide board, a failed refresh of both the week and the Meal library
+  stacks two `Notice` banners at the same spot (both are absolutely
+  positioned at the bottom). Merge them into one notice, or offset the second.
+- Other loaders (`useIngredients`, `useMeal`, `useMealActions`) were not
+  audited for the same "error read as empty" pattern; the repositories now
+  return `query-failed`, but the hooks over them have not been checked.

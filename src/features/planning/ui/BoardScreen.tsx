@@ -45,6 +45,8 @@ import { ServingsSheet } from './ServingsSheet'
 import { AppNav } from '@/shared/ui/AppNav'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { Notice } from '@/shared/ui/Notice'
+import { LoadError, Loading } from '@/shared/ui/LoadState'
+import { loadState } from '@/shared/query/load-state'
 import type { BacklogItem, CookEvent, CookEventId, LeftoverId } from '../domain/types'
 
 const sheets = themed((tokens) =>
@@ -187,11 +189,14 @@ const Board = ({
   const household = session.household
   const me = session.member
   const locale = household?.locale ?? 'fi'
-  const { board, backlog, weekPlanId, householdName, weekStart } = useWeekBoard(clock)
+  const weekBoard = useWeekBoard(clock)
+  const { board, backlog, weekPlanId, householdName, weekStart } = weekBoard
+  const boardState = loadState(weekBoard)
   const { changedDays, markChanged } = useRecentlyChangedDays()
   useWeekRealtime(weekStart, markChanged)
   const present = usePresence(weekStart, me)
-  const { meals } = useHouseholdMeals()
+  const library = useHouseholdMeals()
+  const { meals } = library
   const { add, hasFailed } = useAddToBacklog(clock)
   const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal(clock)
   const [isPickerOpen, setPickerOpen] = useState(false)
@@ -339,8 +344,11 @@ const Board = ({
 
   /** Day one: nothing wanted, nothing planned. Not the same as an empty
    *  Backlog, which is the ordinary state of a week that is already planned. */
+  const isLoaded = boardState === 'ready' || boardState === 'stale'
   const isDayOne =
-    backlog.length === 0 && board.every((day) => day.slots.every((slot) => slot.cards.length === 0))
+    isLoaded &&
+    backlog.length === 0 &&
+    board.every((day) => day.slots.every((slot) => slot.cards.length === 0))
 
   const dayOne = (
     <DayOne
@@ -355,13 +363,29 @@ const Board = ({
     />
   )
 
+  /** What the Backlog says when it has nothing in it: DayOne for a week that is
+   *  truly blank, and never "empty" for one that has not arrived. The failure
+   *  itself is reported once, where the board would be. */
+  const shelfEmptyFor = (): React.JSX.Element | undefined => {
+    if (isDayOne) return dayOne
+    if (isLoaded) return undefined
+    return boardState === 'loading' ? <Loading /> : <></>
+  }
+  const shelfEmpty = shelfEmptyFor()
+
+  /** The board itself, or why there isn't one. A failed first load must not be
+   *  drawn as a week with nothing planned. */
+  const boardFailure = boardState === 'failed' && (
+    <LoadError onRetry={weekBoard.refetch} testID="board-load-error" />
+  )
+
   const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => {
     return (
       <BacklogShelf
         layout={layout}
         onDropped={onDropped}
         items={backlog}
-        {...(isDayOne ? { empty: dayOne } : {})}
+        {...(shelfEmpty === undefined ? {} : { empty: shelfEmpty })}
         onAdd={() => {
           setPickerTarget(undefined)
           setPickerOpen(true)
@@ -553,6 +577,13 @@ const Board = ({
       {moveFailed && <Notice message={t('plan.moveFailed')} testID="move-error" />}
       {unplanFailed && <Notice message={t('unplan.failed')} testID="unplan-error" />}
       {orderRefused && <Notice message={t('board.leftoverOrder')} testID="leftover-order-error" />}
+      {boardState === 'stale' && (
+        <Notice
+          message={t('load.stale')}
+          testID="load-stale"
+          action={{ label: t('load.retry'), onPress: weekBoard.refetch }}
+        />
+      )}
     </>
   )
 
@@ -570,6 +601,8 @@ const Board = ({
           <MealLibraryScreen
             layout="pane"
             meals={meals}
+            loadState={loadState(library)}
+            onRetry={library.refetch}
             onSelect={(mealId) => {
               add(mealId)
             }}
@@ -593,26 +626,28 @@ const Board = ({
         }
         backlog={shelf('pane')}
         board={
-          <View style={{ flex: 1, flexDirection: 'row' }} testID="board">
-            {board.map((day, index) => (
-              <WideDayColumn
-                key={day.date}
-                day={day}
-                isToday={day.date === today}
-                isLast={index === board.length - 1}
-                locale={locale}
-                recentlyChanged={changedDays.has(day.date)}
-                onSelect={(id) => {
-                  setUnplanning(cookEventById(id))
-                }}
-                onAddLeftover={addSecondSitting}
-                onAddMeal={openPickerFor}
-                onEditServings={setEditingServings}
-                onRemoveLeftover={setRemovingLeftover}
-                onDropped={onDropped}
-              />
-            ))}
-          </View>
+          boardFailure || (
+            <View style={{ flex: 1, flexDirection: 'row' }} testID="board">
+              {board.map((day, index) => (
+                <WideDayColumn
+                  key={day.date}
+                  day={day}
+                  isToday={day.date === today}
+                  isLast={index === board.length - 1}
+                  locale={locale}
+                  recentlyChanged={changedDays.has(day.date)}
+                  onSelect={(id) => {
+                    setUnplanning(cookEventById(id))
+                  }}
+                  onAddLeftover={addSecondSitting}
+                  onAddMeal={openPickerFor}
+                  onEditServings={setEditingServings}
+                  onRemoveLeftover={setRemovingLeftover}
+                  onDropped={onDropped}
+                />
+              ))}
+            </View>
+          )
         }
         overlays={
           <>
@@ -670,31 +705,33 @@ const Board = ({
             </Text>
           )}
 
-          <View style={styles.days} testID="board">
-            {board.map((day) => (
-              <View
-                key={day.date}
-                onLayout={(event) => {
-                  dayOffsets.current.set(day.date, event.nativeEvent.layout.y)
-                }}
-              >
-                <DayColumn
-                  day={day}
-                  isToday={day.date === today}
-                  locale={locale}
-                  recentlyChanged={changedDays.has(day.date)}
-                  onAddLeftover={addSecondSitting}
-                  onUnplan={(id) => {
-                    setUnplanning(cookEventById(id))
+          {boardFailure || (
+            <View style={styles.days} testID="board">
+              {board.map((day) => (
+                <View
+                  key={day.date}
+                  onLayout={(event) => {
+                    dayOffsets.current.set(day.date, event.nativeEvent.layout.y)
                   }}
-                  onAddMeal={openPickerFor}
-                  onEditServings={setEditingServings}
-                  onRemoveLeftover={setRemovingLeftover}
-                  onDropped={onDropped}
-                />
-              </View>
-            ))}
-          </View>
+                >
+                  <DayColumn
+                    day={day}
+                    isToday={day.date === today}
+                    locale={locale}
+                    recentlyChanged={changedDays.has(day.date)}
+                    onAddLeftover={addSecondSitting}
+                    onUnplan={(id) => {
+                      setUnplanning(cookEventById(id))
+                    }}
+                    onAddMeal={openPickerFor}
+                    onEditServings={setEditingServings}
+                    onRemoveLeftover={setRemovingLeftover}
+                    onDropped={onDropped}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
 
