@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View, type TextInput } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
@@ -11,6 +11,7 @@ import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
 import type { BoardPreview, JoinBoardError } from '../application/boards'
 import { BetaKeyField } from './BetaKeyField'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 /** "Dad", "Dad and Mum", "Dad, Mum and Sanni" — the people to go and ask. */
 const listNames = (names: readonly string[], and: string): string => {
@@ -66,6 +67,8 @@ export const JoinBoardScreen = ({
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [betaKey, setBetaKey] = useState('')
+  const passwordRef = useRef<TextInput>(null)
+  const betaKeyRef = useRef<TextInput>(null)
 
   const names = preview?.members.map((m) => m.name) ?? []
   // "Dad and Mum are already planning", but "check with Dad or Mum" — either
@@ -85,103 +88,116 @@ export const JoinBoardScreen = ({
   }
 
   return (
-    <ScrollView
-      style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
-      testID="join-board-screen"
-    >
-      <Wordmark />
-      {preview !== undefined && preview.members.length > 0 && (
-        <View style={styles.faces} testID="join-faces">
-          {preview.members.map((member, index) => (
-            <View key={member.name} style={index > 0 && styles.overlap}>
-              <Avatar
-                name={member.name}
-                colour={member.colour}
-                size="large"
-                ringColour={theme.color.surface}
-              />
-            </View>
-          ))}
-        </View>
-      )}
-
-      <Text style={styles.title}>
-        {preview === undefined
-          ? t('board.joinTitle')
-          : t('board.joinTitleNamed', { board: preview.name })}
-      </Text>
-      <Text style={styles.body}>
-        {names.length > 0
-          ? t('board.joinBodyNamed', { names: asList, count: names.length })
-          : t('board.joinBody')}
-      </Text>
-
-      <Text style={formStyles.label}>{t('board.yourName')}</Text>
-      <Field
-        value={displayName}
-        onChangeText={setDisplayName}
-        placeholder={t('board.yourNamePlaceholder')}
-        accessibilityLabel={t('board.yourName')}
-        testID="join-your-name"
-      />
-
-      <Text style={formStyles.label}>{t('board.password')}</Text>
-      <PasswordField
-        value={password}
-        onChangeText={setPassword}
-        hasError={error !== undefined && error !== 'invalid-beta-key'}
-        testID="join-password"
-      />
-
-      {askBetaKey && (
-        <>
-          <View style={styles.gap} />
-          <BetaKeyField
-            value={betaKey}
-            onChangeText={setBetaKey}
-            hasError={error === 'invalid-beta-key'}
-            testID="join-beta-key"
-          />
-        </>
-      )}
-
-      {error !== undefined && (
-        <Text style={[formStyles.error, { marginTop: tokens.space.sm }]} testID="join-error">
-          {errorText()}
-        </Text>
-      )}
-
-      <Pressable
-        style={({ pressed }) => [
-          formStyles.primary,
-          { marginTop: tokens.space.lg },
-          pressed && formStyles.primaryPressed,
-        ]}
-        disabled={isPending}
-        onPress={() => {
-          onJoin({ password, displayName, betaKey })
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t('board.join')}
-        testID="join-submit"
+    <KeyboardAvoiding>
+      <ScrollView
+        style={formStyles.screen}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.xl }]}
+        testID="join-board-screen"
       >
-        <Text style={formStyles.primaryText}>{t('board.join')}</Text>
-      </Pressable>
+        <Wordmark />
+        {preview !== undefined && preview.members.length > 0 && (
+          <View style={styles.faces} testID="join-faces">
+            {preview.members.map((member, index) => (
+              <View key={member.name} style={index > 0 && styles.overlap}>
+                <Avatar
+                  name={member.name}
+                  colour={member.colour}
+                  size="large"
+                  ringColour={theme.color.surface}
+                />
+              </View>
+            ))}
+          </View>
+        )}
 
-      {onStartOwn !== undefined && (
-        <View style={styles.footer}>
-          <Text style={styles.muted}>{t('board.notThisOne')}</Text>
-          <Pressable
-            onPress={onStartOwn}
-            accessibilityRole="button"
-            accessibilityLabel={t('board.startYourOwn')}
-            testID="join-start-own"
-          >
-            <Text style={styles.link}>{t('board.startYourOwn')}</Text>
-          </Pressable>
-        </View>
-      )}
-    </ScrollView>
+        <Text style={styles.title}>
+          {preview === undefined
+            ? t('board.joinTitle')
+            : t('board.joinTitleNamed', { board: preview.name })}
+        </Text>
+        <Text style={styles.body}>
+          {names.length > 0
+            ? t('board.joinBodyNamed', { names: asList, count: names.length })
+            : t('board.joinBody')}
+        </Text>
+
+        <Text style={formStyles.label}>{t('board.yourName')}</Text>
+        <Field
+          value={displayName}
+          onChangeText={setDisplayName}
+          autoComplete="name"
+          autoCapitalize="words"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+          placeholder={t('board.yourNamePlaceholder')}
+          accessibilityLabel={t('board.yourName')}
+          testID="join-your-name"
+        />
+
+        <Text style={formStyles.label}>{t('board.password')}</Text>
+        <PasswordField
+          value={password}
+          onChangeText={setPassword}
+          inputRef={passwordRef}
+          returnKeyType={askBetaKey ? 'next' : 'done'}
+          submitBehavior={askBetaKey ? 'submit' : 'blurAndSubmit'}
+          onSubmitEditing={askBetaKey ? () => betaKeyRef.current?.focus() : undefined}
+          hasError={error !== undefined && error !== 'invalid-beta-key'}
+          testID="join-password"
+        />
+
+        {askBetaKey && (
+          <>
+            <View style={styles.gap} />
+            <BetaKeyField
+              value={betaKey}
+              onChangeText={setBetaKey}
+              inputRef={betaKeyRef}
+              hasError={error === 'invalid-beta-key'}
+              testID="join-beta-key"
+            />
+          </>
+        )}
+
+        {error !== undefined && (
+          <Text style={[formStyles.error, { marginTop: tokens.space.sm }]} testID="join-error">
+            {errorText()}
+          </Text>
+        )}
+
+        <Pressable
+          style={({ pressed }) => [
+            formStyles.primary,
+            { marginTop: tokens.space.lg },
+            pressed && formStyles.primaryPressed,
+          ]}
+          disabled={isPending}
+          onPress={() => {
+            onJoin({ password, displayName, betaKey })
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('board.join')}
+          testID="join-submit"
+        >
+          <Text style={formStyles.primaryText}>{t('board.join')}</Text>
+        </Pressable>
+
+        {onStartOwn !== undefined && (
+          <View style={styles.footer}>
+            <Text style={styles.muted}>{t('board.notThisOne')}</Text>
+            <Pressable
+              onPress={onStartOwn}
+              accessibilityRole="button"
+              accessibilityLabel={t('board.startYourOwn')}
+              testID="join-start-own"
+            >
+              <Text style={styles.link}>{t('board.startYourOwn')}</Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoiding>
   )
 }
