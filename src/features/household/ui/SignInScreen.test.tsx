@@ -60,4 +60,22 @@ describe('SignInScreen', () => {
     await fireEvent.press(view.getByText('← Back to the start'))
     expect(onBack).toHaveBeenCalledTimes(1)
   })
+
+  // The password field's Go key bypasses the disabled button; a second request
+  // in flight would re-enable the button when the first one settles.
+  it('ignores a second submit while the first is still pending', async () => {
+    const signInWithPassword = jest.fn(() => new Promise(() => undefined))
+    const pending = { auth: { signInWithPassword } } as never
+    const view = await renderWithProviders(<SignInScreen client={pending} />)
+    await fireEvent(view.getByTestId('sign-in-password'), 'submitEditing')
+    await fireEvent(view.getByTestId('sign-in-password'), 'submitEditing')
+    expect(signInWithPassword).toHaveBeenCalledTimes(1)
+  })
+
+  // With the keyboard up the button and the seeded logins can sit below the
+  // fold; the form scrolls, and a tap on them lands first time.
+  it('scrolls, and lets taps through while the keyboard is up', async () => {
+    const view = await renderWithProviders(<SignInScreen client={client} />)
+    expect(view.getByTestId('sign-in-form').props.keyboardShouldPersistTaps).toBe('handled')
+  })
 })

@@ -22,14 +22,14 @@ const beef: Ingredient = {
 // With the keyboard up, the first tap on a result would otherwise only dismiss
 // the keyboard — the search field sits above the list it filters.
 describe('keyboard handling in the pickers', () => {
-  it('MealPicker lets a tap on a result through while the keyboard is up', async () => {
+  it('MealPicker sets its results to take taps while the keyboard is up', async () => {
     const view = await renderWithProviders(
       <MealPicker visible meals={[]} onSelect={jest.fn()} onDismiss={jest.fn()} />,
     )
     expect(view.getByTestId('picker-results').props.keyboardShouldPersistTaps).toBe('handled')
   })
 
-  it('IngredientPicker lets a tap on a result through while the keyboard is up', async () => {
+  it('IngredientPicker sets its results to take taps while the keyboard is up', async () => {
     const view = await renderWithProviders(
       <IngredientPicker visible ingredients={[]} onSelect={jest.fn()} onDismiss={jest.fn()} />,
     )
