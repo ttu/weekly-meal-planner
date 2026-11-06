@@ -180,7 +180,9 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     hasData: data !== undefined || (plan.data !== undefined && weekPlanId === undefined),
     refetch: () => {
       void plan.refetch()
-      void refetch()
+      // Without a plan id the list query is disabled, and forcing it would cache
+      // an empty list. It runs by itself once the id arrives.
+      if (weekPlanId !== undefined) void refetch()
     },
     toggle: (id, checked) => {
       toggleMutation.mutate({ id, checked })

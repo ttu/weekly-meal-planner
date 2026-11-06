@@ -68,6 +68,22 @@ describe('useShoppingList', () => {
     expect(view.result.current.hasData).toBe(false)
   })
 
+  it('retries the Week Plan first, then loads the list, never caching an empty one', async () => {
+    const view = await setup({ week_plan: failure })
+    await waitFor(() => {
+      expect(view.result.current.isError).toBe(true)
+    })
+
+    view.respondWith({ ...planned, shopping_extra: extra('Coffee') })
+    await act(() => {
+      view.result.current.refetch()
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Coffee'])
+    })
+    expect(view.result.current.isError).toBe(false)
+  })
+
   it('reports a failed shopping load as an error, not an empty list', async () => {
     const view = await setup({ ...planned, shopping_extra: failure })
     await waitFor(() => {
