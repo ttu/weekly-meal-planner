@@ -25,11 +25,14 @@ you want to overturn one, change the spec first.
   (`docs/06-security.md`). Once email verification exists, delete the secret
   and then the gate: `p_beta_key`, `app.beta_key_accepted`, the screen field.
 - Two advisories are ignored in `package.json` (`pnpm.auditConfig.ignoreGhsas`)
-  because no patched release exists: `node-forge` (GHSA-86w9-cpqp-85rv) via
-  `@expo/cli`, and `braces` (GHSA-vfj7-8cjw-p6xm) via
-  `vite-plugin-commonjs`. Both are dev-tooling only and never reach the
-  shipped bundle. When a fixed version is published, add an override for it and
-  delete the ignore.
+  because no compatible patched release exists. `zod` (GHSA-mrhx-c7xc-m3w5)
+  via `@expo/cli`, which pins `zod@^3` and the fix is only in 4.6.6;
+  dev-tooling only. `decode-uri-component` (GHSA-qr28-fpjm-wq7f) via
+  `expo-router` > `query-string@7`, which `require()`s it, while the fixed
+  0.5.1 is ESM-only with a default export; this one does reach the bundle, but
+  the input is the app's own URL, so the worst case is a crafted link hanging
+  the tab that opened it. When `@expo/cli` moves to zod 4 or `expo-router` to a
+  fixed `query-string`, delete the ignore.
 - The git guardrail hook (`.claude/hooks/block-dangerous-git.sh`) matches
   text, and automated security reviews of PR #2 keep finding spellings past
   it. Two are open: its quote tracking can be misled (a `#` comment, `$'...'`)
