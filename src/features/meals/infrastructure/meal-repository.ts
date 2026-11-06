@@ -31,7 +31,7 @@ const photoOf = (
   return url === undefined ? {} : { photoUrl: url }
 }
 
-export type LoadMealsError = 'invalid-row'
+export type LoadMealsError = 'query-failed' | 'invalid-row'
 
 /**
  * Every Meal the Household can see: its own, plus the Catalogue in its own
@@ -42,12 +42,13 @@ export const loadMeals = async (
   client: AppSupabaseClient,
   locale: Locale,
 ): Promise<Result<readonly Meal[], LoadMealsError>> => {
-  const { data } = await client
+  const { data, error } = await client
     .from('meal')
     .select('id,household_id,name,servings,photo_url,meal_ingredient(count)')
     .or(`locale.is.null,locale.eq.${locale}`)
+  if (error !== null) return err('query-failed')
 
-  const rows = z.array(rowSchema).safeParse(data ?? [])
+  const rows = z.array(rowSchema).safeParse(data)
   if (!rows.success) return err('invalid-row')
 
   // One round trip for every photo on the screen, not one per card.

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { brand } from '@/shared/types/brand'
-import { ok, err, type Result } from '@/shared/types/result'
+import { ok, err, isErr, type Result } from '@/shared/types/result'
 import type { AppSupabaseClient } from '@/features/household'
 import type { CookEvent, Leftover, WeekStart } from '../domain/types'
 
@@ -28,7 +28,12 @@ const leftoverRow = z.object({
   cook_event: z.object({ meal: z.object({ name: z.string() }) }),
 })
 
-export type LoadWeekError = 'no-week-plan' | 'invalid-row'
+/**
+ * `no-week-plan` is an answer: the query worked and nobody has planned this
+ * week. `query-failed` is the absence of one — the network, a token or RLS got
+ * in the way — and must never be drawn as an empty board.
+ */
+export type LoadWeekError = 'no-week-plan' | 'query-failed' | 'invalid-row'
 
 export type WeekContents = {
   readonly weekPlanId: string
@@ -36,26 +41,37 @@ export type WeekContents = {
   readonly leftovers: readonly Leftover[]
 }
 
-export const loadWeek = async (
+/** The Week Plan's id, or `undefined` when nobody has planned this week.
+ *  Read-only: it never creates the plan. */
+export const loadWeekPlanId = async (
   client: AppSupabaseClient,
   weekStart: WeekStart,
-): Promise<Result<WeekContents, LoadWeekError>> => {
+): Promise<Result<string | undefined, 'query-failed'>> => {
   // No household_id filter: RLS already restricts the row set (ADR 0002).
-  const { data: plan } = await client
+  const { data, error } = await client
     .from('week_plan')
     .select('id')
     .eq('week_start', weekStart)
     .maybeSingle()
-  if (plan === null) return err('no-week-plan')
+  return error === null ? ok(data?.id) : err('query-failed')
+}
 
-  const planId = plan.id
+export const loadWeek = async (
+  client: AppSupabaseClient,
+  weekStart: WeekStart,
+): Promise<Result<WeekContents, LoadWeekError>> => {
+  const plan = await loadWeekPlanId(client, weekStart)
+  if (isErr(plan)) return plan
+  if (plan.value === undefined) return err('no-week-plan')
 
-  const { data: cookEventData } = await client
+  const planId = plan.value
+
+  const { data: cookEventData, error: cookEventError } = await client
     .from('cook_event')
     .select('id,meal_id,date,slot_key,servings_cooked,added_by,meal(name)')
     .eq('week_plan_id', planId)
 
-  const { data: leftoverData } = await client
+  const { data: leftoverData, error: leftoverError } = await client
     .from('leftover')
     .select('id,cook_event_id,date,slot_key,cook_event!inner(week_plan_id,meal(name))')
     .eq('cook_event.week_plan_id', planId)
@@ -63,13 +79,17 @@ export const loadWeek = async (
   // `added_by` is a user id, not a foreign key to household_member — a Member
   // can leave while the Meal they planned stays — so the Member is looked up
   // separately and joined in memory, with a blank for one who has since left.
-  const { data: memberData } = await client
+  const { data: memberData, error: memberError } = await client
     .from('household_member')
     .select('user_id,display_name,colour')
 
-  const cookEvents = z.array(cookEventRow).safeParse(cookEventData ?? [])
-  const leftovers = z.array(leftoverRow).safeParse(leftoverData ?? [])
-  const members = z.array(memberRow).safeParse(memberData ?? [])
+  if (cookEventError !== null || leftoverError !== null || memberError !== null) {
+    return err('query-failed')
+  }
+
+  const cookEvents = z.array(cookEventRow).safeParse(cookEventData)
+  const leftovers = z.array(leftoverRow).safeParse(leftoverData)
+  const members = z.array(memberRow).safeParse(memberData)
   if (!cookEvents.success || !leftovers.success || !members.success) return err('invalid-row')
 
   const byUserId = new Map(members.data.map((m) => [m.user_id, m]))

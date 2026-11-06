@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { themed, useThemed } from '@/shared/theme/theme'
 
 /**
@@ -13,6 +13,9 @@ import { themed, useThemed } from '@/shared/theme/theme'
 type Props = {
   readonly message: string
   readonly testID?: string | undefined
+  /** One thing to do about it — "Try again". The banner floats over the page
+   *  and ignores touches, so it takes them back only when it has a button. */
+  readonly action?: { readonly label: string; readonly onPress: () => void } | undefined
 }
 
 const sheets = themed((tokens) =>
@@ -23,7 +26,9 @@ const sheets = themed((tokens) =>
       right: 0,
       bottom: tokens.space.lg,
       alignItems: 'center',
-      pointerEvents: 'none',
+      // The layer spans the window; only the banner may take touches, and only
+      // when it has a button. 'none' here would disable the button as well.
+      pointerEvents: 'box-none',
       zIndex: 900,
     },
     banner: {
@@ -38,16 +43,33 @@ const sheets = themed((tokens) =>
       boxShadow: tokens.shadow.lifted,
     },
     text: { ...tokens.type.body, color: tokens.color.action },
+    actionButton: { alignSelf: 'flex-start', paddingTop: tokens.space.sm },
+    actionText: { ...tokens.type.mealNameSmall, color: tokens.color.action },
   }),
 )
 
-export const Notice = ({ message, testID }: Props): React.JSX.Element => {
+export const Notice = ({ message, testID, action }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
 
   return (
     <View style={styles.layer} accessibilityLiveRegion="polite">
-      <View style={styles.banner} testID={testID}>
+      <View
+        style={styles.banner}
+        testID={testID}
+        pointerEvents={action === undefined ? 'none' : 'auto'}
+      >
         <Text style={styles.text}>{message}</Text>
+        {action !== undefined && (
+          <Pressable
+            style={styles.actionButton}
+            onPress={action.onPress}
+            accessibilityRole="button"
+            accessibilityLabel={action.label}
+            testID={testID === undefined ? undefined : `${testID}-action`}
+          >
+            <Text style={styles.actionText}>{action.label}</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   )
