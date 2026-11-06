@@ -17,6 +17,7 @@ import type { Ingredient, IngredientId, Servings } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
 import type { PhotoChange } from '../application/save-meal-photo'
 import type { EditorError } from './useSaveMeal'
+import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -176,271 +177,276 @@ export const MealEditorScreen = ({
   }
 
   return (
-    <ScrollView
-      style={formStyles.screen}
-      contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.md }]}
-      testID="meal-editor-screen"
-    >
-      <View style={formStyles.header}>
-        <Text style={formStyles.title}>
-          {initial === undefined ? t('meal.new') : t('meal.edit')}
-        </Text>
-        <Pressable
-          onPress={onCancel}
-          accessibilityRole="button"
-          accessibilityLabel={t('picker.cancel')}
-          testID="editor-cancel"
-        >
-          <Text style={styles.cancel}>{t('picker.cancel')}</Text>
-        </Pressable>
-      </View>
+    <KeyboardAvoiding>
+      <ScrollView
+        style={formStyles.screen}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[formStyles.content, { paddingTop: insets.top + tokens.space.md }]}
+        testID="meal-editor-screen"
+      >
+        <View style={formStyles.header}>
+          <Text style={formStyles.title}>
+            {initial === undefined ? t('meal.new') : t('meal.edit')}
+          </Text>
+          <Pressable
+            onPress={onCancel}
+            accessibilityRole="button"
+            accessibilityLabel={t('picker.cancel')}
+            testID="editor-cancel"
+          >
+            <Text style={styles.cancel}>{t('picker.cancel')}</Text>
+          </Pressable>
+        </View>
 
-      <Text style={formStyles.label}>{t('meal.name')}</Text>
-      <TextInput
-        style={formStyles.field}
-        value={name}
-        onChangeText={setName}
-        accessibilityLabel={t('meal.name')}
-        testID="editor-name"
-      />
+        <Text style={formStyles.label}>{t('meal.name')}</Text>
+        <TextInput
+          style={formStyles.field}
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="sentences"
+          returnKeyType="done"
+          accessibilityLabel={t('meal.name')}
+          testID="editor-name"
+        />
 
-      <Text style={formStyles.label}>{t('meal.photo')}</Text>
-      <View style={styles.photoRow}>
-        {shownPhoto === undefined ? (
-          <View style={[styles.photo, styles.photoEmpty]} testID="editor-photo-empty">
-            <Text style={styles.photoInitial}>{(name.trim()[0] ?? '?').toUpperCase()}</Text>
-          </View>
-        ) : (
-          <Image
-            style={styles.photo}
-            source={{ uri: shownPhoto }}
-            contentFit="cover"
-            cachePolicy="disk"
-            accessibilityIgnoresInvertColors
-            accessibilityLabel={t('meal.photo')}
-            testID="editor-photo"
-          />
-        )}
+        <Text style={formStyles.label}>{t('meal.photo')}</Text>
+        <View style={styles.photoRow}>
+          {shownPhoto === undefined ? (
+            <View style={[styles.photo, styles.photoEmpty]} testID="editor-photo-empty">
+              <Text style={styles.photoInitial}>{(name.trim()[0] ?? '?').toUpperCase()}</Text>
+            </View>
+          ) : (
+            <Image
+              style={styles.photo}
+              source={{ uri: shownPhoto }}
+              contentFit="cover"
+              cachePolicy="disk"
+              accessibilityIgnoresInvertColors
+              accessibilityLabel={t('meal.photo')}
+              testID="editor-photo"
+            />
+          )}
 
-        {!isReadOnly && (
-          <View style={styles.photoActions}>
-            <Pressable
-              style={styles.photoAction}
-              disabled={isPending}
-              onPress={() => {
-                void pickPhoto().then((picked) => {
-                  if (picked === undefined) return
-                  setPhoto({ kind: 'picked', uri: picked.uri, contentType: picked.contentType })
-                })
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={
-                shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')
-              }
-              testID="editor-pick-photo"
-            >
-              <Text style={formStyles.quietAction}>
-                {shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')}
-              </Text>
-            </Pressable>
-
-            {shownPhoto !== undefined && (
+          {!isReadOnly && (
+            <View style={styles.photoActions}>
               <Pressable
                 style={styles.photoAction}
                 disabled={isPending}
                 onPress={() => {
-                  setPhoto({ kind: 'cleared' })
+                  void pickPhoto().then((picked) => {
+                    if (picked === undefined) return
+                    setPhoto({ kind: 'picked', uri: picked.uri, contentType: picked.contentType })
+                  })
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={t('meal.removePhoto')}
-                testID="editor-remove-photo"
+                accessibilityLabel={
+                  shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')
+                }
+                testID="editor-pick-photo"
               >
-                <Text style={formStyles.quietAction}>{t('meal.removePhoto')}</Text>
+                <Text style={formStyles.quietAction}>
+                  {shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')}
+                </Text>
               </Pressable>
-            )}
-          </View>
-        )}
-      </View>
 
-      <Text style={formStyles.label}>{t('meal.servings')}</Text>
-      <View style={styles.stepperRow}>
-        <Pressable
-          style={styles.stepper}
-          onPress={() => {
-            setServings((n) => Math.max(1, n - 1))
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('meal.servings')}
-          testID="editor-servings-down"
-        >
-          <Text style={styles.stepperText}>−</Text>
-        </Pressable>
-        <Text style={styles.stepperValue} testID="editor-servings">
-          {String(servings)}
-        </Text>
-        <Pressable
-          style={styles.stepper}
-          onPress={() => {
-            setServings((n) => Math.min(50, n + 1))
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('meal.servings')}
-          testID="editor-servings-up"
-        >
-          <Text style={styles.stepperText}>+</Text>
-        </Pressable>
-      </View>
+              {shownPhoto !== undefined && (
+                <Pressable
+                  style={styles.photoAction}
+                  disabled={isPending}
+                  onPress={() => {
+                    setPhoto({ kind: 'cleared' })
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('meal.removePhoto')}
+                  testID="editor-remove-photo"
+                >
+                  <Text style={formStyles.quietAction}>{t('meal.removePhoto')}</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+        </View>
 
-      <Text style={formStyles.label}>{t('ingredient.heading')}</Text>
-
-      {entries.length === 0 ? (
-        <Text style={[formStyles.muted, styles.noIngredients]} testID="editor-no-ingredients">
-          {t('ingredient.none')}
-        </Text>
-      ) : (
-        entries.map((entry) => {
-          const ingredient = byId.get(entry.ingredientId)
-          if (ingredient === undefined) return null
-          return (
-            <IngredientRow
-              key={entry.ingredientId}
-              ingredient={ingredient}
-              quantityText={entry.quantityText}
-              unit={entry.unit}
-              isQuantityValid={isOk(parseQuantity(entry.quantityText))}
-              onQuantityChange={(quantityText) => {
-                updateEntry(entry.ingredientId, { quantityText })
-              }}
-              onUnitChange={(unit) => {
-                updateEntry(entry.ingredientId, { unit })
-              }}
-              onRemove={() => {
-                setEntries((current) =>
-                  current.filter((e) => e.ingredientId !== entry.ingredientId),
-                )
-              }}
-            />
-          )
-        })
-      )}
-
-      <Pressable
-        style={styles.addIngredient}
-        onPress={() => {
-          setPickerOpen(true)
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t('ingredient.add')}
-        testID="editor-add-ingredient"
-      >
-        <Text style={formStyles.quietAction}>{t('ingredient.add')}</Text>
-      </Pressable>
-
-      <IngredientPicker
-        visible={isPickerOpen}
-        ingredients={unpicked}
-        onSelect={(ingredientId) => {
-          const ingredient = byId.get(ingredientId)
-          const amount = defaultAmountFor(ingredient?.dimension ?? 'count')
-          setEntries((current) => [
-            ...current,
-            { ingredientId, quantityText: String(amount.quantity), unit: amount.unit },
-          ])
-          setPickerOpen(false)
-        }}
-        onDismiss={() => {
-          setPickerOpen(false)
-        }}
-      />
-
-      {error !== undefined && (
-        <Text style={formStyles.error} testID="editor-error">
-          {t(errorKey(error))}
-        </Text>
-      )}
-
-      {isReadOnly && (
-        <>
-          <Text style={formStyles.muted} testID="editor-read-only">
-            {t('meal.catalogueReadOnly')}
+        <Text style={formStyles.label}>{t('meal.servings')}</Text>
+        <View style={styles.stepperRow}>
+          <Pressable
+            style={styles.stepper}
+            onPress={() => {
+              setServings((n) => Math.max(1, n - 1))
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('meal.servings')}
+            testID="editor-servings-down"
+          >
+            <Text style={styles.stepperText}>−</Text>
+          </Pressable>
+          <Text style={styles.stepperValue} testID="editor-servings">
+            {String(servings)}
           </Text>
           <Pressable
-            style={styles.save}
-            onPress={onCopy}
+            style={styles.stepper}
+            onPress={() => {
+              setServings((n) => Math.min(50, n + 1))
+            }}
             accessibilityRole="button"
-            accessibilityLabel={t('meal.copy')}
-            testID="editor-copy"
+            accessibilityLabel={t('meal.servings')}
+            testID="editor-servings-up"
           >
-            <Text style={styles.saveText}>{t('meal.copy')}</Text>
+            <Text style={styles.stepperText}>+</Text>
           </Pressable>
-        </>
-      )}
+        </View>
 
-      {!isReadOnly && onDelete !== undefined && (
-        <Pressable
-          style={styles.delete}
-          onPress={() => {
-            setConfirmingDelete(true)
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('meal.delete')}
-          testID="editor-delete"
-        >
-          <Text style={formStyles.quietAction}>{t('meal.delete')}</Text>
-        </Pressable>
-      )}
+        <Text style={formStyles.label}>{t('ingredient.heading')}</Text>
 
-      <ConfirmSheet
-        visible={isConfirmingDelete}
-        message={t('meal.deleteConfirm', { meal: name })}
-        detail={plannedCount > 0 ? t('meal.deletePlanned', { count: plannedCount }) : undefined}
-        confirmLabel={t('meal.delete')}
-        cancelLabel={t('unplan.confirmNo')}
-        onConfirm={() => {
-          setConfirmingDelete(false)
-          onDelete?.()
-        }}
-        onCancel={() => {
-          setConfirmingDelete(false)
-        }}
-      />
-
-      {!isReadOnly && (
-        <Pressable
-          style={styles.save}
-          disabled={isPending}
-          onPress={() => {
-            onSave(
-              {
-                name,
-                servings: brand<number, 'Servings'>(servings),
-                // Rows with an unusable amount are dropped rather than blocking the
-                // save; the row already shows why, and losing a whole edit to one
-                // stray keystroke is worse.
-                ingredients: entries.flatMap((entry) => {
-                  const quantity = parseQuantity(entry.quantityText)
-                  return isOk(quantity)
-                    ? [
-                        {
-                          ingredientId: entry.ingredientId,
-                          quantity: quantity.value,
-                          unit: entry.unit,
-                          optional: false,
-                        },
-                      ]
-                    : []
-                }),
-              },
-              photo,
+        {entries.length === 0 ? (
+          <Text style={[formStyles.muted, styles.noIngredients]} testID="editor-no-ingredients">
+            {t('ingredient.none')}
+          </Text>
+        ) : (
+          entries.map((entry) => {
+            const ingredient = byId.get(entry.ingredientId)
+            if (ingredient === undefined) return null
+            return (
+              <IngredientRow
+                key={entry.ingredientId}
+                ingredient={ingredient}
+                quantityText={entry.quantityText}
+                unit={entry.unit}
+                isQuantityValid={isOk(parseQuantity(entry.quantityText))}
+                onQuantityChange={(quantityText) => {
+                  updateEntry(entry.ingredientId, { quantityText })
+                }}
+                onUnitChange={(unit) => {
+                  updateEntry(entry.ingredientId, { unit })
+                }}
+                onRemove={() => {
+                  setEntries((current) =>
+                    current.filter((e) => e.ingredientId !== entry.ingredientId),
+                  )
+                }}
+              />
             )
+          })
+        )}
+
+        <Pressable
+          style={styles.addIngredient}
+          onPress={() => {
+            setPickerOpen(true)
           }}
           accessibilityRole="button"
-          accessibilityLabel={t('meal.save')}
-          testID="editor-save"
+          accessibilityLabel={t('ingredient.add')}
+          testID="editor-add-ingredient"
         >
-          <Text style={styles.saveText}>{t('meal.save')}</Text>
+          <Text style={formStyles.quietAction}>{t('ingredient.add')}</Text>
         </Pressable>
-      )}
-    </ScrollView>
+
+        <IngredientPicker
+          visible={isPickerOpen}
+          ingredients={unpicked}
+          onSelect={(ingredientId) => {
+            const ingredient = byId.get(ingredientId)
+            const amount = defaultAmountFor(ingredient?.dimension ?? 'count')
+            setEntries((current) => [
+              ...current,
+              { ingredientId, quantityText: String(amount.quantity), unit: amount.unit },
+            ])
+            setPickerOpen(false)
+          }}
+          onDismiss={() => {
+            setPickerOpen(false)
+          }}
+        />
+
+        {error !== undefined && (
+          <Text style={formStyles.error} testID="editor-error">
+            {t(errorKey(error))}
+          </Text>
+        )}
+
+        {isReadOnly && (
+          <>
+            <Text style={formStyles.muted} testID="editor-read-only">
+              {t('meal.catalogueReadOnly')}
+            </Text>
+            <Pressable
+              style={styles.save}
+              onPress={onCopy}
+              accessibilityRole="button"
+              accessibilityLabel={t('meal.copy')}
+              testID="editor-copy"
+            >
+              <Text style={styles.saveText}>{t('meal.copy')}</Text>
+            </Pressable>
+          </>
+        )}
+
+        {!isReadOnly && onDelete !== undefined && (
+          <Pressable
+            style={styles.delete}
+            onPress={() => {
+              setConfirmingDelete(true)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('meal.delete')}
+            testID="editor-delete"
+          >
+            <Text style={formStyles.quietAction}>{t('meal.delete')}</Text>
+          </Pressable>
+        )}
+
+        <ConfirmSheet
+          visible={isConfirmingDelete}
+          message={t('meal.deleteConfirm', { meal: name })}
+          detail={plannedCount > 0 ? t('meal.deletePlanned', { count: plannedCount }) : undefined}
+          confirmLabel={t('meal.delete')}
+          cancelLabel={t('unplan.confirmNo')}
+          onConfirm={() => {
+            setConfirmingDelete(false)
+            onDelete?.()
+          }}
+          onCancel={() => {
+            setConfirmingDelete(false)
+          }}
+        />
+
+        {!isReadOnly && (
+          <Pressable
+            style={styles.save}
+            disabled={isPending}
+            onPress={() => {
+              onSave(
+                {
+                  name,
+                  servings: brand<number, 'Servings'>(servings),
+                  // Rows with an unusable amount are dropped rather than blocking the
+                  // save; the row already shows why, and losing a whole edit to one
+                  // stray keystroke is worse.
+                  ingredients: entries.flatMap((entry) => {
+                    const quantity = parseQuantity(entry.quantityText)
+                    return isOk(quantity)
+                      ? [
+                          {
+                            ingredientId: entry.ingredientId,
+                            quantity: quantity.value,
+                            unit: entry.unit,
+                            optional: false,
+                          },
+                        ]
+                      : []
+                  }),
+                },
+                photo,
+              )
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('meal.save')}
+            testID="editor-save"
+          >
+            <Text style={styles.saveText}>{t('meal.save')}</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+    </KeyboardAvoiding>
   )
 }
