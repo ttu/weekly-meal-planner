@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { brand } from '@/shared/types/brand'
-import { ok, err, type Result } from '@/shared/types/result'
+import { ok, err, isErr, type Result } from '@/shared/types/result'
 import type { AppSupabaseClient } from '@/features/household'
 import type { CookEvent, Leftover, WeekStart } from '../domain/types'
 
@@ -41,20 +41,30 @@ export type WeekContents = {
   readonly leftovers: readonly Leftover[]
 }
 
-export const loadWeek = async (
+/** The Week Plan's id, or `undefined` when nobody has planned this week.
+ *  Read-only: it never creates the plan. */
+export const loadWeekPlanId = async (
   client: AppSupabaseClient,
   weekStart: WeekStart,
-): Promise<Result<WeekContents, LoadWeekError>> => {
+): Promise<Result<string | undefined, 'query-failed'>> => {
   // No household_id filter: RLS already restricts the row set (ADR 0002).
-  const { data: plan, error: planError } = await client
+  const { data, error } = await client
     .from('week_plan')
     .select('id')
     .eq('week_start', weekStart)
     .maybeSingle()
-  if (planError !== null) return err('query-failed')
-  if (plan === null) return err('no-week-plan')
+  return error === null ? ok(data?.id) : err('query-failed')
+}
 
-  const planId = plan.id
+export const loadWeek = async (
+  client: AppSupabaseClient,
+  weekStart: WeekStart,
+): Promise<Result<WeekContents, LoadWeekError>> => {
+  const plan = await loadWeekPlanId(client, weekStart)
+  if (isErr(plan)) return plan
+  if (plan.value === undefined) return err('no-week-plan')
+
+  const planId = plan.value
 
   const { data: cookEventData, error: cookEventError } = await client
     .from('cook_event')

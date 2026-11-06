@@ -350,11 +350,7 @@ export const ShoppingListScreen = ({
           <View style={styles.head}>
             <Text style={styles.title}>{t('shopping.title')}</Text>
           </View>
-          {loadState === 'loading' ? (
-            <Loading />
-          ) : (
-            <LoadError onRetry={onRetry ?? (() => undefined)} />
-          )}
+          {loadState === 'loading' ? <Loading /> : <LoadError onRetry={onRetry} />}
         </ScrollView>
       </View>
     )

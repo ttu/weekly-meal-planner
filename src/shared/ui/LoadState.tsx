@@ -37,7 +37,8 @@ export const Loading = ({ testID }: { readonly testID?: string }): React.JSX.Ele
 }
 
 type LoadErrorProps = {
-  readonly onRetry: () => void
+  /** Without one there is nothing to press, so no button is drawn. */
+  readonly onRetry?: (() => void) | undefined
   readonly testID?: string
 }
 
@@ -48,15 +49,17 @@ export const LoadError = ({ onRetry, testID }: LoadErrorProps): React.JSX.Elemen
   return (
     <View style={styles.box} accessibilityRole="alert" testID={testID ?? 'load-error'}>
       <Text style={styles.text}>{t('load.failed')}</Text>
-      <Pressable
-        style={styles.button}
-        onPress={onRetry}
-        accessibilityRole="button"
-        accessibilityLabel={t('load.retry')}
-        testID={`${testID ?? 'load-error'}-retry`}
-      >
-        <Text style={styles.buttonText}>{t('load.retry')}</Text>
-      </Pressable>
+      {onRetry !== undefined && (
+        <Pressable
+          style={styles.button}
+          onPress={onRetry}
+          accessibilityRole="button"
+          accessibilityLabel={t('load.retry')}
+          testID={`${testID ?? 'load-error'}-retry`}
+        >
+          <Text style={styles.buttonText}>{t('load.retry')}</Text>
+        </Pressable>
+      )}
     </View>
   )
 }

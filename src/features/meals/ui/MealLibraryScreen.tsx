@@ -249,7 +249,7 @@ export const MealLibraryScreen = ({
         ListHeaderComponent={
           <>
             {loadState === 'loading' && <Loading />}
-            {loadState === 'failed' && <LoadError onRetry={onRetry ?? (() => undefined)} />}
+            {loadState === 'failed' && <LoadError onRetry={onRetry} />}
           </>
         }
         ListEmptyComponent={

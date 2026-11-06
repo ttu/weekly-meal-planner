@@ -43,6 +43,12 @@ describe('ShoppingListScreen load states', () => {
     expect(view.getByTestId('loading')).toBeTruthy()
   })
 
+  it('draws no retry button when there is nothing to retry with', async () => {
+    const view = await renderWithProviders(screen({ loadState: 'failed' }))
+    expect(view.getByTestId('load-error')).toBeTruthy()
+    expect(view.queryByTestId('load-error-retry')).toBeNull()
+  })
+
   it('shows an error with a retry, not an empty list, when the first load failed', async () => {
     const onRetry = jest.fn()
     const view = await renderWithProviders(screen({ loadState: 'failed', onRetry }))

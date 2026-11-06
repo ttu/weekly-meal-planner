@@ -13,7 +13,12 @@ export { currentWeekStart, weekDates } from './domain/week'
 export { buildBoard, type BoardDay, type BoardSlot, type BuildBoardInput } from './domain/board'
 export { BoardScreen } from './ui/BoardScreen'
 export { useWeekBoard, type WeekBoard } from './ui/useWeekBoard'
-export { loadWeek, type WeekContents, type LoadWeekError } from './infrastructure/board-repository'
+export {
+  loadWeek,
+  loadWeekPlanId,
+  type WeekContents,
+  type LoadWeekError,
+} from './infrastructure/board-repository'
 export { BacklogShelf } from './ui/BacklogShelf'
 export { loadBacklog, type LoadBacklogError } from './infrastructure/backlog-repository'
 export { addToBacklog, type AddToBacklogError } from './application/add-to-backlog'

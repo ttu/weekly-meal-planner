@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isErr } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession } from '@/features/household'
-import { useSelectedWeek, useWeekBoard } from '@/features/planning'
+import { loadWeekPlanId, useSelectedWeek } from '@/features/planning'
 import type { IngredientId } from '@/shared/types/ids'
 import { loadShoppingData } from '../infrastructure/shopping-repository'
 import { deriveShoppingList } from '../domain/derive'
@@ -41,10 +41,22 @@ export type ShoppingListView = {
 
 export const useShoppingList = (clock: Clock = systemClock): ShoppingListView => {
   const { client, household } = useSession()
-  const week = useWeekBoard(clock)
-  const { weekPlanId } = week
   const queryClient = useQueryClient()
   const { weekStart } = useSelectedWeek(clock)
+
+  // Its own read, not the board's: a failing board-detail query must not stop
+  // the list. Under the ['week', …] prefix so whatever invalidates the week
+  // (a new Week Plan, realtime) refreshes this too.
+  const plan = useQuery({
+    queryKey: ['week', household?.id, weekStart, 'plan-id'],
+    enabled: household !== undefined,
+    queryFn: async () => {
+      const result = await loadWeekPlanId(client, weekStart)
+      if (isErr(result)) throw new Error(`Could not find the Week Plan: ${result.error}`)
+      return { id: result.value }
+    },
+  })
+  const weekPlanId = plan.data?.id
   const queryKey = ['shopping', household?.id, weekStart]
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -162,12 +174,12 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
 
   return {
     list: data ?? EMPTY,
-    isLoading: week.isLoading || isLoading,
-    isError: week.isError || isError,
+    isLoading: plan.isLoading || household === undefined || isLoading,
+    isError: plan.isError || isError,
     // With no Week Plan there is nothing to fetch and the list is really empty.
-    hasData: data !== undefined || (week.hasData && weekPlanId === undefined),
+    hasData: data !== undefined || (plan.data !== undefined && weekPlanId === undefined),
     refetch: () => {
-      week.refetch()
+      void plan.refetch()
       void refetch()
     },
     toggle: (id, checked) => {

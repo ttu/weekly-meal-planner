@@ -46,6 +46,20 @@ describe('useShoppingList', () => {
     expect(view.result.current.list.buy).toEqual([])
   })
 
+  // The board also reads Members; a failure there must not take the list down.
+  it('still loads the list when the board detail queries fail', async () => {
+    const view = await setup({
+      ...planned,
+      household_member: failure,
+      leftover: failure,
+      shopping_extra: extra('Coffee'),
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.extras).toHaveLength(1)
+    })
+    expect(view.result.current.isError).toBe(false)
+  })
+
   it('reports a failed Week Plan load as an error, not an empty list', async () => {
     const view = await setup({ week_plan: failure })
     await waitFor(() => {
