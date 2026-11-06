@@ -19,6 +19,11 @@ const designTokenRules = [
     message: 'Raw fontSize. Use a tokens.type.* size (src/shared/theme/tokens.ts).',
   },
   {
+    selector:
+      'Property[key.name=/^(backgroundColor|color|borderColor|tintColor)$/][value.type="Literal"][value.value!="transparent"]',
+    message: 'Raw colour. Use a tokens.color.* value (src/shared/theme/tokens.ts).',
+  },
+  {
     selector: 'JSXAttribute[name.name="style"] > JSXExpressionContainer > ObjectExpression',
     message: 'Inline style. Put it in a themed() StyleSheet and reference it by name.',
   },

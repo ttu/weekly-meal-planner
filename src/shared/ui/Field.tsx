@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { StyleSheet, Text, TextInput, type TextInputProps } from 'react-native'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
@@ -18,6 +18,8 @@ import { useFormStyles } from '@/shared/theme/form-styles'
 type Props = TextInputProps & {
   readonly hasError?: boolean | undefined
   readonly errorMessage?: string | undefined
+  /** Typed here: react-native's own types omit it, react-native-web honours it. */
+  readonly 'aria-describedby'?: string | undefined
 }
 
 const sheets = themed((tokens) =>
@@ -48,6 +50,7 @@ export const Field = ({
   const formStyles = useFormStyles()
   const [focused, setFocused] = useState(false)
 
+  const messageId = useId()
   const showMessage = hasError && errorMessage !== undefined
 
   return (
@@ -55,6 +58,14 @@ export const Field = ({
       <TextInput
         {...props}
         aria-invalid={hasError || undefined}
+        // Web links the message by id; native has no such link, so the message
+        // is read as the hint. An existing description is kept on web.
+        aria-describedby={
+          showMessage
+            ? [props['aria-describedby'], messageId].filter(Boolean).join(' ')
+            : props['aria-describedby']
+        }
+        accessibilityHint={showMessage ? errorMessage : props.accessibilityHint}
         style={[
           formStyles.field,
           styles.field,
@@ -74,7 +85,7 @@ export const Field = ({
         }}
       />
       {showMessage && (
-        <Text style={styles.message} accessibilityRole="alert">
+        <Text nativeID={messageId} style={styles.message} accessibilityRole="alert">
           {errorMessage}
         </Text>
       )}
