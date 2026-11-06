@@ -5,6 +5,30 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import sonarjs from 'eslint-plugin-sonarjs'
 import tseslint from 'typescript-eslint'
 
+const unsafeCast = [
+  {
+    selector: 'TSAsExpression[typeAnnotation.typeName.name!="const"]',
+    message: 'Unsafe cast. Construct branded values through a parser at the edge.',
+  },
+]
+
+/** Rule 3 (docs/07-design-system.md): theme tokens only, no inline styles. */
+const designTokenRules = [
+  {
+    selector: 'Property[key.name="fontSize"][value.type="Literal"]',
+    message: 'Raw fontSize. Use a tokens.type.* size (src/shared/theme/tokens.ts).',
+  },
+  {
+    selector:
+      'Property[key.name=/^(backgroundColor|color|borderColor|tintColor)$/][value.type="Literal"][value.value!="transparent"]',
+    message: 'Raw colour. Use a tokens.color.* value (src/shared/theme/tokens.ts).',
+  },
+  {
+    selector: 'JSXAttribute[name.name="style"] > JSXExpressionContainer > ObjectExpression',
+    message: 'Inline style. Put it in a themed() StyleSheet and reference it by name.',
+  },
+]
+
 export default defineConfig([
   {
     // Build output, assets and CommonJS tool configs are not application code.
@@ -123,14 +147,13 @@ export default defineConfig([
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
       'no-console': 'error',
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'TSAsExpression[typeAnnotation.typeName.name!="const"]',
-          message: 'Unsafe cast. Construct branded values through a parser at the edge.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...unsafeCast, ...designTokenRules],
     },
+  },
+  {
+    // The tokens are where the literal sizes are defined.
+    files: ['src/shared/theme/tokens.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...unsafeCast] },
   },
   {
     // Fixtures, tests and stories build branded values directly; that is their job.

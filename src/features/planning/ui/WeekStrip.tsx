@@ -29,7 +29,7 @@ const sheets = themed((tokens) =>
     dayToday: { backgroundColor: tokens.color.affirm },
     weekday: {
       fontFamily: tokens.type.labelSmall.fontFamily,
-      fontSize: 11,
+      fontSize: tokens.type.labelSmall.fontSize,
       fontWeight: '600',
       letterSpacing: 0.9,
       color: tokens.color.textSupport,
@@ -38,7 +38,7 @@ const sheets = themed((tokens) =>
     weekdayToday: { color: tokens.color.onActionMuted },
     date: {
       fontFamily: tokens.type.mealName.fontFamily,
-      fontSize: 17,
+      fontSize: tokens.type.mealName.fontSize,
       fontWeight: '600',
       color: tokens.color.textPrimary,
     },

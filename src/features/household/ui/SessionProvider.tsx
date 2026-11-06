@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, use, useMemo, type ReactNode } from 'react'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 import type { Household, Member } from '../domain/types'
 
@@ -38,7 +38,7 @@ export const SessionProvider = ({
 }
 
 export const useSession = (): SessionValue => {
-  const value = useContext(SessionContext)
+  const value = use(SessionContext)
   if (value === undefined) throw new Error('useSession used outside SessionProvider')
   return value
 }

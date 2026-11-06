@@ -52,7 +52,7 @@ const sheets = themed((tokens) =>
     headingPane: { color: tokens.color.textSupport },
     count: {
       fontFamily: tokens.type.label.fontFamily,
-      fontSize: 12,
+      fontSize: tokens.type.label.fontSize,
       fontWeight: '700',
       color: tokens.color.textPrimary,
       backgroundColor: tokens.color.backlog,
