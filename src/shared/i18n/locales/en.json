@@ -27,6 +27,7 @@
     "joinBody": "Give your name and the board password.",
     "join": "Join board",
     "joinRejected": "That link and password do not match a board.",
+    "joinAlreadyMember": "You are already on a board, and an account can be on only one.",
     "joinRateLimited": "Too many tries. Wait a few minutes.",
     "betaKey": "Beta key",
     "betaKeyHint": "Menami is in a closed beta. The key comes with your invitation.",

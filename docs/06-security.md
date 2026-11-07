@@ -77,7 +77,10 @@ Two functions are `SECURITY DEFINER`, and they are the only ones in the system:
   correctly hides the row they are trying to join. It returns `rejected` for a
   wrong token and a wrong password alike, so it cannot be used to discover which
   links are real, and it counts failures per token and refuses past ten in
-  fifteen minutes, because the password is the guessable half.
+  fifteen minutes, because the password is the guessable half. Once the password
+  is right it returns `already-member` to someone who is a Member of a
+  different Household: the app assumes one board per account and cannot yet
+  leave one. Joining the same board again stays a no-op.
 
 `join_board` returns a status rather than raising. Raising would abort the
 transaction and roll back the record of the failed attempt, leaving the rate

@@ -192,12 +192,17 @@ grant execute on function public.create_board(text, text, text, text, text, text
 -- 'rejected' is returned for a wrong token and a wrong password alike. Telling
 -- them apart would turn this into an oracle for valid tokens.
 --
+-- 'already-member' is returned, after the password has been checked, to someone
+-- who is a Member of a different Household: the app assumes one board per
+-- account and cannot yet leave one. Joining the same board again stays a no-op.
+-- The password comes first so this says nothing to someone who does not hold it.
+--
 -- 'invalid-beta-key' is checked before the token is looked at, so it says
 -- nothing about whether the link is real (12_beta_key.sql). Wrong keys are
 -- counted against the caller, not the link: the link is the one thing a
 -- guesser can change on every try, and it keeps its own attempts for the board
 -- password.
-create type join_board_status as enum ('joined', 'rejected', 'rate-limited', 'invalid-beta-key');
+create type join_board_status as enum ('joined', 'rejected', 'rate-limited', 'invalid-beta-key', 'already-member');
 
 create function public.join_board(
   p_share_token text,
@@ -274,6 +279,13 @@ begin
     insert into household_join_attempt (share_token, user_id) values (p_share_token, auth.uid());
     perform app.purge_stale_attempts_sometimes();
     return query select null::uuid, 'rejected'::join_board_status;
+    return;
+  end if;
+
+  if exists (select 1 from household_member
+             where user_id = auth.uid() and household_id <> target.id)
+  then
+    return query select null::uuid, 'already-member'::join_board_status;
     return;
   end if;
 

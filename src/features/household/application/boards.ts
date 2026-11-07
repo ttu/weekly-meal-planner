@@ -5,7 +5,8 @@ import type { Locale } from '@/shared/i18n'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
 export type CreateBoardError = 'short-password' | 'invalid-beta-key' | 'write-failed'
-export type JoinBoardError = 'rejected' | 'rate-limited' | 'invalid-beta-key' | 'write-failed'
+export type JoinBoardError =
+  'rejected' | 'rate-limited' | 'invalid-beta-key' | 'already-member' | 'write-failed'
 
 export type NewBoard = { readonly householdId: HouseholdId; readonly shareToken: string }
 
@@ -90,6 +91,7 @@ export const joinBoard = async (
 
   if (row.out_status === 'rate-limited') return err('rate-limited')
   if (row.out_status === 'invalid-beta-key') return err('invalid-beta-key')
+  if (row.out_status === 'already-member') return err('already-member')
   // 'joined' is the only status that carries a Household id; every other one
   // returns null beside it.
   if (row.out_status !== 'joined') return err('rejected')
