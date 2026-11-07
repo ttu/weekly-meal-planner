@@ -247,8 +247,18 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     # are refused.
     flag_ok='^(-u|--set-upstream|-v|--verbose|--no-verify|--force-with-lease(=[A-Za-z0-9._/:-]+)?)$'
     word_ok='^[A-Za-z0-9._/:-]+$'
+    # Quotes and backslashes can split a word (`pu''sh`) so the text read here
+    # differs from what the shell runs. No plain force push needs them.
+    case "$COMMAND" in
+      *\"* | *\'* | *\\*)
+        echo "BLOCKED: '$COMMAND' is a force push with quotes or backslashes the guardrail cannot read." >&2
+        exit 2
+        ;;
+    esac
+    checked=0
     while IFS= read -r segment; do
       [[ "$segment" == *push* ]] || continue
+      checked=1
       read -ra words <<< "$segment"
       positional=()
       shape_ok=1
@@ -272,6 +282,12 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
         exit 2
       fi
     done < <(printf '%s\n' "$COMMAND" | tr ';&|' '\n\n\n')
+    # The pattern above matched, so a push was there to judge. If no segment
+    # was, something hid it: refuse.
+    if (( checked == 0 )); then
+      echo "BLOCKED: '$COMMAND' looks like a force push the guardrail could not locate." >&2
+      exit 2
+    fi
   fi
 
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make

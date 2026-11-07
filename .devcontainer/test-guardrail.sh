@@ -160,6 +160,10 @@ expect 2 'git push --force-with-lease origin ~'
 expect 2 'git push --force-with-lease origin "main"'
 expect 2 'git -C /tmp push --force-with-lease origin feat/pinned'
 expect 2 'echo push; git push --force-with-lease origin feat/pinned'
+expect 2 "git pu''sh --force-with-lease origin feat/pinned"
+expect 2 'git pu""sh --force-with-lease origin HEAD'
+expect 2 'git pu\sh --force-with-lease'
+expect 2 "gi''t push --force-with-lease"
 expect 0 'git push --force-with-lease origin HEAD:feat/pinned'
 expect 0 'git add . && git push --force-with-lease origin feat/pinned'
 expect 0 'git push --force-with-lease -u origin feat/pinned'
