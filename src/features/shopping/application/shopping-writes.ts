@@ -35,7 +35,7 @@ export const markRunningLow = async (
 ): Promise<Result<void, ShoppingWriteError>> => {
   const { error } = await client
     .from('household_staple')
-    .update({ running_low: true, marked_low_at: new Date().toISOString() })
+    .update({ running_low: true })
     .eq('household_id', householdId)
     .eq('ingredient_id', ingredientId)
 
@@ -99,7 +99,10 @@ export const setExtraChecked = async (
 ): Promise<Result<void, ShoppingWriteError>> => {
   const { error } = await client
     .from('shopping_extra')
-    .update({ checked_at: checked ? new Date().toISOString() : null })
+    // 'now' works because Postgres accepts it as a timestamptz literal, so the
+    // payload casts before the trigger runs. The trigger is what enforces
+    // server-side stamping against hostile clients; this value is only a marker.
+    .update({ checked_at: checked ? 'now' : null })
     .eq('id', id)
 
   return done(error)

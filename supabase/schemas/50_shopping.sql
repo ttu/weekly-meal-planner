@@ -36,3 +36,48 @@ create table shopping_extra (
   checked_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+-- The database stamps these, never the phone: a phone with a wrong clock would
+-- otherwise decide when a Staple ran low or an Extra was ticked. A client says
+-- "low" or "checked" with any non-null value; the time it sends is discarded.
+create or replace function app.stamp_marked_low_at()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $fn$
+begin
+  if new.running_low then
+    new.marked_low_at := case
+      when tg_op = 'UPDATE' and old.running_low then old.marked_low_at
+      else now()
+    end;
+  elsif tg_op = 'UPDATE' then
+    new.marked_low_at := old.marked_low_at;
+  else
+    new.marked_low_at := null;
+  end if;
+  return new;
+end;
+$fn$;
+
+create trigger household_staple_stamp before insert or update on household_staple
+  for each row execute function app.stamp_marked_low_at();
+
+create or replace function app.stamp_checked_at()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $fn$
+begin
+  if new.checked_at is not null then
+    new.checked_at := case
+      when tg_op = 'UPDATE' and old.checked_at is not null then old.checked_at
+      else now()
+    end;
+  end if;
+  return new;
+end;
+$fn$;
+
+create trigger shopping_extra_stamp before insert or update of checked_at on shopping_extra
+  for each row execute function app.stamp_checked_at();
