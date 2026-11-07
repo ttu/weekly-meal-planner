@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RadioGroup } from '@/shared/ui/RadioGroup'
+import { rovingTabIndex } from '@/shared/ui/radioKeys'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
 import { tokens } from '@/shared/theme/tokens'
@@ -184,8 +186,8 @@ const DayChips = ({
   const { t } = useTranslation()
 
   return (
-    <View style={styles.dayRow}>
-      {board.map((day) => (
+    <RadioGroup label={t('plan.day')} style={styles.dayRow}>
+      {board.map((day, index) => (
         <Pressable
           key={day.date}
           style={[
@@ -198,6 +200,10 @@ const DayChips = ({
           }}
           accessibilityRole="radio"
           aria-checked={day.date === date}
+          tabIndex={rovingTabIndex(
+            index,
+            board.findIndex((d) => d.date === date),
+          )}
           accessibilityLabel={day.date}
           testID={`plan-day-${day.date}`}
         >
@@ -206,7 +212,7 @@ const DayChips = ({
           </Text>
         </Pressable>
       ))}
-    </View>
+    </RadioGroup>
   )
 }
 
@@ -224,8 +230,8 @@ const SlotChips = ({
   const { t } = useTranslation()
 
   return (
-    <View style={styles.slotRow}>
-      {slots.map((slot) => (
+    <RadioGroup label={t('plan.slot')} style={styles.slotRow}>
+      {slots.map((slot, index) => (
         <Pressable
           key={slot.key}
           style={[styles.chip, styles.slotChip, slot.key === slotKey && styles.chipSelected]}
@@ -234,6 +240,10 @@ const SlotChips = ({
           }}
           accessibilityRole="radio"
           aria-checked={slot.key === slotKey}
+          tabIndex={rovingTabIndex(
+            index,
+            slots.findIndex((s) => s.key === slotKey),
+          )}
           accessibilityLabel={slotName(slot, t)}
           testID={`plan-slot-${slot.key}`}
         >
@@ -242,7 +252,7 @@ const SlotChips = ({
           </Text>
         </Pressable>
       ))}
-    </View>
+    </RadioGroup>
   )
 }
 

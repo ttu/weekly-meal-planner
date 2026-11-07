@@ -47,6 +47,27 @@ test.describe('a screen reader hears the state of a control', () => {
     await expect(page.getByTestId('plan-slot-dinner')).toHaveAttribute('aria-checked', 'true')
     await expect(page.getByTestId('plan-slot-lunch')).toHaveAttribute('aria-checked', 'false')
 
+    // Each choice is a labelled radiogroup with one Tab stop: the chosen day.
+    await expect(page.getByRole('radiogroup', { name: 'Day' })).toBeVisible()
+    await expect(page.getByRole('radiogroup', { name: 'Slot' })).toBeVisible()
+    const dayGroup = page.getByRole('radiogroup', { name: 'Day' })
+    await expect(dayGroup.locator('[role="radio"][tabindex="0"]')).toHaveCount(1)
+
+    // Arrow keys move the choice, Space picks the focused option.
+    const tuesday = page.locator('[data-testid^="plan-day-"]').nth(1)
+    await page.getByTestId(`plan-day-${monday}`).focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(tuesday).toHaveAttribute('aria-checked', 'true')
+    await expect(tuesday).toBeFocused()
+    await page.keyboard.press('ArrowLeft')
+    await expect(page.getByTestId(`plan-day-${monday}`)).toHaveAttribute('aria-checked', 'true')
+
+    await page.getByTestId('plan-slot-lunch').focus()
+    await page.keyboard.press('Space')
+    await expect(page.getByTestId('plan-slot-lunch')).toHaveAttribute('aria-checked', 'true')
+    await page.keyboard.press('ArrowRight')
+    await expect(page.getByTestId('plan-slot-dinner')).toHaveAttribute('aria-checked', 'true')
+
     await page.getByTestId('plan-submit').click()
     await expect(page.getByTestId('plan-sheet')).toBeHidden()
   })

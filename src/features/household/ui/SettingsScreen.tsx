@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RadioGroup } from '@/shared/ui/RadioGroup'
+import { rovingTabIndex } from '@/shared/ui/radioKeys'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -244,8 +246,8 @@ export const SettingsScreen = ({
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.language')}
         </Text>
-        <View style={styles.presets}>
-          {LOCALES.map((option) => (
+        <RadioGroup label={t('settings.language')} style={styles.presets}>
+          {LOCALES.map((option, index) => (
             <Pressable
               key={option}
               style={[formStyles.chip, styles.preset, locale === option && formStyles.chipSelected]}
@@ -255,13 +257,14 @@ export const SettingsScreen = ({
               }}
               accessibilityRole="radio"
               aria-checked={locale === option}
+              tabIndex={rovingTabIndex(index, LOCALES.indexOf(locale))}
               accessibilityLabel={t(`settings.language_${option}`)}
               testID={`settings-language-${option}`}
             >
               <Text style={formStyles.chipText}>{t(`settings.language_${option}`)}</Text>
             </Pressable>
           ))}
-        </View>
+        </RadioGroup>
         <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>
           {t('settings.languageHint')}
         </Text>
@@ -269,8 +272,8 @@ export const SettingsScreen = ({
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
           {t('settings.appearance')}
         </Text>
-        <View style={styles.presets}>
-          {APPEARANCES.map((option) => (
+        <RadioGroup label={t('settings.appearance')} style={styles.presets}>
+          {APPEARANCES.map((option, index) => (
             <Pressable
               key={option}
               style={[formStyles.chip, styles.preset, choice === option && formStyles.chipSelected]}
@@ -279,13 +282,14 @@ export const SettingsScreen = ({
               }}
               accessibilityRole="radio"
               aria-checked={choice === option}
+              tabIndex={rovingTabIndex(index, APPEARANCES.indexOf(choice))}
               accessibilityLabel={t(`settings.appearance_${option}`)}
               testID={`settings-appearance-${option}`}
             >
               <Text style={formStyles.chipText}>{t(`settings.appearance_${option}`)}</Text>
             </Pressable>
           ))}
-        </View>
+        </RadioGroup>
         <Text style={[styles.hint, { marginTop: tokens.space.sm }]}>
           {t('settings.appearanceHint')}
         </Text>
