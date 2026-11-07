@@ -126,6 +126,55 @@ MODE=host
 unset MENAMI_DEVCONTAINER
 rm -f "$PIN"
 expect 2 'git push --force'
+expect 2 'git push --force origin feat/pinned'
+expect 2 'git push --force-with-lease --force origin feat/pinned'
+expect 2 'git push -f origin feat/pinned'
+expect 0 'git push --force-with-lease origin feat/pinned'
+expect 0 'git push --force-with-lease=feat/pinned origin feat/pinned'
+expect 2 'git push --force-with-lease origin main'
+expect 2 'git push --force-with-lease origin +feat/pinned'
+# A lease push has to name its branch: with none, git pushes whatever is
+# checked out when it runs, which the hook cannot know.
+expect 2 'git push --force-with-lease'
+expect 2 'git push --force-with-lease origin'
+expect 2 'git push --force-with-lease origin HEAD'
+expect 2 'git push --force-with-lease origin @'
+# Git accepts an abbreviated option, so those count too.
+expect 2 'git push --force-w'
+expect 2 'git push --force-w origin HEAD'
+# Every chained push is judged, and what cannot be parsed is refused.
+expect 2 'git push origin feat/pinned; git push --force-with-lease'
+expect 2 'git push origin feat/pinned && git push --force-with-lease origin HEAD'
+expect 2 'git push --force-with-lease origin feat/pinned && git push --force-with-lease'
+expect 2 'git push -o x --force-with-lease origin'
+expect 2 'git push --push-option=x --force-with-lease origin feat/pinned'
+expect 2 'git push --force-with-lease origin feat/pinned $(echo)'
+expect 2 'eval git push --force-with-lease'
+# The shape is an allowlist: quotes, variables, globs, value options, bundled
+# flags, a global -C and a stray `push` word all fall outside it.
+expect 2 'git push -qo x --force-with-lease origin feat/pinned'
+expect 2 'git push --pu=x --force-with-lease origin feat/pinned'
+expect 2 'git push --force-with-lease origin "$B"'
+expect 2 'git push --force-with-lease origin $B'
+expect 2 'git push --force-with-lease origin ~'
+expect 2 'git push --force-with-lease origin "main"'
+expect 2 'git -C /tmp push --force-with-lease origin feat/pinned'
+expect 2 'echo push; git push --force-with-lease origin feat/pinned'
+expect 2 "git pu''sh --force-with-lease origin feat/pinned"
+expect 2 'git pu""sh --force-with-lease origin HEAD'
+expect 2 'git pu\sh --force-with-lease'
+expect 2 "gi''t push --force-with-lease"
+# A word the shell rewrites hides `push` from the segment filter.
+expect 2 'git push origin feat/pinned; git pu${E}sh --force-with-lease'
+expect 2 'git push origin feat/pinned; git pu$Esh --force-with-lease origin feat/pinned'
+expect 2 'git push origin feat/pinned; git pu{,}sh --force-with-lease'
+expect 2 'git push origin feat/pinned; git p?sh --force-with-lease'
+expect 2 'git push origin feat/pinned; git [p]ush --force-with-lease'
+expect 2 'git push origin feat/pinned; git pu$(true)sh --force-with-lease'
+expect 0 'git push --force-with-lease origin HEAD:feat/pinned'
+expect 0 'git add . && git push --force-with-lease origin feat/pinned'
+expect 0 'git push --force-with-lease -u origin feat/pinned'
+expect 0 'git push origin feat/pinned --force-with-lease'
 expect 2 'git push origin +feat/pinned'
 expect 2 'git push origin main'
 expect 2 'git push origin HEAD:refs/heads/main'

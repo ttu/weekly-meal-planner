@@ -86,7 +86,9 @@ tool, active on the host as well. It covers what GitHub cannot see:
   merge them.
 - **On the host only, publishing that is hard to undo.** There `gh` and git
   use your own login, which reaches every repo you can, so the PAT's limits do
-  not apply: force-pushes, pushes to `main`, tag pushes (by flag, by name, or
+  not apply: force-pushes (`--force`, `-f`, a `+` refspec; `--force-with-lease <remote> <branch>`
+  is allowed so a rebased branch can be pushed, but only with the branch
+  named: `HEAD` or no branch pushes whatever is checked out), pushes to `main`, tag pushes (by flag, by name, or
   through `push.followTags` / `remote.*.push` config), branch-deleting pushes,
   `gh release`/`repo`/`secret`/`workflow` changes, and `gh api` writes are
   refused. Two `gh api` writes are allowed, and only in an exact shape:

@@ -194,10 +194,12 @@ done
 # apply. Not airtight — it matches text — but it stops the accidents.
 if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   HOST_PATTERNS=(
-    # Force-push in any spelling, including a `+` refspec.
-    'push[[:space:]].*--force'
+    # Force-push in any spelling, including a `+` refspec. `--force-with-lease`
+    # is allowed: it refuses to overwrite commits you have not seen, and it is
+    # how a rebased branch is pushed (the pre-push hook demands a rebase).
+    # Bare `--force` still matches, also when it is combined with a lease.
+    'push[[:space:]].*--force([[:space:]=]|$)'
     'push[[:space:]]+(.*[[:space:]]+)?-f([[:space:]]|$)'
-    '--force-with-lease'
     'git[[:space:]]+push[[:space:]].*[[:space:]:]\+[^[:space:]]'
     # Push to the default branch: `main`, `HEAD:main`, `refs/heads/main`.
     'git[[:space:]]+push[[:space:]].*[[:space:]:/+](main|master)([[:space:]]|$)'
@@ -226,6 +228,71 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
       exit 2
     fi
   done
+
+  # A lease push must name the branch it pushes. With none named
+  # (`--force-with-lease`, `... origin HEAD`) git pushes whatever is checked
+  # out when it runs, which this hook cannot know: a switch to main chained
+  # before the push changes it after the check. Bare `--force` was refused
+  # above, so any `--force*` left is a lease or an abbreviation of one (git
+  # accepts `--force-w`). The first non-option word is the remote, the second
+  # the refspec.
+  if printf '%s' "$COMMAND"    | grep -qEi -- 'push[[:space:]].*--force' ||
+     printf '%s' "$NORMALIZED" | grep -qEi -- 'push[[:space:]].*--force'; then
+    # An allowlist, not a hunt for bad spellings: every chained command that
+    # mentions `push` must be exactly
+    #   git push [-u | -v | --no-verify | --force-with-lease[=ref]]... <remote> <branch>
+    # in plain characters, with the flags anywhere. A second push after a `;`
+    # cannot hide behind a harmless first one, and quotes, variables, globs,
+    # `-C`, value-taking options and abbreviated flags all fall outside it and
+    # are refused.
+    flag_ok='^(-u|--set-upstream|-v|--verbose|--no-verify|--force-with-lease(=[A-Za-z0-9._/:-]+)?)$'
+    word_ok='^[A-Za-z0-9._/:-]+$'
+    # Only plain characters, apart from the separators between commands. Quotes,
+    # backslashes, `$`, backticks, braces, globs and `~` can all rewrite a word
+    # (`pu''sh`, `pu${E}sh`, `pu{,}sh`, `p?sh`) so that the text read here is
+    # not what the shell runs. No plain force push needs any of them.
+    plain=${COMMAND//[;&|]/ }
+    plain=${plain//$'\n'/ }
+    plain_ok='^[A-Za-z0-9 ._/:=@-]*$'
+    if ! [[ "$plain" =~ $plain_ok ]]; then
+      echo "BLOCKED: '$COMMAND' is a force push with characters the guardrail cannot read." >&2
+      echo "Use plain names only: git push --force-with-lease <remote> <branch>." >&2
+      exit 2
+    fi
+    checked=0
+    while IFS= read -r segment; do
+      [[ "$segment" == *push* ]] || continue
+      checked=1
+      read -ra words <<< "$segment"
+      positional=()
+      shape_ok=1
+      if [[ "${words[0]:-}" != "git" || "${words[1]:-}" != "push" ]]; then
+        shape_ok=0
+      else
+        for word in "${words[@]:2}"; do
+          if [[ "$word" == -* ]]; then
+            [[ "$word" =~ $flag_ok ]] || shape_ok=0
+          elif [[ "$word" =~ $word_ok ]]; then
+            positional+=("$word")
+          else
+            shape_ok=0
+          fi
+        done
+      fi
+      destination=${positional[1]:-}
+      if (( shape_ok == 0 || ${#positional[@]} != 2 )) || [[ "$destination" == "HEAD" || "$destination" == "@" ]]; then
+        echo "BLOCKED: '$COMMAND' is a force push the guardrail cannot vouch for." >&2
+        echo "Use exactly: git push --force-with-lease <remote> <branch> (plain names, no quotes or variables)." >&2
+        exit 2
+      fi
+    done < <(printf '%s\n' "$COMMAND" | tr ';&|' '\n\n\n')
+    # The pattern above matched, so a push was there to judge. If no segment
+    # was, something hid it: refuse.
+    if (( checked == 0 )); then
+      echo "BLOCKED: '$COMMAND' looks like a force push the guardrail could not locate." >&2
+      exit 2
+    fi
+  fi
 
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make
   # it POST, also with the value attached or among combined short flags:
