@@ -178,7 +178,8 @@ displayed, never enforced.
 - **`household_staple`** — household, ingredient, `running_low`,
   `marked_low_at`. Presence means "we normally have this": excluded from the buy
   list, surfaced in the check-stock section instead. `running_low = true` pushes
-  it back onto the buy list.
+  it back onto the buy list. `marked_low_at` is stamped by the database, not the
+  phone, as is an Extra's `checked_at`.
 
 ## The board
 
