@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { isErr } from '@/shared/types/result'
+import { isErr, type Result } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useSession, type SlotKey } from '@/features/household'
 import { addLeftover } from '../application/add-leftover'
@@ -58,72 +58,34 @@ export const usePlanningActions = (clock: Clock = systemClock): PlanningActions 
     void queryClient.invalidateQueries({ queryKey: ['week', household?.id, weekStart] })
   }
 
-  const leftoverMutation = useMutation({
-    mutationFn: async (request: LeftoverRequest) => {
-      const result = await addLeftover(client, request)
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: invalidate,
-  })
+  /**
+   * One write: run the use case, throw its error so Query counts the failure,
+   * refresh the week either way. `idempotent` opts into retries: only for
+   * writes where repeating leaves the same state (see IDEMPOTENT_WRITE_RETRY).
+   */
+  const useWrite = <V>(
+    run: (variables: V) => Promise<Result<unknown, string>>,
+    idempotent = true,
+  ) =>
+    useMutation({
+      retry: idempotent ? IDEMPOTENT_WRITE_RETRY : false,
+      mutationFn: async (variables: V) => {
+        const result = await run(variables)
+        if (isErr(result)) throw new Error(result.error)
+      },
+      onSettled: invalidate,
+    })
 
-  const moveMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (request: MoveRequest) => {
-      const result = await moveCookEvent(client, request)
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: invalidate,
-  })
-
-  const moveLeftoverMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (request: MoveLeftoverRequest) => {
-      const result = await moveLeftover(client, request)
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: invalidate,
-  })
-
-  const removeLeftoverMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (id: LeftoverId) => {
-      const result = await removeLeftover(client, id)
-      if (isErr(result)) throw new Error(result.error)
-    },
-    onSettled: invalidate,
-  })
-
-  const unplanMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (cookEventId: CookEventId) => {
-      const result = await unplanMeal(client, cookEventId)
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: invalidate,
-  })
-
-  const servingsMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async ({ id, servings }: { id: CookEventId; servings: Servings }) => {
-      const result = await setServingsCooked(client, id, servings)
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: invalidate,
-  })
-
-  const removeMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (id: BacklogItemId) => {
-      const result = await removeBacklogItem(client, id)
-      if (isErr(result)) throw new Error(result.error)
-    },
-    onSettled: invalidate,
-  })
+  // An insert is not idempotent: a retry after a lost response would add a second Leftover.
+  const leftoverMutation = useWrite((r: LeftoverRequest) => addLeftover(client, r), false)
+  const moveMutation = useWrite((r: MoveRequest) => moveCookEvent(client, r))
+  const moveLeftoverMutation = useWrite((r: MoveLeftoverRequest) => moveLeftover(client, r))
+  const removeLeftoverMutation = useWrite((id: LeftoverId) => removeLeftover(client, id))
+  const unplanMutation = useWrite((id: CookEventId) => unplanMeal(client, id))
+  const servingsMutation = useWrite(({ id, servings }: { id: CookEventId; servings: Servings }) =>
+    setServingsCooked(client, id, servings),
+  )
+  const removeMutation = useWrite((id: BacklogItemId) => removeBacklogItem(client, id))
 
   return {
     addLeftoverFor: (request) => {
