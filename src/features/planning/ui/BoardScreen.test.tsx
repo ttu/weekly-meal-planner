@@ -59,6 +59,16 @@ describe('BoardScreen load states', () => {
     })
   })
 
+  it('does not draw a week of empty Slots before the week has arrived', async () => {
+    const view = await renderBoard({ week_plan: rows(null) })
+    expect(view.getByTestId('board-loading')).toBeTruthy()
+    expect(view.queryByTestId('board')).toBeNull()
+    await waitFor(() => {
+      expect(view.getByTestId('board')).toBeTruthy()
+    })
+    expect(view.queryByTestId('board-loading')).toBeNull()
+  })
+
   it('offers Day One once the week has loaded and is really empty', async () => {
     const view = await renderBoard({ week_plan: rows(null) })
     await waitFor(() => {

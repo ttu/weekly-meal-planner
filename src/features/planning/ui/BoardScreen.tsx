@@ -367,11 +367,14 @@ const Board = ({
   }
   const shelfEmpty = shelfEmptyFor()
 
-  /** The board itself, or why there isn't one. A failed first load must not be
-   *  drawn as a week with nothing planned. */
-  const boardFailure = boardState === 'failed' && (
-    <LoadError onRetry={weekBoard.refetch} testID="board-load-error" />
-  )
+  /** Why there is no board yet. Neither a failed nor an unfinished first load
+   *  may be drawn as a week of empty Slots: it invites planning into a week
+   *  that is not there. */
+  const boardPlaceholder =
+    (boardState === 'failed' && (
+      <LoadError onRetry={weekBoard.refetch} testID="board-load-error" />
+    )) ||
+    (boardState === 'loading' && <Loading testID="board-loading" />)
 
   const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => {
     return (
@@ -433,7 +436,7 @@ const Board = ({
         }
         backlog={shelf('pane')}
         board={
-          boardFailure || (
+          boardPlaceholder || (
             <View style={styles.wideBoard} testID="board">
               {board.map((day, index) => (
                 <WideDayColumn
@@ -512,7 +515,7 @@ const Board = ({
             </Text>
           )}
 
-          {boardFailure || (
+          {boardPlaceholder || (
             <View style={styles.days} testID="board">
               {board.map((day) => (
                 <View
