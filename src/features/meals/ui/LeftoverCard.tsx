@@ -41,7 +41,14 @@ const sheets = themed((tokens) =>
       paddingVertical: 9,
       paddingHorizontal: 14,
     },
-    cardCompact: { marginLeft: 0, paddingVertical: tokens.space.sm, paddingHorizontal: 10 },
+    /** The wide column lays its × over the top-right corner; the right
+     *  padding keeps the Meal's name out from under it. */
+    cardCompact: {
+      marginLeft: 0,
+      paddingVertical: tokens.space.sm,
+      paddingLeft: 10,
+      paddingRight: 22,
+    },
     text: { ...tokens.type.body, color: tokens.color.textMuted },
     /** Clipped rather than wrapped: the italic word below it is what says
      *  this is a Leftover, and it must not be pushed out of the card. */

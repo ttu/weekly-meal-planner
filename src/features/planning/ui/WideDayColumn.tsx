@@ -40,6 +40,7 @@ const sheets = themed((tokens) =>
     },
     headingToday: { color: tokens.color.affirm },
     today: { ...tokens.type.labelSmall, fontWeight: '400', color: tokens.color.affirm },
+    todayHidden: { opacity: 0 },
     body: { flex: 1 },
     slot: { flex: 1, paddingVertical: 9, paddingHorizontal: 5, gap: 6 },
     slotDivided: {
@@ -352,11 +353,15 @@ export const WideDayColumn = ({
         <Text style={[styles.heading, isToday && styles.headingToday]}>
           {formatColumnHeading(day.date, locale)}
         </Text>
-        {isToday && (
-          <Text style={styles.today} testID="day-today-marker">
-            {t('board.today')}
-          </Text>
-        )}
+        {/* Every column keeps the line, so today's Slots share the band the
+            other six sit in; only today's is visible. */}
+        <Text
+          style={[styles.today, !isToday && styles.todayHidden]}
+          aria-hidden={!isToday}
+          testID={isToday ? 'day-today-marker' : undefined}
+        >
+          {t('board.today')}
+        </Text>
       </View>
 
       <View style={styles.body}>
