@@ -27,6 +27,12 @@ const designTokenRules = [
     selector: 'JSXAttribute[name.name="style"] > JSXExpressionContainer > ObjectExpression',
     message: 'Inline style. Put it in a themed() StyleSheet and reference it by name.',
   },
+  {
+    // react-native-web drops it silently: no aria-checked/selected reaches the DOM.
+    selector: 'JSXAttribute[name.name="accessibilityState"]',
+    message:
+      'accessibilityState is ignored on web. Use aria-checked, aria-selected, aria-expanded.',
+  },
 ]
 
 export default defineConfig([

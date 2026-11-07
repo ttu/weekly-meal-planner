@@ -83,8 +83,8 @@ export const IngredientRow = ({
             onPress={() => {
               onUnitChange(option)
             }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: option === unit }}
+            accessibilityRole="radio"
+            aria-checked={option === unit}
             accessibilityLabel={`${t('ingredient.unit')} ${unitName(option)}`}
             testID={`ingredient-unit-${ingredient.slug}-${option}`}
           >

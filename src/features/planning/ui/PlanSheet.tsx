@@ -196,8 +196,8 @@ const DayChips = ({
           onPress={() => {
             onPick(day.date)
           }}
-          accessibilityRole="button"
-          accessibilityState={{ selected: day.date === date }}
+          accessibilityRole="radio"
+          aria-checked={day.date === date}
           accessibilityLabel={day.date}
           testID={`plan-day-${day.date}`}
         >
@@ -232,8 +232,8 @@ const SlotChips = ({
           onPress={() => {
             onPick(slot.key)
           }}
-          accessibilityRole="button"
-          accessibilityState={{ selected: slot.key === slotKey }}
+          accessibilityRole="radio"
+          aria-checked={slot.key === slotKey}
           accessibilityLabel={slotName(slot, t)}
           testID={`plan-slot-${slot.key}`}
         >

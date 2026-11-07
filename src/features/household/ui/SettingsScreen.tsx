@@ -254,7 +254,7 @@ export const SettingsScreen = ({
                 onChangeLocale(option)
               }}
               accessibilityRole="radio"
-              accessibilityState={{ selected: locale === option }}
+              aria-checked={locale === option}
               accessibilityLabel={t(`settings.language_${option}`)}
               testID={`settings-language-${option}`}
             >
@@ -278,7 +278,7 @@ export const SettingsScreen = ({
                 setChoice(option)
               }}
               accessibilityRole="radio"
-              accessibilityState={{ selected: choice === option }}
+              aria-checked={choice === option}
               accessibilityLabel={t(`settings.appearance_${option}`)}
               testID={`settings-appearance-${option}`}
             >

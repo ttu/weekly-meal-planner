@@ -166,6 +166,12 @@ WCAG 2.1 AA contrast (4.5:1 body, 3:1 large text and UI components). The
 terracotta accent and the amber backlog edge both need checking against the
 paper ground before they ship — amber on light is the likely failure.
 
+A control's state is written as `aria-checked`, `aria-selected` or
+`aria-expanded`, never `accessibilityState`: react-native-web drops the latter
+without a warning, so a ticked Buy Line read as unticked. Lint refuses it. A
+pick-one row of chips (a day, a Slot, a unit) is `radio` + `aria-checked`;
+`tab` takes `aria-selected`.
+
 Automated floor: `eslint-plugin-jsx-a11y` and axe. Above the floor, manual
 keyboard testing of the board and the plan sheet.
 
