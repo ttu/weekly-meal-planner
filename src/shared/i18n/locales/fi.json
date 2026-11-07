@@ -27,6 +27,7 @@
     "joinBody": "Anna nimesi ja taulun salasana.",
     "join": "Liity tauluun",
     "joinRejected": "Linkki ja salasana eivät vastaa mitään taulua.",
+    "joinAlreadyMember": "Olet jo mukana taulussa, ja tili voi kuulua vain yhteen.",
     "joinRateLimited": "Liian monta yritystä. Odota muutama minuutti.",
     "betaKey": "Beta-avain",
     "betaKeyHint": "Menami on suljetussa betassa. Avain tulee kutsun mukana.",

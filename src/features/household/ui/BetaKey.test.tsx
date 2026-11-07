@@ -90,3 +90,14 @@ describe('the beta key on the way in', () => {
     })
   })
 })
+
+describe('joining a second board', () => {
+  it('says the person is already on a board', async () => {
+    const view = await renderWithProviders(
+      <JoinBoardScreen isPending={false} error="already-member" onJoin={jest.fn()} />,
+    )
+    expect(view.getByTestId('join-error')).toHaveTextContent(
+      'You are already on a board, and an account can be on only one.',
+    )
+  })
+})

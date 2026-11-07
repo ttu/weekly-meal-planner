@@ -77,6 +77,7 @@ export const JoinBoardScreen = ({
   const errorText = (): string => {
     if (error === 'rate-limited') return t('board.joinRateLimited')
     if (error === 'invalid-beta-key') return t('board.invalidBetaKey')
+    if (error === 'already-member') return t('board.joinAlreadyMember')
     // A wrong link and a wrong password say the same thing, because the server
     // does not distinguish them either (ADR 0010). Naming the Members is only
     // possible when the link was real, and then it is the useful thing to say.
@@ -136,7 +137,9 @@ export const JoinBoardScreen = ({
         <PasswordField
           value={password}
           onChangeText={setPassword}
-          hasError={error !== undefined && error !== 'invalid-beta-key'}
+          hasError={
+            error !== undefined && error !== 'invalid-beta-key' && error !== 'already-member'
+          }
           testID="join-password"
         />
 

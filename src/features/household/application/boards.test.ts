@@ -1,4 +1,4 @@
-import { createBoard } from './boards'
+import { createBoard, joinBoard } from './boards'
 import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
 const input = {
@@ -34,5 +34,18 @@ describe('createBoard', () => {
       input,
     )
     expect(result).toEqual({ kind: 'err', error: 'invalid-beta-key' })
+  })
+})
+
+describe('joinBoard', () => {
+  // A status and not an error, like the beta key: see 42_sharing_rpc.sql.
+  it('maps a person already on another board to already-member', async () => {
+    const result = await joinBoard(
+      clientAnswering([{ out_household_id: null, out_status: 'already-member' }]),
+      'tok',
+      'kaalikaari',
+      'Aino',
+    )
+    expect(result).toEqual({ kind: 'err', error: 'already-member' })
   })
 })

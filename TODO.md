@@ -45,6 +45,9 @@ you want to overturn one, change the spec first.
 
 ## Household
 
+- One board per account is enforced only by `join_board` (`already-member`);
+  `create_board` still lets a Member start a second board, and
+  `household_member` has no unique `user_id`. Decide with `leave_board` below.
 - A Member cannot leave a board or change their own name or colour:
   `household_member` has no update or delete policy, and the only writers are
   `create_board` and `join_board`. Needs a decision on what leaving means for

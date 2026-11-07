@@ -4,6 +4,7 @@ const OWNER = '11111111-1111-1111-1111-111111111111'
 const JOINER = '22222222-2222-2222-2222-222222222222'
 const LOOPER = '44444444-4444-4444-4444-444444444444'
 const STRANGER = '33333333-3333-3333-3333-333333333333'
+const OTHER_OWNER = '55555555-5555-5555-5555-555555555555'
 
 /**
  * The link is a bearer credential and the password is the second factor
@@ -97,6 +98,24 @@ describe('board sharing', () => {
 
     expect(members.map((m) => m.display_name)).toEqual(['Aino', 'Mum'])
     expect(new Set(members.map((m) => m.colour)).size).toBe(2)
+  })
+
+  // The app assumes one board per account, and there is no way to leave.
+  it('refuses a second board to someone already on one, and adds no row', async () => {
+    const second = await createBoard(OTHER_OWNER, 'toinen-salasana')
+    await db.asMember(JOINER)
+    expect(await join(second.token, 'toinen-salasana')).toBe('already-member')
+    const rows = (await db.sql('select household_id from household_member where user_id = $1', [
+      JOINER,
+    ])) as { household_id: string }[]
+    expect(rows.map((r) => r.household_id)).toEqual([householdId])
+  })
+
+  it('treats joining the same board again as a no-op', async () => {
+    await db.asMember(JOINER)
+    expect(await join(token, 'kaalikaari')).toBe('joined')
+    const rows = await db.sql('select 1 from household_member where user_id = $1', [JOINER])
+    expect(rows).toHaveLength(1)
   })
 
   // The whole point of the password: a leaked link is not a leaked board.
