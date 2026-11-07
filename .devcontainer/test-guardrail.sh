@@ -126,6 +126,13 @@ MODE=host
 unset MENAMI_DEVCONTAINER
 rm -f "$PIN"
 expect 2 'git push --force'
+expect 2 'git push --force origin feat/pinned'
+expect 2 'git push --force-with-lease --force origin feat/pinned'
+expect 2 'git push -f origin feat/pinned'
+expect 0 'git push --force-with-lease origin feat/pinned'
+expect 0 'git push --force-with-lease=feat/pinned origin feat/pinned'
+expect 2 'git push --force-with-lease origin main'
+expect 2 'git push --force-with-lease origin +feat/pinned'
 expect 2 'git push origin +feat/pinned'
 expect 2 'git push origin main'
 expect 2 'git push origin HEAD:refs/heads/main'
