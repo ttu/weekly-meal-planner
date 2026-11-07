@@ -194,10 +194,12 @@ done
 # apply. Not airtight — it matches text — but it stops the accidents.
 if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   HOST_PATTERNS=(
-    # Force-push in any spelling, including a `+` refspec.
-    'push[[:space:]].*--force'
+    # Force-push in any spelling, including a `+` refspec. `--force-with-lease`
+    # is allowed: it refuses to overwrite commits you have not seen, and it is
+    # how a rebased branch is pushed (the pre-push hook demands a rebase).
+    # Bare `--force` still matches, also when it is combined with a lease.
+    'push[[:space:]].*--force([[:space:]=]|$)'
     'push[[:space:]]+(.*[[:space:]]+)?-f([[:space:]]|$)'
-    '--force-with-lease'
     'git[[:space:]]+push[[:space:]].*[[:space:]:]\+[^[:space:]]'
     # Push to the default branch: `main`, `HEAD:main`, `refs/heads/main`.
     'git[[:space:]]+push[[:space:]].*[[:space:]:/+](main|master)([[:space:]]|$)'
