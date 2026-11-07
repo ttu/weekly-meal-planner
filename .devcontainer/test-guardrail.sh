@@ -164,6 +164,13 @@ expect 2 "git pu''sh --force-with-lease origin feat/pinned"
 expect 2 'git pu""sh --force-with-lease origin HEAD'
 expect 2 'git pu\sh --force-with-lease'
 expect 2 "gi''t push --force-with-lease"
+# A word the shell rewrites hides `push` from the segment filter.
+expect 2 'git push origin feat/pinned; git pu${E}sh --force-with-lease'
+expect 2 'git push origin feat/pinned; git pu$Esh --force-with-lease origin feat/pinned'
+expect 2 'git push origin feat/pinned; git pu{,}sh --force-with-lease'
+expect 2 'git push origin feat/pinned; git p?sh --force-with-lease'
+expect 2 'git push origin feat/pinned; git [p]ush --force-with-lease'
+expect 2 'git push origin feat/pinned; git pu$(true)sh --force-with-lease'
 expect 0 'git push --force-with-lease origin HEAD:feat/pinned'
 expect 0 'git add . && git push --force-with-lease origin feat/pinned'
 expect 0 'git push --force-with-lease -u origin feat/pinned'

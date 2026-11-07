@@ -247,14 +247,18 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     # are refused.
     flag_ok='^(-u|--set-upstream|-v|--verbose|--no-verify|--force-with-lease(=[A-Za-z0-9._/:-]+)?)$'
     word_ok='^[A-Za-z0-9._/:-]+$'
-    # Quotes and backslashes can split a word (`pu''sh`) so the text read here
-    # differs from what the shell runs. No plain force push needs them.
-    case "$COMMAND" in
-      *\"* | *\'* | *\\*)
-        echo "BLOCKED: '$COMMAND' is a force push with quotes or backslashes the guardrail cannot read." >&2
-        exit 2
-        ;;
-    esac
+    # Only plain characters, apart from the separators between commands. Quotes,
+    # backslashes, `$`, backticks, braces, globs and `~` can all rewrite a word
+    # (`pu''sh`, `pu${E}sh`, `pu{,}sh`, `p?sh`) so that the text read here is
+    # not what the shell runs. No plain force push needs any of them.
+    plain=${COMMAND//[;&|]/ }
+    plain=${plain//$'\n'/ }
+    plain_ok='^[A-Za-z0-9 ._/:=@-]*$'
+    if ! [[ "$plain" =~ $plain_ok ]]; then
+      echo "BLOCKED: '$COMMAND' is a force push with characters the guardrail cannot read." >&2
+      echo "Use plain names only: git push --force-with-lease <remote> <branch>." >&2
+      exit 2
+    fi
     checked=0
     while IFS= read -r segment; do
       [[ "$segment" == *push* ]] || continue
