@@ -27,6 +27,11 @@ describe('planMeal', () => {
     expect(result).toEqual({ kind: 'ok', value: undefined })
   })
 
+  it('fails on an unexpected result type rather than hiding it as success', async () => {
+    const result = await planMeal(clientReturning({ data: 42, error: null }), input)
+    expect(result).toEqual({ kind: 'err', error: 'write-failed' })
+  })
+
   it('fails when the RPC errors', async () => {
     const result = await planMeal(
       clientReturning({ data: null, error: { message: 'boom' } }),

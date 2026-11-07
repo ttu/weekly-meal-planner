@@ -25,7 +25,7 @@ export const planMeal = async (
   client: AppSupabaseClient,
   input: Input,
 ): Promise<Result<CookEventId | undefined, PlanMealError>> => {
-  const { data, error } = await client.rpc('plan_meal', {
+  const { data: rpcData, error } = await client.rpc('plan_meal', {
     ...(input.backlogItemId === undefined ? {} : { p_backlog_item_id: input.backlogItemId }),
     p_week_plan_id: input.weekPlanId,
     p_meal_id: input.mealId,
@@ -37,7 +37,12 @@ export const planMeal = async (
 
   if (error !== null) return err('write-failed')
 
+  // The generated type says string; the function also returns null, so check at runtime.
+  const data: unknown = rpcData
+
   // null is deliberate: the Backlog Item is already gone (another Member planned
   // it, or this is a retry after success), so the Meal is planned. Not a failure.
-  return ok(typeof data === 'string' ? brand<string, 'CookEventId'>(data) : undefined)
+  if (data === null) return ok(undefined)
+  if (typeof data === 'string') return ok(brand<string, 'CookEventId'>(data))
+  return err('write-failed')
 }
