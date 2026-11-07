@@ -142,6 +142,24 @@ describe('useBoardDrop', () => {
       ],
     ]
 
+    it('keeps saying so for 4s after the latest refusal, not the first', async () => {
+      const v = await setup()
+      const payload: DragPayload = { kind: 'leftover', leftover }
+      await v.drop(payload, slot('2026-09-13', lunch))
+      await act(() => {
+        jest.advanceTimersByTime(3000)
+      })
+      await v.drop(payload, slot('2026-09-13', lunch))
+      await act(() => {
+        jest.advanceTimersByTime(3000)
+      })
+      expect(v.result.current.orderRefused).toBe(true)
+      await act(() => {
+        jest.advanceTimersByTime(1000)
+      })
+      expect(v.result.current.orderRefused).toBe(false)
+    })
+
     it.each(refusals)(
       'refuses %s, says so, then stops saying so',
       async (_name, payload, target) => {

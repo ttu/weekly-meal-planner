@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MealId } from '@/features/meals'
 import type { BoardDay } from '../domain/board'
 import { resolveDrop, type DropAction } from '../domain/drop'
@@ -49,6 +49,15 @@ export const useBoardDrop = ({
   readonly orderRefused: boolean
 } => {
   const [orderRefused, setOrderRefused] = useState(false)
+  const refusedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  // A refusal that outlives the screen must not set state on it.
+  useEffect(
+    () => () => {
+      clearTimeout(refusedTimer.current)
+    },
+    [],
+  )
 
   const onDropped = (payload: DragPayload, target: DropTarget): void => {
     const action = resolveDrop(payload, target)
@@ -64,7 +73,9 @@ export const useBoardDrop = ({
       const slotOrder = (board[0]?.slots ?? []).map((slot) => slot.slotKey)
       if (breaksLeftoverOrder(order, allCards, slotOrder)) {
         setOrderRefused(true)
-        setTimeout(() => {
+        // A second refusal restarts the clock rather than inheriting the first's.
+        clearTimeout(refusedTimer.current)
+        refusedTimer.current = setTimeout(() => {
           setOrderRefused(false)
         }, REFUSED_MS)
         return
