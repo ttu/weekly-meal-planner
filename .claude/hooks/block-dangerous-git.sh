@@ -279,8 +279,11 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
           fi
         done
       fi
+      # Compared in lower case and by suffix: on a case-insensitive filesystem
+      # `head` is `HEAD`, and FETCH_HEAD / ORIG_HEAD are not branches either.
       destination=${positional[1]:-}
-      if (( shape_ok == 0 || ${#positional[@]} != 2 )) || [[ "$destination" == "HEAD" || "$destination" == "@" ]]; then
+      destination_lc=$(printf '%s' "$destination" | tr '[:upper:]' '[:lower:]')
+      if (( shape_ok == 0 || ${#positional[@]} != 2 )) || [[ "$destination_lc" == "@" || "$destination_lc" == "head" || "$destination_lc" == *_head || "$destination_lc" == */head ]]; then
         echo "BLOCKED: '$COMMAND' is a force push the guardrail cannot vouch for." >&2
         echo "Use exactly: git push --force-with-lease <remote> <branch> (plain names, no quotes or variables)." >&2
         exit 2
