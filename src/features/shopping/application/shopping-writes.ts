@@ -99,7 +99,9 @@ export const setExtraChecked = async (
 ): Promise<Result<void, ShoppingWriteError>> => {
   const { error } = await client
     .from('shopping_extra')
-    // 'now' is only a marker: a trigger replaces it with the database's clock.
+    // 'now' works because Postgres accepts it as a timestamptz literal, so the
+    // payload casts before the trigger runs. The trigger is what enforces
+    // server-side stamping against hostile clients; this value is only a marker.
     .update({ checked_at: checked ? 'now' : null })
     .eq('id', id)
 
