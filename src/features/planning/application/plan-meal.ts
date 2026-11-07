@@ -37,7 +37,8 @@ export const planMeal = async (
 
   if (error !== null) return err('write-failed')
 
-  // The generated type says string; the function also returns null, so check at runtime.
+  // Generated types say `string` (Postgres types cannot express a nullable return), and
+  // lint rejects both `as string | null` and a narrower annotation, so check at runtime.
   const data: unknown = rpcData
 
   // null is deliberate: the Backlog Item is already gone (another Member planned
