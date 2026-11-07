@@ -25,6 +25,7 @@ import { DayColumn } from './DayColumn'
 import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
+import { localToday } from '../domain/week'
 import { resolveDrop } from '../domain/drop'
 import { breaksLeftoverOrder } from '../domain/leftover-order'
 import { useWeekBoard } from './useWeekBoard'
@@ -260,7 +261,7 @@ const Board = ({
       .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
       .find((cookEvent) => cookEvent.id === id)
 
-  const today = clock.now().toISOString().slice(0, 10)
+  const today = localToday(clock)
 
   /**
    * A second sitting lands on the same day and Slot as the Meal it came from,
