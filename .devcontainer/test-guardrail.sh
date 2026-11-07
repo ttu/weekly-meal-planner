@@ -133,6 +133,11 @@ expect 0 'git push --force-with-lease origin feat/pinned'
 expect 0 'git push --force-with-lease=feat/pinned origin feat/pinned'
 expect 2 'git push --force-with-lease origin main'
 expect 2 'git push --force-with-lease origin +feat/pinned'
+# With main checked out, a lease push that names no branch would push main.
+git -C "$REPO" switch -q -c main
+expect 2 'git push --force-with-lease'
+expect 2 'git push --force-with-lease origin HEAD'
+git -C "$REPO" switch -q feat/pinned
 expect 2 'git push origin +feat/pinned'
 expect 2 'git push origin main'
 expect 2 'git push origin HEAD:refs/heads/main'

@@ -229,6 +229,18 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     fi
   done
 
+  # A lease push with no branch named (`--force-with-lease`, `... origin HEAD`)
+  # pushes the checked-out branch, so the `main` patterns above never see it.
+  # Refuse it whenever main or master is what is checked out.
+  if printf '%s' "$COMMAND" | grep -qEi -- 'push[[:space:]].*--force-with-lease'; then
+    current=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)
+    if [[ "$current" == "main" || "$current" == "master" ]]; then
+      echo "BLOCKED: '$COMMAND' would force-push $current." >&2
+      echo "Ask the user to run this themselves." >&2
+      exit 2
+    fi
+  fi
+
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make
   # it POST, also with the value attached or among combined short flags:
   # `-ftitle=x`, `-iXDELETE`) are refused unless the whole call, on its own, is one of two
