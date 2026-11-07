@@ -238,19 +238,34 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   # the refspec.
   if printf '%s' "$COMMAND"    | grep -qEi -- 'push[[:space:]].*--force' ||
      printf '%s' "$NORMALIZED" | grep -qEi -- 'push[[:space:]].*--force'; then
-    rest=${COMMAND#*push}
-    rest=${rest%%[;&|]*}
-    read -ra words <<< "$rest"
-    positional=()
-    for word in "${words[@]}"; do
-      [[ "$word" == -* ]] || positional+=("$word")
-    done
-    destination=${positional[1]:-}
-    if [[ -z "$destination" || "$destination" == "HEAD" || "$destination" == "@" ]]; then
-      echo "BLOCKED: '$COMMAND' is a force push that does not name its branch." >&2
-      echo "Spell it out: --force-with-lease <remote> <branch>." >&2
+    # Every chained command is judged on its own: a second push after a `;`
+    # must not hide behind a harmless first one. What this cannot parse, it
+    # refuses.
+    if printf '%s' "$COMMAND" | grep -qE -- '\$\(|`|(^|[[:space:];&|])eval[[:space:]]'; then
+      echo "BLOCKED: '$COMMAND' is a force push inside a construct the guardrail cannot read." >&2
       exit 2
     fi
+    while IFS= read -r segment; do
+      [[ "$segment" =~ push[[:space:]](.*)$ ]] || continue
+      rest=${BASH_REMATCH[1]}
+      # Options that take a value as a separate word would shift the words
+      # below, so a force push using one is refused rather than guessed at.
+      if printf '%s' "$rest" | grep -qE -- '(^|[[:space:]])(-o|--push-option|--repo|--receive-pack|--exec)([[:space:]=]|$)'; then
+        echo "BLOCKED: '$COMMAND' is a force push with an option the guardrail cannot read." >&2
+        exit 2
+      fi
+      read -ra words <<< "$rest"
+      positional=()
+      for word in "${words[@]}"; do
+        [[ "$word" == -* ]] || positional+=("$word")
+      done
+      destination=${positional[1]:-}
+      if [[ -z "$destination" || "$destination" == "HEAD" || "$destination" == "@" ]]; then
+        echo "BLOCKED: '$COMMAND' is a force push that does not name its branch." >&2
+        echo "Spell it out: --force-with-lease <remote> <branch>." >&2
+        exit 2
+      fi
+    done < <(printf '%s\n' "$COMMAND" | tr ';&|' '\n\n\n')
   fi
 
   # `gh api` writes (an explicit method, or -f/-F/--field/--input, which make
