@@ -7,14 +7,22 @@ const DAY_MS = 86_400_000
 const toIsoDate = (date: Date): string => date.toISOString().slice(0, 10)
 
 /**
- * Monday of the ISO week containing the clock's instant. getUTCDay() returns 0
- * for Sunday, which must map back six days, not forward one.
+ * The household's calendar day for the clock's instant, as an ISO date. Read
+ * from the local getters: in Finland, 00:30 Monday is still Sunday in UTC.
+ */
+export const localToday = (clock: Clock): string => {
+  const now = clock.now()
+  return toIsoDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())))
+}
+
+/**
+ * Monday of the ISO week containing the local day. getUTCDay() on the
+ * date-only value returns 0 for Sunday, which must map back six days.
  */
 export const currentWeekStart = (clock: Clock): WeekStart => {
-  const now = clock.now()
-  const utcMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-  const daysSinceMonday = (new Date(utcMidnight).getUTCDay() + 6) % 7
-  return brand(toIsoDate(new Date(utcMidnight - daysSinceMonday * DAY_MS)))
+  const today = Date.parse(`${localToday(clock)}T00:00:00.000Z`)
+  const daysSinceMonday = (new Date(today).getUTCDay() + 6) % 7
+  return brand(toIsoDate(new Date(today - daysSinceMonday * DAY_MS)))
 }
 
 /**

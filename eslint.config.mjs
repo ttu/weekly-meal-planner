@@ -46,6 +46,7 @@ export default defineConfig([
       '*.cjs',
       'src/shared/db/database.types.ts',
       'jest.setup.node.js',
+      'jest.global-setup.js',
     ],
   },
   js.configs.recommended,

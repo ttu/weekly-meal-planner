@@ -1,5 +1,5 @@
 import { fixedClock } from '@/shared/time/clock'
-import { currentWeekStart, weekDates } from './week'
+import { currentWeekStart, localToday, weekDates } from './week'
 import type { WeekStart } from './types'
 
 describe('currentWeekStart', () => {
@@ -15,7 +15,7 @@ describe('currentWeekStart', () => {
   // Monday on Sundays, silently showing an empty week to a family planning on
   // Sunday evening — the most likely moment they open the app.
   it('returns the Monday six days back when today is Sunday', () => {
-    expect(currentWeekStart(fixedClock('2026-08-30T23:59:00.000Z'))).toBe('2026-08-24')
+    expect(currentWeekStart(fixedClock('2026-08-30T20:59:00.000Z'))).toBe('2026-08-24')
   })
 })
 
@@ -34,5 +34,20 @@ describe('weekDates', () => {
 
   it('crosses a month boundary correctly', () => {
     expect(weekDates('2026-08-31' as WeekStart)[6]).toBe('2026-09-06')
+  })
+})
+
+// Finland is UTC+2 in November: 22:30Z on Sunday is already 00:30 Monday there.
+// jest.global-setup.js pins the zone to Europe/Helsinki, so UTC-based code
+// fails here on any machine.
+describe('local day', () => {
+  const clock = fixedClock('2026-11-01T22:30:00Z')
+
+  it('takes the week start from the local day, not the UTC day', () => {
+    expect(currentWeekStart(clock)).toBe('2026-11-02')
+  })
+
+  it('takes today from the local day, not the UTC day', () => {
+    expect(localToday(clock)).toBe('2026-11-02')
   })
 })

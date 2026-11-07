@@ -56,7 +56,9 @@ The shopping-list derivation, and the unit conversion beneath it:
 - `running_low` promoting a staple into Buy
 - overrides winning, with their reason preserved
 - a meal with no ingredients producing the incomplete-meal line
-- ISO week boundaries, with an injected clock
+- ISO week boundaries and the current day, with an injected clock. The week and
+  "today" follow the local day, so `jest.global-setup.js` pins the suite to
+  `Europe/Helsinki`; write instants with that offset in mind.
 
 Mutation testing (Stryker) is scoped to exactly this pure logic and runs on a
 schedule, not per-commit. Gaps it finds are closed with behaviour tests, never
