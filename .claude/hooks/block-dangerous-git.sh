@@ -238,31 +238,37 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
   # the refspec.
   if printf '%s' "$COMMAND"    | grep -qEi -- 'push[[:space:]].*--force' ||
      printf '%s' "$NORMALIZED" | grep -qEi -- 'push[[:space:]].*--force'; then
-    # Every chained command is judged on its own: a second push after a `;`
-    # must not hide behind a harmless first one. What this cannot parse, it
-    # refuses.
-    if printf '%s' "$COMMAND" | grep -qE -- '\$\(|`|(^|[[:space:];&|])eval[[:space:]]'; then
-      echo "BLOCKED: '$COMMAND' is a force push inside a construct the guardrail cannot read." >&2
-      exit 2
-    fi
+    # An allowlist, not a hunt for bad spellings: every chained command that
+    # mentions `push` must be exactly
+    #   git push [-u | -v | --no-verify | --force-with-lease[=ref]]... <remote> <branch>
+    # in plain characters, with the flags anywhere. A second push after a `;`
+    # cannot hide behind a harmless first one, and quotes, variables, globs,
+    # `-C`, value-taking options and abbreviated flags all fall outside it and
+    # are refused.
+    flag_ok='^(-u|--set-upstream|-v|--verbose|--no-verify|--force-with-lease(=[A-Za-z0-9._/:-]+)?)$'
+    word_ok='^[A-Za-z0-9._/:-]+$'
     while IFS= read -r segment; do
-      [[ "$segment" =~ push[[:space:]](.*)$ ]] || continue
-      rest=${BASH_REMATCH[1]}
-      # Options that take a value as a separate word would shift the words
-      # below, so a force push using one is refused rather than guessed at.
-      if printf '%s' "$rest" | grep -qE -- '(^|[[:space:]])(-o|--push-option|--repo|--receive-pack|--exec)([[:space:]=]|$)'; then
-        echo "BLOCKED: '$COMMAND' is a force push with an option the guardrail cannot read." >&2
-        exit 2
-      fi
-      read -ra words <<< "$rest"
+      [[ "$segment" == *push* ]] || continue
+      read -ra words <<< "$segment"
       positional=()
-      for word in "${words[@]}"; do
-        [[ "$word" == -* ]] || positional+=("$word")
-      done
+      shape_ok=1
+      if [[ "${words[0]:-}" != "git" || "${words[1]:-}" != "push" ]]; then
+        shape_ok=0
+      else
+        for word in "${words[@]:2}"; do
+          if [[ "$word" == -* ]]; then
+            [[ "$word" =~ $flag_ok ]] || shape_ok=0
+          elif [[ "$word" =~ $word_ok ]]; then
+            positional+=("$word")
+          else
+            shape_ok=0
+          fi
+        done
+      fi
       destination=${positional[1]:-}
-      if [[ -z "$destination" || "$destination" == "HEAD" || "$destination" == "@" ]]; then
-        echo "BLOCKED: '$COMMAND' is a force push that does not name its branch." >&2
-        echo "Spell it out: --force-with-lease <remote> <branch>." >&2
+      if (( shape_ok == 0 || ${#positional[@]} != 2 )) || [[ "$destination" == "HEAD" || "$destination" == "@" ]]; then
+        echo "BLOCKED: '$COMMAND' is a force push the guardrail cannot vouch for." >&2
+        echo "Use exactly: git push --force-with-lease <remote> <branch> (plain names, no quotes or variables)." >&2
         exit 2
       fi
     done < <(printf '%s\n' "$COMMAND" | tr ';&|' '\n\n\n')
