@@ -229,14 +229,26 @@ if [[ -z "${MENAMI_DEVCONTAINER:-}" ]]; then
     fi
   done
 
-  # A lease push with no branch named (`--force-with-lease`, `... origin HEAD`)
-  # pushes the checked-out branch, so the `main` patterns above never see it.
-  # Refuse it whenever main or master is what is checked out.
-  if printf '%s' "$COMMAND" | grep -qEi -- 'push[[:space:]].*--force-with-lease'; then
-    current=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)
-    if [[ "$current" == "main" || "$current" == "master" ]]; then
-      echo "BLOCKED: '$COMMAND' would force-push $current." >&2
-      echo "Ask the user to run this themselves." >&2
+  # A lease push must name the branch it pushes. With none named
+  # (`--force-with-lease`, `... origin HEAD`) git pushes whatever is checked
+  # out when it runs, which this hook cannot know: a switch to main chained
+  # before the push changes it after the check. Bare `--force` was refused
+  # above, so any `--force*` left is a lease or an abbreviation of one (git
+  # accepts `--force-w`). The first non-option word is the remote, the second
+  # the refspec.
+  if printf '%s' "$COMMAND"    | grep -qEi -- 'push[[:space:]].*--force' ||
+     printf '%s' "$NORMALIZED" | grep -qEi -- 'push[[:space:]].*--force'; then
+    rest=${COMMAND#*push}
+    rest=${rest%%[;&|]*}
+    read -ra words <<< "$rest"
+    positional=()
+    for word in "${words[@]}"; do
+      [[ "$word" == -* ]] || positional+=("$word")
+    done
+    destination=${positional[1]:-}
+    if [[ -z "$destination" || "$destination" == "HEAD" || "$destination" == "@" ]]; then
+      echo "BLOCKED: '$COMMAND' is a force push that does not name its branch." >&2
+      echo "Spell it out: --force-with-lease <remote> <branch>." >&2
       exit 2
     fi
   fi
