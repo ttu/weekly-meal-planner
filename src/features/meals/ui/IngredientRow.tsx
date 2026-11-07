@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { RadioGroup } from '@/shared/ui/RadioGroup'
+import { rovingTabIndex } from '@/shared/ui/radioKeys'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { useTranslation } from '@/shared/i18n'
@@ -17,6 +19,7 @@ const sheets = themed((tokens) =>
     name: { ...tokens.type.body, color: tokens.color.textPrimary, flexShrink: 1 },
     remove: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
     controls: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+    units: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
     quantity: { width: 110, marginBottom: 0 },
     quantityInvalid: { borderColor: tokens.color.action },
     error: { ...tokens.type.body, color: tokens.color.action },
@@ -52,6 +55,8 @@ export const IngredientRow = ({
   const { t } = useTranslation()
   const unitName = (option: string): string => t(`unit.${option}`)
 
+  const units = unitsFor(ingredient.dimension)
+
   return (
     <View style={styles.row} testID={`ingredient-row-${ingredient.slug}`}>
       <View style={styles.topRow}>
@@ -76,21 +81,24 @@ export const IngredientRow = ({
           accessibilityLabel={`${t('ingredient.quantity')} ${ingredient.name}`}
           testID={`ingredient-quantity-${ingredient.slug}`}
         />
-        {unitsFor(ingredient.dimension).map((option) => (
-          <Pressable
-            key={option}
-            style={[formStyles.chip, option === unit && formStyles.chipSelected]}
-            onPress={() => {
-              onUnitChange(option)
-            }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: option === unit }}
-            accessibilityLabel={`${t('ingredient.unit')} ${unitName(option)}`}
-            testID={`ingredient-unit-${ingredient.slug}-${option}`}
-          >
-            <Text style={formStyles.chipText}>{unitName(option)}</Text>
-          </Pressable>
-        ))}
+        <RadioGroup label={`${t('ingredient.unit')} ${ingredient.name}`} style={styles.units}>
+          {units.map((option, index) => (
+            <Pressable
+              key={option}
+              style={[formStyles.chip, option === unit && formStyles.chipSelected]}
+              onPress={() => {
+                onUnitChange(option)
+              }}
+              accessibilityRole="radio"
+              aria-checked={option === unit}
+              tabIndex={rovingTabIndex(index, units.indexOf(unit))}
+              accessibilityLabel={`${t('ingredient.unit')} ${unitName(option)}`}
+              testID={`ingredient-unit-${ingredient.slug}-${option}`}
+            >
+              <Text style={formStyles.chipText}>{unitName(option)}</Text>
+            </Pressable>
+          ))}
+        </RadioGroup>
       </View>
 
       {!isQuantityValid && (

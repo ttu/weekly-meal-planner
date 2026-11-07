@@ -249,7 +249,7 @@ const ExtraRow = ({
         onToggle(extra.id, !extra.checked)
       }}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: extra.checked }}
+      aria-checked={extra.checked}
       accessibilityLabel={extra.label}
       testID={`extra-${extra.id}`}
     >
@@ -365,7 +365,7 @@ export const ShoppingListScreen = ({
             onToggle(line.ingredientId, !line.checked)
           }}
           accessibilityRole="checkbox"
-          accessibilityState={{ checked: line.checked }}
+          aria-checked={line.checked}
           accessibilityLabel={`${line.name} ${formatAmounts(line, unitLabel)}`}
           testID={`buy-${line.ingredientId}`}
         >
@@ -507,7 +507,7 @@ export const ShoppingListScreen = ({
               setHideTicked((hidden) => !hidden)
             }}
             accessibilityRole="button"
-            accessibilityState={{ expanded: !hideTicked }}
+            aria-expanded={!hideTicked}
             testID="toggle-ticked"
           >
             <Text style={styles.tickedToggleText}>

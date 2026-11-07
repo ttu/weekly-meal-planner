@@ -113,7 +113,7 @@ export const AppNav = ({ active, onGo, shoppingCount }: Props): React.JSX.Elemen
               onGo(destination.id)
             }}
             accessibilityRole="tab"
-            accessibilityState={{ selected: destination.id === active }}
+            aria-selected={destination.id === active}
             accessibilityLabel={destination.label}
             testID={`nav-${destination.id}`}
           >
@@ -137,7 +137,7 @@ export const AppNav = ({ active, onGo, shoppingCount }: Props): React.JSX.Elemen
             onGo(destination.id)
           }}
           accessibilityRole="tab"
-          accessibilityState={{ selected: destination.id === active }}
+          aria-selected={destination.id === active}
           accessibilityLabel={destination.label}
           testID={`nav-${destination.id}`}
         >
