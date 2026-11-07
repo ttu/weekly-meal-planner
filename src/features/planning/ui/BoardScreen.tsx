@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
@@ -6,8 +6,6 @@ import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
 import {
-  BoardMenu,
-  ShareSheet,
   boardUrl,
   signOut,
   usePresence,
@@ -15,7 +13,7 @@ import {
   type PresentMember,
   type SlotKey,
 } from '@/features/household'
-import { MealLibraryScreen, MealPicker, useHouseholdMeals } from '@/features/meals'
+import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
@@ -26,8 +24,6 @@ import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
 import { localToday } from '../domain/week'
-import { resolveDrop } from '../domain/drop'
-import { breaksLeftoverOrder } from '../domain/leftover-order'
 import { useWeekBoard } from './useWeekBoard'
 import { useSelectedWeek } from './SelectedWeek'
 import { useAddToBacklog } from './useAddToBacklog'
@@ -36,19 +32,18 @@ import { usePlanningActions } from './usePlanningActions'
 import { useWeekRealtime } from './useWeekRealtime'
 import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
-import { DragProvider, type DragPayload, type DropTarget } from './DragContext'
-import type { DropAction } from '../domain/drop'
+import { DragProvider } from './DragContext'
 import { DragLayer } from './DragLayer'
 import { DraggableCard } from './DraggableCard'
 import { useEdgeAutoScroll } from './useEdgeAutoScroll'
-import { PlanSheet } from './PlanSheet'
-import { ServingsSheet } from './ServingsSheet'
+import { BoardErrors } from './BoardErrors'
+import { BoardOverlays } from './BoardOverlays'
+import { useBoardDrop } from './useBoardDrop'
+import { useBoardSheets } from './useBoardSheets'
 import { AppNav } from '@/shared/ui/AppNav'
-import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
-import { Notice } from '@/shared/ui/Notice'
 import { LoadError, Loading } from '@/shared/ui/LoadState'
 import { loadState } from '@/shared/query/load-state'
-import type { BacklogItem, CookEvent, CookEventId, LeftoverId } from '../domain/types'
+import type { CookEvent, CookEventId } from '../domain/types'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -206,34 +201,28 @@ const Board = ({
   const { meals } = library
   const { add, hasFailed } = useAddToBacklog(clock)
   const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal(clock)
-  const [isPickerOpen, setPickerOpen] = useState(false)
-  const [pickerTarget, setPickerTarget] = useState<DropTarget | undefined>(undefined)
-  const [planning, setPlanning] = useState<BacklogItem | undefined>(undefined)
+  const boardSheets = useBoardSheets()
   const {
-    addLeftoverFor,
-    move,
-    moveLeftoverTo,
-    removeLeftoverCard,
-    unplan,
-    setServings,
-    removeFromBacklog,
-    leftoverFailed,
-    moveFailed,
-    unplanFailed,
-  } = usePlanningActions(clock)
-  const [unplanning, setUnplanning] = useState<CookEvent | undefined>(undefined)
-  /**
-   * The two × buttons that used to delete on the first tap. Both sit a few
-   * pixels from something else worth pressing, and neither can be undone —
-   * so both now ask, the same way unplanning does.
-   */
-  const [removingBacklog, setRemovingBacklog] = useState<BacklogItem | undefined>(undefined)
-  const [removingLeftover, setRemovingLeftover] = useState<LeftoverId | undefined>(undefined)
-  const [editingServings, setEditingServings] = useState<CookEvent | undefined>(undefined)
+    setPickerOpen,
+    setPickerTarget,
+    setPlanning,
+    setUnplanning,
+    setRemovingBacklog,
+    setRemovingLeftover,
+    setEditingServings,
+    setMenuOpen,
+    setSharing,
+  } = boardSheets
+  const planningActions = usePlanningActions(clock)
+  const { addLeftoverFor, leftoverFailed, moveFailed, unplanFailed } = planningActions
   const { offset, goToWeek } = useSelectedWeek(clock)
-  const [isMenuOpen, setMenuOpen] = useState(false)
-  const [orderRefused, setOrderRefused] = useState(false)
-  const [isSharing, setSharing] = useState(false)
+  const { onDropped, orderRefused } = useBoardDrop({
+    board,
+    weekPlanId,
+    add,
+    plan,
+    actions: planningActions,
+  })
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
   const autoScroll = useEdgeAutoScroll(scroll)
@@ -249,10 +238,6 @@ const Board = ({
   }
 
   const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
-  /** The Household's own order of Slots, which is what "before" means within
-   *  a day: lunch precedes dinner because they put it there. */
-  const slotOrder = (board[0]?.slots ?? []).map((slot) => slot.slotKey)
-
   const leftoverCountFor = (id: CookEventId): number =>
     allCards.filter((card) => card.kind === 'leftover' && card.leftover.cookEventId === id).length
 
@@ -291,46 +276,48 @@ const Board = ({
     setPickerOpen(true)
   }
 
-  /** What a drop means is decided in the domain; this only carries it out,
-   *  through the same mutations the tap path uses. */
-  const onDropped = (payload: DragPayload, target: DropTarget): void => {
-    const action = resolveDrop(payload, target)
+  const errors = (
+    <BoardErrors
+      addFailed={hasFailed}
+      planFailed={planFailed}
+      leftoverFailed={leftoverFailed}
+      moveFailed={moveFailed}
+      unplanFailed={unplanFailed}
+      orderRefused={orderRefused}
+      stale={boardState === 'stale'}
+      onRetry={weekBoard.refetch}
+    />
+  )
 
-    // A Leftover is a second sitting of a pot already cooked, so it cannot be
-    // carried back past its Meal — nor the Meal forward past it. The card goes
-    // home and the board says why, rather than leaving Wednesday eating the
-    // leftovers of Friday's dinner.
-    const order = orderedMove(action, payload)
-    if (order !== undefined && breaksLeftoverOrder(order, allCards, slotOrder)) {
-      setOrderRefused(true)
-      setTimeout(() => {
-        setOrderRefused(false)
-      }, 4000)
-      return
-    }
-
-    switch (action.kind) {
-      case 'want':
-        add(action.mealId)
-        return
-      case 'plan':
-        // weekPlanId may be undefined on a week nobody has planned into yet;
-        // the mutation makes the Week Plan when it is.
-        plan({ weekPlanId, ...action })
-        return
-      case 'move':
-        move(action)
-        return
-      case 'move-leftover':
-        moveLeftoverTo(action)
-        return
-      case 'unplan':
-        unplan(action.cookEventId)
-        return
-      case 'none':
-        return
-    }
-  }
+  const overlays = (
+    <BoardOverlays
+      sheets={boardSheets}
+      board={board}
+      weekPlanId={weekPlanId}
+      today={today}
+      locale={locale}
+      slots={household?.slots ?? []}
+      boardName={household?.name ?? ''}
+      otherMembers={present.map((member) => member.displayName)}
+      meals={meals}
+      planPending={planPending}
+      plan={plan}
+      add={add}
+      actions={planningActions}
+      leftoverCountFor={leftoverCountFor}
+      shareUrl={shareUrl}
+      shared={shared}
+      onShare={onShare}
+      onCopyShareUrl={() => {
+        onShareUrl?.(shareUrl)
+      }}
+      onOpenSettings={onOpenSettings}
+      onLeave={() => {
+        void signOut(session.client)
+      }}
+      onWriteOwnMeal={onWriteOwnMeal}
+    />
+  )
 
   const header = (
     <BoardHeader
@@ -406,193 +393,6 @@ const Board = ({
       />
     )
   }
-
-  const overlays = (
-    <>
-      {planning !== undefined && weekPlanId !== undefined && (
-        <PlanSheet
-          visible
-          mealName={planning.mealName}
-          addedByName={planning.addedByName}
-          defaultServings={planning.servings}
-          board={board}
-          slots={household?.slots ?? []}
-          today={today}
-          locale={locale}
-          isPending={planPending}
-          onSubmit={(choice) => {
-            plan({
-              weekPlanId,
-              mealId: planning.mealId,
-              backlogItemId: planning.id,
-              ...choice,
-            })
-            setPlanning(undefined)
-          }}
-          onDismiss={() => {
-            setPlanning(undefined)
-          }}
-        />
-      )}
-
-      {isMenuOpen && (
-        <BoardMenu
-          boardName={session.household?.name ?? ''}
-          otherMembers={present.map((member) => member.displayName)}
-          onInvite={() => {
-            setMenuOpen(false)
-            onShare()
-          }}
-          onMealTimes={() => {
-            setMenuOpen(false)
-            onOpenSettings?.()
-          }}
-          onSettings={() => {
-            setMenuOpen(false)
-            onOpenSettings?.()
-          }}
-          onLeave={() => {
-            setMenuOpen(false)
-            void signOut(session.client)
-          }}
-          onDismiss={() => {
-            setMenuOpen(false)
-          }}
-        />
-      )}
-
-      {editingServings !== undefined && (
-        <ServingsSheet
-          mealName={editingServings.mealName}
-          servingsCooked={editingServings.servingsCooked}
-          onSave={(servings) => {
-            setServings(editingServings.id, servings)
-            setEditingServings(undefined)
-          }}
-          onDismiss={() => {
-            setEditingServings(undefined)
-          }}
-        />
-      )}
-
-      {removingBacklog !== undefined && (
-        <ConfirmSheet
-          visible
-          message={t('backlog.removeConfirm', { meal: removingBacklog.mealName })}
-          confirmLabel={t('backlog.removeConfirmYes')}
-          cancelLabel={t('backlog.removeConfirmNo')}
-          onConfirm={() => {
-            removeFromBacklog(removingBacklog.id)
-            setRemovingBacklog(undefined)
-          }}
-          onCancel={() => {
-            setRemovingBacklog(undefined)
-          }}
-        />
-      )}
-
-      {removingLeftover !== undefined && (
-        <ConfirmSheet
-          visible
-          message={t('leftover.removeConfirm')}
-          confirmLabel={t('leftover.removeConfirmYes')}
-          cancelLabel={t('leftover.removeConfirmNo')}
-          onConfirm={() => {
-            removeLeftoverCard(removingLeftover)
-            setRemovingLeftover(undefined)
-          }}
-          onCancel={() => {
-            setRemovingLeftover(undefined)
-          }}
-        />
-      )}
-
-      {unplanning !== undefined && (
-        <ConfirmSheet
-          visible
-          message={t('unplan.confirm')}
-          detail={
-            leftoverCountFor(unplanning.id) > 0
-              ? t('unplan.confirmWithLeftovers', { count: leftoverCountFor(unplanning.id) })
-              : undefined
-          }
-          confirmLabel={t('unplan.confirmYes')}
-          cancelLabel={t('unplan.confirmNo')}
-          onConfirm={() => {
-            unplan(unplanning.id)
-            setUnplanning(undefined)
-          }}
-          onCancel={() => {
-            setUnplanning(undefined)
-          }}
-        />
-      )}
-
-      <ShareSheet
-        visible={isSharing}
-        url={shareUrl}
-        justCopied={shared}
-        onCopy={() => {
-          onShareUrl?.(shareUrl)
-        }}
-        onClose={() => {
-          setSharing(false)
-        }}
-      />
-
-      <MealPicker
-        visible={isPickerOpen}
-        meals={meals}
-        {...(onWriteOwnMeal === undefined
-          ? {}
-          : {
-              onWriteItDown: (name: string) => {
-                setPickerOpen(false)
-                onWriteOwnMeal(name)
-              },
-            })}
-        onSelect={(mealId) => {
-          const target = pickerTarget
-          const servings = meals.find((meal) => meal.id === mealId)?.servings
-          if (target === undefined || target.kind !== 'slot' || servings === undefined) {
-            add(mealId)
-          } else {
-            plan({
-              weekPlanId,
-              mealId,
-              date: target.date,
-              slotKey: target.slotKey,
-              servingsCooked: servings,
-            })
-          }
-          setPickerOpen(false)
-          setPickerTarget(undefined)
-        }}
-        onDismiss={() => {
-          setPickerOpen(false)
-          setPickerTarget(undefined)
-        }}
-      />
-    </>
-  )
-
-  const errors = (
-    <>
-      {hasFailed && <Notice message={t('picker.addFailed')} testID="backlog-add-error" />}
-      {planFailed && <Notice message={t('plan.failed')} testID="plan-error" />}
-      {leftoverFailed && <Notice message={t('leftover.failed')} testID="leftover-error" />}
-      {moveFailed && <Notice message={t('plan.moveFailed')} testID="move-error" />}
-      {unplanFailed && <Notice message={t('unplan.failed')} testID="unplan-error" />}
-      {orderRefused && <Notice message={t('board.leftoverOrder')} testID="leftover-order-error" />}
-      {boardState === 'stale' && (
-        <Notice
-          message={t('load.stale')}
-          testID="load-stale"
-          action={{ label: t('load.retry'), onPress: weekBoard.refetch }}
-        />
-      )}
-    </>
-  )
 
   if (isWide) {
     return (
@@ -840,20 +640,6 @@ const PresenceRow = ({
  *  List - the one thing the week is for. */
 /** "This week", "Next week", "In 3 weeks" — the heading says which week is on
  *  screen, because after one tap of an arrow it is no longer obvious. */
-/** The two drops that can break the order, as the rule wants them. */
-const orderedMove = (
-  action: DropAction,
-  payload: DragPayload,
-): Parameters<typeof breaksLeftoverOrder>[0] | undefined => {
-  if (action.kind === 'move-leftover' && payload.kind === 'leftover') {
-    return { kind: 'leftover', cookEventId: payload.leftover.cookEventId, to: action }
-  }
-  if (action.kind === 'move') {
-    return { kind: 'cook-event', cookEventId: action.cookEventId, to: action }
-  }
-  return undefined
-}
-
 const weekHeadingKey = (offset: number): { key: string; count: number } => {
   if (offset === 0) return { key: 'board.thisWeek', count: 0 }
   if (offset === 1) return { key: 'board.weekAhead', count: 1 }
