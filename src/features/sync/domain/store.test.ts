@@ -1,14 +1,13 @@
 import type { Hlc } from './hlc'
 import { MAX_DRIFT_MS } from './hlc'
-import { applyEvents as applyAt, emptyStore, readField, type SyncEvent, type Store } from './store'
+import { applyEvents, emptyStore, readField, type SyncEvent } from './store'
 
 const NOW = 1_000
-const applyEvents = (store: Store, events: readonly SyncEvent[]): Store =>
-  applyAt(store, events, NOW)
 
 const at = (wall: number, node = 'a', counter = 0): Hlc => ({ wall, counter, node })
 const set = (id: string, hlc: Hlc, entity: string, field: string, value: unknown): SyncEvent => ({
   id,
+  receivedAt: NOW,
   hlc,
   entity,
   field,
@@ -127,5 +126,19 @@ describe('applyEvents with malformed or implausible events', () => {
   ])('skips an event with a %s instead of throwing', (_name, bad) => {
     const store = applyEvents(emptyStore, [raw(bad), good])
     expect(readField(store, 'meal:x', 'title')).toBe('Soup')
+  })
+})
+
+describe('applyEvents is deterministic', () => {
+  it('judges an event by when the relay got it, not by when this device merges it', () => {
+    const early = { ...set('1', at(NOW + MAX_DRIFT_MS + 1), 'meal:x', 'title', 'Pwned') }
+    const honest = { ...early, receivedAt: NOW + 10 }
+    expect(readField(applyEvents(emptyStore, [early]), 'meal:x', 'title')).toBeUndefined()
+    expect(readField(applyEvents(emptyStore, [honest]), 'meal:x', 'title')).toBe('Pwned')
+  })
+
+  it('skips an event whose receive time is malformed', () => {
+    const bad = { ...set('1', at(1), 'meal:x', 'title', 'x'), receivedAt: Number.NaN }
+    expect(applyEvents(emptyStore, [bad])).toEqual(emptyStore)
   })
 })
