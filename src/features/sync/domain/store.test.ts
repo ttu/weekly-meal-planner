@@ -142,3 +142,19 @@ describe('applyEvents is deterministic', () => {
     expect(applyEvents(emptyStore, [bad])).toEqual(emptyStore)
   })
 })
+
+describe('applyEvents with a bad receivedAt', () => {
+  const far = at(NOW + MAX_DRIFT_MS + 1)
+
+  it.each([
+    ['Infinity', Infinity],
+    ['NaN', Number.NaN],
+    ['negative', -1],
+    ['fractional', 1.5],
+    ['unsafe integer', Number.MAX_SAFE_INTEGER + 2],
+    ['a string', '9999999999999' as unknown as number],
+  ])('refuses %s instead of letting it switch the drift check off', (_name, receivedAt) => {
+    const event = { ...set('1', far, 'meal:x', 'title', 'Pwned'), receivedAt }
+    expect(applyEvents(emptyStore, [event])).toEqual(emptyStore)
+  })
+})

@@ -12,7 +12,7 @@ export const MAX_DRIFT_MS = 24 * 3600_000
 export const MAX_COUNTER = 0xffff
 const MAX_NODE_LENGTH = 64
 
-const isCount = (n: unknown, max: number): boolean =>
+const isCount = (n: unknown, max: number): n is number =>
   typeof n === 'number' && Number.isSafeInteger(n) && n >= 0 && n <= max
 
 /**
@@ -32,8 +32,8 @@ export const isValidHlc = (hlc: unknown): hlc is Hlc =>
   hlc.node.length <= MAX_NODE_LENGTH
 
 /** The one place that decides whether a remote stamp may be believed. */
-export const isPlausibleHlc = (hlc: unknown, now: number): hlc is Hlc =>
-  isValidHlc(hlc) && hlc.wall - now <= MAX_DRIFT_MS
+export const isPlausibleHlc = (hlc: unknown, now: unknown): hlc is Hlc =>
+  isValidHlc(hlc) && isCount(now, Number.MAX_SAFE_INTEGER) && hlc.wall - now <= MAX_DRIFT_MS
 
 /** A full counter rolls into the next millisecond, so a clock can always advance. */
 const stamp = (wall: number, counter: number, node: string): Hlc =>
