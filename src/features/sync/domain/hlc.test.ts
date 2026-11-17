@@ -1,4 +1,4 @@
-import { compareHlc, receiveHlc, tickHlc, type Hlc } from './hlc'
+import { compareHlc, isValidHlc, receiveHlc, tickHlc, type Hlc } from './hlc'
 
 const at = (wall: number, counter: number, node: string): Hlc => ({ wall, counter, node })
 
@@ -30,9 +30,7 @@ describe('receiveHlc', () => {
 
   it('refuses a remote stamp absurdly far in the future', () => {
     // A Member with a wrong clock must not drag every other clock years ahead.
-    expect(() => receiveHlc(at(100, 0, 'a'), at(100 + 24 * 3600_000 * 400, 0, 'b'), 100)).toThrow(
-      /ahead/,
-    )
+    expect(() => receiveHlc(at(100, 0, 'a'), at(100 + 25 * 3600_000, 0, 'b'), 100)).toThrow(/ahead/)
   })
 })
 
@@ -42,5 +40,26 @@ describe('compareHlc', () => {
     expect(compareHlc(at(1, 1, 'a'), at(1, 0, 'z'))).toBeGreaterThan(0)
     expect(compareHlc(at(1, 1, 'a'), at(1, 1, 'b'))).toBeLessThan(0)
     expect(compareHlc(at(1, 1, 'a'), at(1, 1, 'a'))).toBe(0)
+  })
+})
+
+describe('isValidHlc', () => {
+  it('accepts a well-formed stamp', () => {
+    expect(isValidHlc(at(1, 0, 'a'))).toBe(true)
+  })
+
+  it.each([
+    ['NaN wall', at(Number.NaN, 0, 'a')],
+    ['infinite wall', at(Infinity, 0, 'a')],
+    ['negative wall', at(-1, 0, 'a')],
+    ['fractional counter', at(1, 0.5, 'a')],
+    ['unsafe integer', at(Number.MAX_SAFE_INTEGER + 2, 0, 'a')],
+    ['empty node', at(1, 0, '')],
+  ])('rejects %s, which would poison every comparison', (_name, hlc) => {
+    expect(isValidHlc(hlc)).toBe(false)
+  })
+
+  it('is what receiveHlc relies on, so a malformed remote stamp is refused', () => {
+    expect(() => receiveHlc(at(1, 0, 'a'), at(Number.NaN, 0, 'b'), 1)).toThrow(/invalid/)
   })
 })

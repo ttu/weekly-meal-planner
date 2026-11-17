@@ -63,3 +63,36 @@ describe('applyEvents', () => {
     expect(JSON.stringify(before)).toBe(snapshot)
   })
 })
+
+describe('applyEvents with a hostile writer', () => {
+  const good = set('1', at(1), 'meal:x', 'title', 'Soup')
+
+  it.each(['__proto__', 'constructor', 'prototype'])(
+    'ignores events that name the reserved key %s instead of throwing',
+    (name) => {
+      const store = applyEvents(emptyStore, [
+        set('2', at(2), name, 'title', 'x'),
+        set('3', at(3), 'meal:x', name, 'x'),
+        good,
+      ])
+      expect(readField(store, 'meal:x', 'title')).toBe('Soup')
+      expect(readField(store, name, 'title')).toBeUndefined()
+      expect(Object.keys(store)).toEqual(['meal:x'])
+    },
+  )
+
+  it('ignores events whose clock is malformed, so one cannot freeze a field', () => {
+    const poison = set('2', { wall: Number.NaN, counter: 0, node: 'evil' }, 'meal:x', 'title', 'x')
+    const store = applyEvents(emptyStore, [
+      poison,
+      good,
+      set('3', at(2), 'meal:x', 'title', 'Stew'),
+    ])
+    expect(readField(store, 'meal:x', 'title')).toBe('Stew')
+  })
+
+  it('does not let an inherited property pose as an existing cell', () => {
+    const store = applyEvents(emptyStore, [set('1', at(1), 'meal:x', 'valueOf', 'x'), good])
+    expect(readField(store, 'meal:x', 'title')).toBe('Soup')
+  })
+})

@@ -7,7 +7,13 @@
 export type Hlc = { readonly wall: number; readonly counter: number; readonly node: string }
 
 /** A remote stamp further ahead than this is a wrong clock, not a real event. */
-export const MAX_DRIFT_MS = 24 * 3600_000 * 365
+export const MAX_DRIFT_MS = 24 * 3600_000
+
+const isCount = (n: number): boolean => Number.isSafeInteger(n) && n >= 0
+
+/** Untrusted stamps are checked before use: NaN or a huge value would win or freeze every comparison. */
+export const isValidHlc = (hlc: Hlc): boolean =>
+  isCount(hlc.wall) && isCount(hlc.counter) && hlc.node.length > 0
 
 export const compareHlc = (a: Hlc, b: Hlc): number =>
   a.wall - b.wall ||
@@ -21,6 +27,7 @@ export const tickHlc = (local: Hlc, now: number): Hlc =>
     : { wall: local.wall, counter: local.counter + 1, node: local.node }
 
 export const receiveHlc = (local: Hlc, remote: Hlc, now: number): Hlc => {
+  if (!isValidHlc(remote)) throw new Error('invalid remote clock')
   if (remote.wall - now > MAX_DRIFT_MS) throw new Error('remote clock is too far ahead')
   const wall = Math.max(local.wall, remote.wall, now)
   // Only clocks sitting at the winning wall time constrain the counter.
