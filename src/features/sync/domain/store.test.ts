@@ -1,5 +1,10 @@
 import type { Hlc } from './hlc'
-import { applyEvents, emptyStore, readField, type SyncEvent } from './store'
+import { MAX_DRIFT_MS } from './hlc'
+import { applyEvents as applyAt, emptyStore, readField, type SyncEvent, type Store } from './store'
+
+const NOW = 1_000
+const applyEvents = (store: Store, events: readonly SyncEvent[]): Store =>
+  applyAt(store, events, NOW)
 
 const at = (wall: number, node = 'a', counter = 0): Hlc => ({ wall, counter, node })
 const set = (id: string, hlc: Hlc, entity: string, field: string, value: unknown): SyncEvent => ({
@@ -93,6 +98,34 @@ describe('applyEvents with a hostile writer', () => {
 
   it('does not let an inherited property pose as an existing cell', () => {
     const store = applyEvents(emptyStore, [set('1', at(1), 'meal:x', 'valueOf', 'x'), good])
+    expect(readField(store, 'meal:x', 'title')).toBe('Soup')
+  })
+})
+
+describe('applyEvents with malformed or implausible events', () => {
+  const good = set('1', at(1), 'meal:x', 'title', 'Soup')
+  const raw = (partial: object): SyncEvent => ({ ...good, ...partial })
+
+  it('drops an event stamped far in the future, so it cannot win a field for good', () => {
+    const future = set('2', at(NOW + MAX_DRIFT_MS + 1), 'meal:x', 'title', 'Pwned')
+    const store = applyEvents(emptyStore, [
+      good,
+      future,
+      set('3', at(2), 'meal:x', 'title', 'Stew'),
+    ])
+    expect(readField(store, 'meal:x', 'title')).toBe('Stew')
+  })
+
+  it.each([
+    ['null clock', { hlc: null }],
+    ['numeric node', { hlc: { wall: 1, counter: 0, node: 7 } }],
+    ['huge counter', { hlc: { wall: 1, counter: 1e9, node: 'a' } }],
+    ['overlong node', { hlc: { wall: 1, counter: 0, node: 'n'.repeat(500) } }],
+    ['numeric entity', { entity: 7 }],
+    ['numeric field', { field: 7 }],
+    ['overlong entity', { entity: 'e'.repeat(500) }],
+  ])('skips an event with a %s instead of throwing', (_name, bad) => {
+    const store = applyEvents(emptyStore, [raw(bad), good])
     expect(readField(store, 'meal:x', 'title')).toBe('Soup')
   })
 })

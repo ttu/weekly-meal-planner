@@ -1,4 +1,4 @@
-import { compareHlc, isValidHlc, receiveHlc, tickHlc, type Hlc } from './hlc'
+import { MAX_COUNTER, compareHlc, isValidHlc, receiveHlc, tickHlc, type Hlc } from './hlc'
 
 const at = (wall: number, counter: number, node: string): Hlc => ({ wall, counter, node })
 
@@ -62,4 +62,28 @@ describe('isValidHlc', () => {
   it('is what receiveHlc relies on, so a malformed remote stamp is refused', () => {
     expect(() => receiveHlc(at(1, 0, 'a'), at(Number.NaN, 0, 'b'), 1)).toThrow(/invalid/)
   })
+})
+
+describe('counter cap', () => {
+  it('rolls into the next millisecond instead of growing without bound', () => {
+    expect(tickHlc(at(100, MAX_COUNTER, 'a'), 100)).toEqual(at(101, 0, 'a'))
+  })
+
+  it('does the same when receiving', () => {
+    const next = receiveHlc(at(100, MAX_COUNTER, 'a'), at(100, 0, 'b'), 100)
+    expect(next).toEqual(at(101, 0, 'a'))
+  })
+
+  it('rejects a remote counter above the cap', () => {
+    expect(isValidHlc(at(1, MAX_COUNTER + 1, 'a'))).toBe(false)
+  })
+})
+
+describe('isValidHlc on untrusted input', () => {
+  it.each([null, undefined, 'x', 7, {}, { wall: 1, counter: 0, node: 5 }])(
+    'rejects %j without throwing',
+    (value) => {
+      expect(isValidHlc(value)).toBe(false)
+    },
+  )
 })

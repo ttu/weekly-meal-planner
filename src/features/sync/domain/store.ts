@@ -1,4 +1,4 @@
-import { compareHlc, isValidHlc, type Hlc } from './hlc'
+import { compareHlc, isPlausibleHlc, type Hlc } from './hlc'
 
 /** JSON without `null`: this codebase uses `undefined` for "no value". */
 export type FieldValue =
@@ -19,12 +19,15 @@ export type Store = { readonly [entity: string]: { readonly [field: string]: Cel
 export const emptyStore: Store = {}
 
 const NAME = /^[A-Za-z][\w:-]*$/
+const MAX_NAME_LENGTH = 128
 const RESERVED = new Set(['__proto__', 'constructor', 'prototype'])
 
+const isName = (n: unknown): n is string =>
+  typeof n === 'string' && n.length <= MAX_NAME_LENGTH && NAME.test(n) && !RESERVED.has(n)
+
 /** Events come from other Members, who may be hostile: reject what could corrupt the store. */
-const isAcceptable = (event: SyncEvent): boolean =>
-  isValidHlc(event.hlc) &&
-  [event.entity, event.field].every((n) => NAME.test(n) && !RESERVED.has(n))
+const isAcceptable = (event: SyncEvent, now: number): boolean =>
+  isPlausibleHlc(event.hlc, now) && isName(event.entity) && isName(event.field)
 
 const own = (store: Store, entity: string, field: string): Cell | undefined => {
   const cells = Object.hasOwn(store, entity) ? store[entity] : undefined
@@ -35,9 +38,9 @@ const own = (store: Store, entity: string, field: string): Cell | undefined => {
  * Last-writer-wins per field. Pure, and idempotent and order-independent, which
  * is what lets events arrive twice, late, or out of order and still converge.
  */
-export const applyEvents = (store: Store, events: readonly SyncEvent[]): Store =>
+export const applyEvents = (store: Store, events: readonly SyncEvent[], now: number): Store =>
   events.reduce<Store>((acc, event) => {
-    if (!isAcceptable(event)) return acc
+    if (!isAcceptable(event, now)) return acc
     const current = own(acc, event.entity, event.field)
     if (current && compareHlc(event.hlc, current.hlc) <= 0) return acc
     return {
