@@ -18,7 +18,13 @@ const publicKeys = z.object({ sign: key, box: key })
 const base = { household: z.string().min(1).max(128), prev: key.optional() }
 
 const body = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('create'), ...base, admin: publicKeys, epoch: z.literal(1) }),
+  z.object({
+    kind: z.literal('create'),
+    ...base,
+    nonce: key,
+    admin: publicKeys,
+    epoch: z.literal(1),
+  }),
   z.object({
     kind: z.literal('add'),
     ...base,
@@ -56,6 +62,8 @@ export type Membership = {
 
 export type MembershipError =
   | 'badSignature'
+  | 'badKey'
+  | 'badHousehold'
   | 'notGenesis'
   | 'wrongHousehold'
   | 'wrongPrev'
@@ -74,7 +82,7 @@ const encodeBody = (b: OpBody): Uint8Array => {
   const head = ['menami/v1/membership', b.kind, b.household, b.prev ?? '']
   switch (b.kind) {
     case 'create':
-      return encoder.encode(JSON.stringify([...head, b.admin.sign, b.admin.box, b.epoch]))
+      return encoder.encode(JSON.stringify([...head, b.nonce, b.admin.sign, b.admin.box, b.epoch]))
     case 'add':
       return encoder.encode(
         JSON.stringify([
@@ -109,13 +117,32 @@ export const parseSignedOp = (input: unknown): Result<SignedOp, 'malformed'> => 
   return parsed.success ? ok(parsed.data) : err('malformed')
 }
 
+/** Strict RFC 8032 checking, so a signature has one valid encoding. */
 const validSignature = (op: SignedOp): boolean => {
   try {
-    return ed25519.verify(hexToBytes(op.signature), encodeBody(op.body), hexToBytes(op.signer))
+    return ed25519.verify(hexToBytes(op.signature), encodeBody(op.body), hexToBytes(op.signer), {
+      zip215: false,
+    })
   } catch {
     return false
   }
 }
+
+/** A small-order point makes signatures forgeable for any message, so it can never be a Member. */
+const isSafeKey = (hex: string): boolean => {
+  try {
+    return !ed25519.Point.fromHex(hex).isSmallOrder()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * A Household's id is derived from its creator's key and a nonce, so only the
+ * creator can produce a genesis that matches an id, and nobody can squat one.
+ */
+export const householdIdFor = (adminSignKey: string, nonce: string): string =>
+  bytesToHex(sha256(encoder.encode(JSON.stringify(['menami/v1/household', adminSignKey, nonce]))))
 
 const adminCount = (members: Membership['members']): number =>
   Object.values(members).filter((m) => m.role === 'admin').length
@@ -137,17 +164,19 @@ type Step<K extends OpBody['kind']> = (
   next: (members: Members, epoch?: number) => Membership,
 ) => Result_
 
-const create = (op: SignedOp, b: Extract<OpBody, { kind: 'create' }>): Result_ =>
-  op.signer === b.admin.sign
-    ? ok({
-        household: b.household,
-        epoch: 1,
-        head: opId(op),
-        members: { [b.admin.sign]: { box: b.admin.box, role: 'admin' } },
-      })
-    : err('badSignature')
+const create = (op: SignedOp, b: Extract<OpBody, { kind: 'create' }>): Result_ => {
+  if (op.signer !== b.admin.sign) return err('badSignature')
+  if (b.household !== householdIdFor(b.admin.sign, b.nonce)) return err('badHousehold')
+  return ok({
+    household: b.household,
+    epoch: 1,
+    head: opId(op),
+    members: { [b.admin.sign]: { box: b.admin.box, role: 'admin' } },
+  })
+}
 
 const add: Step<'add'> = (state, b, next) => {
+  if (!isSafeKey(b.member.sign)) return err('badKey')
   if (own(state.members, b.member.sign)) return err('alreadyMember')
   const epochs = b.keys.map((k) => String(k.epoch))
   const wanted = Array.from({ length: state.epoch }, (_, i) => String(i + 1))
@@ -174,6 +203,7 @@ const remove: Step<'remove'> = (state, b, next) => {
 
 /** The pure core: the current state and one operation in, the next state or the reason it is refused. */
 export const applyOp = (state: Membership | undefined, op: SignedOp): Result_ => {
+  if (!isSafeKey(op.signer)) return err('badKey')
   if (!validSignature(op)) return err('badSignature')
   const b = op.body
   if (!state) return b.kind === 'create' ? create(op, b) : err('notGenesis')

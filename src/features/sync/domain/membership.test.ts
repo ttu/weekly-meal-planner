@@ -3,6 +3,7 @@ import { fakeRandom } from './fake-random'
 import { memberKeyOf, newIdentity, type Identity } from './identity'
 import {
   applyOp,
+  householdIdFor,
   parseSignedOp,
   signOp,
   type Membership,
@@ -26,8 +27,21 @@ const bob = newIdentity(random)
 const carol = newIdentity(random)
 const mallory = newIdentity(random)
 
+const NONCE = '11'.repeat(32)
+const HOUSEHOLD = householdIdFor(memberKeyOf(alice), NONCE)
+
 const genesis = (): SignedOp =>
-  signOp({ kind: 'create', household: 'h1', prev: undefined, admin: pub(alice), epoch: 1 }, alice)
+  signOp(
+    {
+      kind: 'create',
+      household: HOUSEHOLD,
+      nonce: NONCE,
+      prev: undefined,
+      admin: pub(alice),
+      epoch: 1,
+    },
+    alice,
+  )
 
 const board = (): Membership => must(applyOp(undefined, genesis()))
 
@@ -65,7 +79,14 @@ describe('creating a board', () => {
 
   it('must be signed by the admin it names', () => {
     const forged = signOp(
-      { kind: 'create', household: 'h1', prev: undefined, admin: pub(alice), epoch: 1 },
+      {
+        kind: 'create',
+        household: HOUSEHOLD,
+        nonce: NONCE,
+        prev: undefined,
+        admin: pub(alice),
+        epoch: 1,
+      },
       mallory,
     )
     expect(errorOf(applyOp(undefined, forged))).toBe('badSignature')
@@ -75,9 +96,60 @@ describe('creating a board', () => {
     expect(errorOf(applyOp(board(), genesis()))).toBe('wrongPrev')
   })
 
+  it('must name the id its creator derives, so nobody can squat an id they have seen', () => {
+    const squat = signOp(
+      {
+        kind: 'create',
+        household: 'ee'.repeat(32),
+        nonce: NONCE,
+        prev: undefined,
+        admin: pub(mallory),
+        epoch: 1,
+      },
+      mallory,
+    )
+    expect(errorOf(applyOp(undefined, squat))).toBe('badHousehold')
+  })
+
+  it('gives one admin different ids for different boards', () => {
+    expect(householdIdFor(memberKeyOf(alice), '22'.repeat(32))).not.toBe(HOUSEHOLD)
+  })
+
   it('must come first', () => {
     const state = board()
     expect(errorOf(applyOp(undefined, add(state, alice, bob)))).toBe('notGenesis')
+  })
+})
+
+describe('small-order keys', () => {
+  // The identity point: with ZIP-215 verification a zero signature "verifies" for any message.
+  const weak = '01' + '00'.repeat(31)
+  const zeroSignature = '01' + '00'.repeat(31) + '00'.repeat(32)
+
+  it('refuses a creator whose signing key is a small-order point', () => {
+    const forged: SignedOp = {
+      body: {
+        kind: 'create',
+        household: householdIdFor(weak, NONCE),
+        nonce: NONCE,
+        prev: undefined,
+        admin: { sign: weak, box: pub(alice).box },
+        epoch: 1,
+      },
+      signer: weak,
+      signature: zeroSignature,
+    }
+    expect(errorOf(applyOp(undefined, forged))).toBe('badKey')
+  })
+
+  it('refuses to add a Member with a small-order signing key', () => {
+    const s = board()
+    const weakAdd = op(s, alice, {
+      kind: 'add',
+      member: { sign: weak, box: pub(bob).box, role: 'admin' },
+      keys: [{ epoch: 1, sealed: sealed(0) }],
+    })
+    expect(errorOf(applyOp(s, weakAdd))).toBe('badKey')
   })
 })
 

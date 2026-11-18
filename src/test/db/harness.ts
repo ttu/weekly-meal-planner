@@ -36,6 +36,7 @@ const SCHEMA_FILES = [
   'supabase/schemas/42_sharing_rpc.sql',
   'supabase/schemas/93_policies_shopping.sql',
   'supabase/schemas/95_limits.sql',
+  'supabase/schemas/80_relay.sql',
 ]
 
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8')
