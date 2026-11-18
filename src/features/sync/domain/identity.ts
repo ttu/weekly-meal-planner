@@ -1,4 +1,4 @@
-import { ed25519 } from '@noble/curves/ed25519'
+import { ed25519, x25519 } from '@noble/curves/ed25519'
 import { bytesToHex } from '@noble/hashes/utils'
 import { newKeyPair, type KeyPair, type Random } from './crypto'
 
@@ -20,3 +20,13 @@ export const newIdentity = (random: Random): Identity => {
 
 /** A Member is identified by their signing public key, so an id cannot be claimed by someone else. */
 export const memberKeyOf = (identity: Identity): string => bytesToHex(identity.signPublicKey)
+
+/** Rebuilds an identity from the two secret keys, as a seat in an invite carries them. */
+export const identityFromSecrets = (
+  signSecretKey: Uint8Array,
+  boxSecretKey: Uint8Array,
+): Identity => ({
+  signSecretKey,
+  signPublicKey: ed25519.getPublicKey(signSecretKey),
+  box: { secretKey: boxSecretKey, publicKey: x25519.getPublicKey(boxSecretKey) },
+})

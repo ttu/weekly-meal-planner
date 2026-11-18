@@ -20,6 +20,14 @@ you want to overturn one, change the spec first.
 
 ## Security
 
+- Relay (ADR 0013, `supabase/schemas/80_relay.sql`): `relay_create` is capped for
+  everyone together (1000 boards an hour) because nothing identifies the caller,
+  so anyone can fill the quota and block new boards for an hour. A per-caller
+  gate needs an identity: the beta key, or proof-of-work on creation.
+- Relay: `relay_rotate` is authorised by the current epoch token alone, so any
+  current Member could move the board to a token only they know and lock the
+  others out. Members are trusted family; the fix is an admin-only rotation
+  secret, distributed in `setRole` ops and rotated on demotion.
 - The beta key (ADR 0012) is not yet in the staging or production Vault, so
   both are still open until someone runs `vault.create_secret` there
   (`docs/06-security.md`). Once email verification exists, delete the secret

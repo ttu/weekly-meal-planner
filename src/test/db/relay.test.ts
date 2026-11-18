@@ -95,11 +95,39 @@ describe('relay', () => {
       expect(rows.at(-1)).toMatchObject({ kind: 'membership', epoch: 2, payload: 'removal' })
     })
 
-    it('cuts off the old token for reading and writing at once', async () => {
+    it('cuts off the old token for writing at once', async () => {
       await create()
       await rotate()
       await expect(append(TOKEN, 1)).rejects.toThrow(/relay_forbidden/)
-      await expect(pull(TOKEN)).rejects.toThrow(/relay_forbidden/)
+      await expect(rotate(TOKEN, STRANGER)).rejects.toThrow(/relay_forbidden/)
+    })
+
+    it('lets the old token read up to the rotation, so remaining Members can fetch their new key', async () => {
+      await create()
+      await rotate()
+      expect((await pull(TOKEN)).map((r) => r.payload)).toEqual(['genesis', 'removal'])
+    })
+
+    it('shows the old token nothing written after the rotation', async () => {
+      await create()
+      await rotate()
+      await append(NEXT, 2, 'event', 'secret')
+      expect((await pull(TOKEN)).map((r) => r.payload)).toEqual(['genesis', 'removal'])
+      expect((await pull(NEXT)).map((r) => r.payload)).toEqual(['genesis', 'removal', 'secret'])
+    })
+
+    it('does the same for a token several epochs old', async () => {
+      await create()
+      await rotate()
+      await db.sql('select * from relay_rotate($1, $2, $3, $4)', [BOARD, NEXT, STRANGER, 'second'])
+      expect((await pull(TOKEN)).map((r) => r.payload)).toEqual(['genesis', 'removal'])
+      expect((await pull(NEXT)).map((r) => r.payload)).toEqual(['genesis', 'removal', 'second'])
+    })
+
+    it('never takes back an old token as a new one, which would undo a removal', async () => {
+      await create()
+      await rotate()
+      await expect(rotate(NEXT, TOKEN)).rejects.toThrow(/relay_same_token/)
     })
 
     it('accepts writes under the new token and epoch only', async () => {
@@ -167,6 +195,22 @@ describe('relay', () => {
       await db.sql('update relay_board set last_seq = 100000 where id = $1', [BOARD])
       await db.asAnon()
       await expect(append()).rejects.toThrow(/relay_full/)
+    })
+
+    it('keeps a little headroom so a full board can still cut a Member off, but not forever', async () => {
+      await create()
+      await db.asOwner()
+      await db.sql('update relay_board set last_seq = 100050 where id = $1', [BOARD])
+      await db.asAnon()
+      await expect(
+        db.sql('select * from relay_rotate($1, $2, $3, $4)', [BOARD, TOKEN, NEXT, 'x']),
+      ).resolves.toBeDefined()
+      await db.asOwner()
+      await db.sql('update relay_board set last_seq = 100100 where id = $1', [BOARD])
+      await db.asAnon()
+      await expect(
+        db.sql('select * from relay_rotate($1, $2, $3, $4)', [BOARD, NEXT, TOKEN, 'x']),
+      ).rejects.toThrow(/relay_full/)
     })
 
     it('stops board creation being used to fill the table', async () => {

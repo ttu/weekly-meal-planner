@@ -26,9 +26,22 @@ create table public.relay_record (
   primary key (board_id, seq)
 );
 
+-- Every epoch's token, kept after rotation. An old token may still *read* up to
+-- the record that ended its epoch, and no further, so a Member who was not cut
+-- off can fetch the record carrying their new key, while someone who was sees
+-- nothing written after their removal.
+create table public.relay_epoch (
+  board_id text not null references public.relay_board (id) on delete cascade,
+  epoch integer not null,
+  token_hash bytea not null,
+  ends_at_seq bigint,
+  primary key (board_id, epoch)
+);
+
 alter table public.relay_board enable row level security;
 alter table public.relay_record enable row level security;
-revoke all on public.relay_board, public.relay_record from anon, authenticated;
+alter table public.relay_epoch enable row level security;
+revoke all on public.relay_board, public.relay_record, public.relay_epoch from anon, authenticated;
 
 create or replace function public.relay_create(p_board text, p_token text, p_payload text)
 returns table (seq bigint, received_at bigint)
@@ -53,6 +66,8 @@ begin
   exception when unique_violation then
     raise exception 'relay_exists';
   end;
+  insert into public.relay_epoch (board_id, epoch, token_hash)
+  values (p_board, 1, extensions.digest(p_token, 'sha256'));
   insert into public.relay_record (board_id, seq, kind, epoch, payload, received_at)
   values (p_board, 0, 'membership', 1, p_payload, now_ms);
   return query select 0::bigint, now_ms;
@@ -110,10 +125,18 @@ begin
   if p_token is null or not found or b.token_hash is distinct from extensions.digest(p_token, 'sha256') then
     raise exception 'relay_forbidden';
   end if;
+  -- A little more headroom than append has: removing someone must stay possible on a full board.
+  if b.last_seq >= 100100 then
+    raise exception 'relay_full';
+  end if;
   if p_new_token is null or p_payload is null or p_new_token !~ '^[0-9a-f]{64}$' then
     raise exception 'relay_bad_token';
   end if;
-  if p_new_token is not distinct from p_token then
+  -- Not the current token, and not any earlier one: taking an old token back would undo a removal.
+  if exists (
+    select 1 from public.relay_epoch
+     where board_id = p_board and token_hash = extensions.digest(p_new_token, 'sha256')
+  ) then
     raise exception 'relay_same_token';
   end if;
   update public.relay_board
@@ -121,6 +144,10 @@ begin
          token_hash = extensions.digest(p_new_token, 'sha256'),
          last_seq = last_seq + 1
    where id = p_board;
+  update public.relay_epoch set ends_at_seq = b.last_seq + 1
+   where board_id = p_board and epoch = b.epoch;
+  insert into public.relay_epoch (board_id, epoch, token_hash)
+  values (p_board, b.epoch + 1, extensions.digest(p_new_token, 'sha256'));
   insert into public.relay_record (board_id, seq, kind, epoch, payload, received_at)
   values (p_board, b.last_seq + 1, 'membership', b.epoch + 1, p_payload, now_ms);
   return query select b.last_seq + 1, now_ms;
@@ -136,17 +163,22 @@ stable
 set search_path = public, extensions, pg_temp
 as $fn$
 declare
-  b public.relay_board;
+  e public.relay_epoch;
 begin
-  select * into b from public.relay_board where id = p_board;
-  -- NULL must fail closed: `NULL <> x` is NULL, and an `if` on NULL does not fire.
-  if p_token is null or not found or b.token_hash is distinct from extensions.digest(p_token, 'sha256') then
+  if p_token is null or p_after is null then
+    raise exception 'relay_forbidden';
+  end if;
+  select * into e from public.relay_epoch
+   where board_id = p_board and token_hash = extensions.digest(p_token, 'sha256');
+  if not found then
     raise exception 'relay_forbidden';
   end if;
   return query
     select r.seq, r.kind, r.epoch, r.payload, r.received_at
       from public.relay_record r
-     where r.board_id = p_board and r.seq > p_after
+     where r.board_id = p_board
+       and r.seq > p_after
+       and r.seq <= coalesce(e.ends_at_seq, 9223372036854775807)
      order by r.seq
      limit least(greatest(p_limit, 1), 1000);
 end;
