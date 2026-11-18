@@ -122,5 +122,7 @@ export const ingest = (
   const lostSeat = state.membership?.members[memberKeyOf(me)] && !mine
   const standing = lostSeat ? { ...result.state, status: 'removed' as const } : result.state
   const gotKey = Object.keys(standing.keys).length > Object.keys(state.keys).length
-  return { ...result, state: gotKey ? release(standing, now) : standing }
+  // The invite token is only for reaching the first key; after that the key's own token is used.
+  const settled = gotKey ? release({ ...standing, bootToken: undefined }, now) : standing
+  return { ...result, state: settled }
 }

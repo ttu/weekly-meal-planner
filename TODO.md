@@ -26,8 +26,11 @@ you want to overturn one, change the spec first.
   gate needs an identity: the beta key, or proof-of-work on creation.
 - Relay: `relay_rotate` is authorised by the current epoch token alone, so any
   current Member could move the board to a token only they know and lock the
-  others out. Members are trusted family; the fix is an admin-only rotation
-  secret, distributed in `setRole` ops and rotated on demotion.
+  others out, and nothing recovers it. It is a denial of service by someone
+  already in the family, not a way to read data. The fix is an admin-only
+  rotation secret (or a signature the relay checks), distributed in `setRole`
+  ops and rotated on demotion, plus a client that reports a rotation record
+  that is not a valid removal instead of stalling quietly.
 - The beta key (ADR 0012) is not yet in the staging or production Vault, so
   both are still open until someone runs `vault.create_secret` there
   (`docs/06-security.md`). Once email verification exists, delete the secret
@@ -50,6 +53,36 @@ you want to overturn one, change the spec first.
   the config route in the container for good: point `GIT_CONFIG_GLOBAL` at a
   root-owned file in `/etc` that `post-create.sh` writes and then locks, so
   neither Bash nor Edit/Write can add an alias, include or autocorrect.
+
+## Local-first migration (ADR 0013)
+
+The sync core is built and tested (`docs/11-sync.md`), but nothing in the app
+uses it yet: every screen still reads Supabase. In order, each its own commit,
+and the app must run after each:
+
+1. **Provider and sync loop.** A React provider holding the `Engine`, a
+   `useSyncExternalStore` view with a cached snapshot, and a loop that syncs on
+   start, on foreground, every ~15 s while visible, and after local writes. A
+   Supabase-backed `Relay` over `relay_*` (the pglite adapter in
+   `src/test/db/pglite-relay.ts` is the model). Device identity in the secure
+   store (add `expo-secure-store`; web falls back to `localStorage`).
+2. **Household slice.** Replace `useAuthSession`, `useHouseholdSession`, anonymous
+   sign-in, `create_board`, `join_board`, `board_preview` and the password with
+   create-board, invite link (the seat) and join. Drop the beta key. Slots,
+   Household Size and Locale become `household:<id>` fields.
+3. **Meals slice.** `meal`, `meal_ingredient`, `ingredient` as rows; the
+   Catalogue ships as static JSON from `data/` and `copy_catalogue_meal`
+   becomes a client function (ADR 0005). Photos need encrypted blob storage.
+4. **Planning slice.** `week_plan`, `backlog_item`, `cook_event`, `leftover`.
+   Port the rules now in `plan_once`, `plan_meal`, `move_*` and the write limits
+   to domain functions. Realtime hooks go: the loop replaces them.
+5. **Shopping slice.** `shopping_check`, `shopping_override`, `shopping_extra`,
+   `household_staple`; the derivation (ADR 0003) is already client-side.
+6. **Recovery and cleanup.** A recovery seat for a lost last device; remove
+   Supabase Auth, the household tables, RLS, PGlite fixtures and
+   `catalogue:sync`; rewrite `docs/03`, `06`, `02`; supersede ADRs 0002 and 0010.
+7. **Event authorship.** Events are not signed per author, so any Member can
+   write as another. Sign them with the Member's key and show who wrote what.
 
 ## Household
 

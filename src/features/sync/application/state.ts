@@ -57,30 +57,32 @@ const snapshotSchema = z.object({
       receivedAt: z.number(),
     }),
   ),
-  bootToken: hex.optional(),
 })
 
-const keysSchema = z.record(z.string(), hex)
+const secretsSchema = z.object({ keys: z.record(z.string(), hex), bootToken: hex.optional() })
 
-/** Epoch keys are secrets: they go to the vault, never into the ordinary snapshot. */
+/** Epoch keys and the invite token are secrets: they go to the vault, never into the ordinary snapshot. */
 export const serialise = (state: EngineState): { snapshot: string; keys: string } => ({
-  snapshot: JSON.stringify({ ...state, keys: undefined }),
-  keys: JSON.stringify(
-    Object.fromEntries(Object.entries(state.keys).map(([epoch, key]) => [epoch, bytesToHex(key)])),
-  ),
+  snapshot: JSON.stringify({ ...state, keys: undefined, bootToken: undefined }),
+  keys: JSON.stringify({
+    keys: Object.fromEntries(
+      Object.entries(state.keys).map(([epoch, key]) => [epoch, bytesToHex(key)]),
+    ),
+    bootToken: state.bootToken,
+  }),
 })
 
 export const deserialise = (snapshot: string, keys: string): EngineState | undefined => {
   try {
     const parsed = snapshotSchema.safeParse(JSON.parse(snapshot))
-    const parsedKeys = keysSchema.safeParse(JSON.parse(keys))
+    const parsedKeys = secretsSchema.safeParse(JSON.parse(keys))
     if (!parsed.success || !parsedKeys.success) return undefined
     return {
       ...parsed.data,
       membership: parsed.data.membership,
-      bootToken: parsed.data.bootToken,
+      bootToken: parsedKeys.data.bootToken,
       keys: Object.fromEntries(
-        Object.entries(parsedKeys.data).map(([epoch, key]) => [
+        Object.entries(parsedKeys.data.keys).map(([epoch, key]) => [
           epoch,
           brand<Uint8Array, 'EpochKey'>(hexToBytes(key)),
         ]),

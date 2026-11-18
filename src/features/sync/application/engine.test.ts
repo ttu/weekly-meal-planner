@@ -126,6 +126,18 @@ describe('sync engine', () => {
     expect(title(bob)).toBe('Soup')
   })
 
+  it('keeps secrets out of ordinary storage, and drops the invite token once keys arrive', async () => {
+    const { engine: alice } = await start('alice')
+    const invite = must(await alice.invite('member'))
+    const { engine: bob, dev } = await joinAs('bob', invite)
+    const plain = (await dev.storage.get(`sync/${bob.household}`)) ?? ''
+    expect(plain).not.toContain(invite.token)
+    for (const key of Object.values(bob.debugKeys())) expect(plain).not.toContain(bytesToHex(key))
+    const vault = (await dev.vault.get(`sync/${bob.household}/keys`)) ?? ''
+    expect(vault).not.toContain(invite.token)
+    expect(vault).toContain(bytesToHex(bob.debugKeys()['1'] ?? new Uint8Array()))
+  })
+
   it('survives closing the app: a reopened board has the same data and pending writes', async () => {
     const { engine, dev, me } = await start('alice')
     await engine.write('meal:soup', 'title', 'Soup')
