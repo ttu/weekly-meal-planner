@@ -120,6 +120,66 @@ describe('relay', () => {
     })
   })
 
+  describe('NULL arguments', () => {
+    const nulls = (query: string, params: unknown[]) => db.sql(query, params)
+
+    it('never pass the token check, whatever the function', async () => {
+      await create()
+      await expect(
+        nulls('select * from relay_append($1, null, 1, $2, $3)', [BOARD, 'event', 'p']),
+      ).rejects.toThrow(/relay_forbidden/)
+      await expect(nulls('select * from relay_pull($1, null, -1, 500)', [BOARD])).rejects.toThrow(
+        /relay_forbidden/,
+      )
+      await expect(
+        nulls('select * from relay_rotate($1, null, $2, $3)', [BOARD, NEXT, 'x']),
+      ).rejects.toThrow(/relay_forbidden/)
+    })
+
+    it('are refused instead of stored, for every other argument too', async () => {
+      await create()
+      await expect(
+        nulls('select * from relay_append($1, $2, null, $3, $4)', [BOARD, TOKEN, 'event', 'p']),
+      ).rejects.toThrow()
+      await expect(
+        nulls('select * from relay_append($1, $2, 1, null, $3)', [BOARD, TOKEN, 'p']),
+      ).rejects.toThrow()
+      await expect(
+        nulls('select * from relay_append($1, $2, 1, $3, null)', [BOARD, TOKEN, 'event']),
+      ).rejects.toThrow()
+      await expect(
+        nulls('select * from relay_rotate($1, $2, null, $3)', [BOARD, TOKEN, 'x']),
+      ).rejects.toThrow()
+      await expect(
+        nulls('select * from relay_create(null, $1, $2)', [TOKEN, 'g']),
+      ).rejects.toThrow()
+      await expect(
+        nulls('select * from relay_create($1, null, $2)', ['board-dddddddd', 'g']),
+      ).rejects.toThrow()
+      expect(await pull()).toHaveLength(1)
+    })
+  })
+
+  describe('abuse limits', () => {
+    it('stops a board growing without bound', async () => {
+      await create()
+      await db.asOwner()
+      await db.sql('update relay_board set last_seq = 100000 where id = $1', [BOARD])
+      await db.asAnon()
+      await expect(append()).rejects.toThrow(/relay_full/)
+    })
+
+    it('stops board creation being used to fill the table', async () => {
+      await db.asOwner()
+      await db.sql(
+        `insert into relay_board (id, token_hash, last_seq)
+         select 'flood-board-' || g, '\\x00', 0 from generate_series(1, 1000) g`,
+      )
+      await db.asAnon()
+      await expect(create()).rejects.toThrow(/relay_busy/)
+    })
+  })
+
   it('exposes no table to clients, so nothing can be read without a token', async () => {
     await create()
     await expect(db.sql('select * from relay_record')).rejects.toThrow()

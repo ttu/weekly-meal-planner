@@ -40,8 +40,12 @@ as $fn$
 declare
   now_ms bigint := (extract(epoch from clock_timestamp()) * 1000)::bigint;
 begin
-  if p_token !~ '^[0-9a-f]{64}$' then
+  if p_board is null or p_payload is null or p_token is null or p_token !~ '^[0-9a-f]{64}$' then
     raise exception 'relay_bad_token';
+  end if;
+  -- Nothing authenticates a caller here, so creation is capped for everyone.
+  if (select count(*) from public.relay_board where created_at > now() - interval '1 hour') >= 1000 then
+    raise exception 'relay_busy';
   end if;
   begin
     insert into public.relay_board (id, token_hash, last_seq)
@@ -68,11 +72,18 @@ declare
 begin
   select * into b from public.relay_board where id = p_board for update;
   -- One answer for "no such board" and "wrong token", so it cannot be probed.
-  if not found or b.token_hash <> extensions.digest(p_token, 'sha256') then
+  -- NULL must fail closed: `NULL <> x` is NULL, and an `if` on NULL does not fire.
+  if p_token is null or not found or b.token_hash is distinct from extensions.digest(p_token, 'sha256') then
     raise exception 'relay_forbidden';
+  end if;
+  if p_epoch is null or p_kind is null or p_payload is null then
+    raise exception 'relay_bad_request';
   end if;
   if p_epoch <> b.epoch then
     raise exception 'relay_epoch';
+  end if;
+  if b.last_seq >= 100000 then
+    raise exception 'relay_full';
   end if;
   update public.relay_board set last_seq = last_seq + 1 where id = p_board;
   insert into public.relay_record (board_id, seq, kind, epoch, payload, received_at)
@@ -95,13 +106,14 @@ declare
   now_ms bigint := (extract(epoch from clock_timestamp()) * 1000)::bigint;
 begin
   select * into b from public.relay_board where id = p_board for update;
-  if not found or b.token_hash <> extensions.digest(p_token, 'sha256') then
+  -- NULL must fail closed: `NULL <> x` is NULL, and an `if` on NULL does not fire.
+  if p_token is null or not found or b.token_hash is distinct from extensions.digest(p_token, 'sha256') then
     raise exception 'relay_forbidden';
   end if;
-  if p_new_token !~ '^[0-9a-f]{64}$' then
+  if p_new_token is null or p_payload is null or p_new_token !~ '^[0-9a-f]{64}$' then
     raise exception 'relay_bad_token';
   end if;
-  if p_new_token = p_token then
+  if p_new_token is not distinct from p_token then
     raise exception 'relay_same_token';
   end if;
   update public.relay_board
@@ -127,7 +139,8 @@ declare
   b public.relay_board;
 begin
   select * into b from public.relay_board where id = p_board;
-  if not found or b.token_hash <> extensions.digest(p_token, 'sha256') then
+  -- NULL must fail closed: `NULL <> x` is NULL, and an `if` on NULL does not fire.
+  if p_token is null or not found or b.token_hash is distinct from extensions.digest(p_token, 'sha256') then
     raise exception 'relay_forbidden';
   end if;
   return query
@@ -138,3 +151,17 @@ begin
      limit least(greatest(p_limit, 1), 1000);
 end;
 $fn$;
+
+-- Postgres grants execute to everyone by default; say who is meant to call these.
+revoke execute on function
+  public.relay_create(text, text, text),
+  public.relay_append(text, text, integer, text, text),
+  public.relay_rotate(text, text, text, text),
+  public.relay_pull(text, text, bigint, integer)
+from public;
+grant execute on function
+  public.relay_create(text, text, text),
+  public.relay_append(text, text, integer, text, text),
+  public.relay_rotate(text, text, text, text),
+  public.relay_pull(text, text, bigint, integer)
+to anon, authenticated;
