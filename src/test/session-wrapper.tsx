@@ -34,7 +34,6 @@ export const sessionWrapper = (
             locale: 'en',
             slots: [],
             size: 4 as HouseholdSize,
-            shareToken: 't',
           }}
           member={{
             id: 'm1' as MemberId,

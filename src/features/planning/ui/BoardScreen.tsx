@@ -1,24 +1,18 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
-import {
-  boardUrl,
-  signOut,
-  usePresence,
-  useSession,
-  type PresentMember,
-  type SlotKey,
-} from '@/features/household'
+import { useSession, type SlotKey } from '@/features/household'
+import { isOk, type Result } from '@/shared/types/result'
 import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
 import { DayOne } from './DayOne'
-import { BoardHeader } from './BoardHeader'
+import { BoardHeader, type PresentMember } from './BoardHeader'
 import { DayColumn } from './DayColumn'
 import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
@@ -155,7 +149,9 @@ const sheets = themed((tokens) =>
 
 type Props = {
   readonly clock?: Clock
-  readonly origin?: string
+  /** Makes a link for a new seat on the board; the route knows the board and where it is served. */
+  readonly createInvite?: (() => Promise<Result<string, 'failed'>>) | undefined
+  readonly onLeave?: (() => void) | undefined
   readonly onOpenLibrary?: (() => void) | undefined
   readonly onOpenShopping?: (() => void) | undefined
   readonly onOpenSettings?: (() => void) | undefined
@@ -170,7 +166,8 @@ type Props = {
 
 const Board = ({
   clock = systemClock,
-  origin = '',
+  createInvite,
+  onLeave,
   onOpenLibrary,
   onOpenShopping,
   onOpenSettings,
@@ -189,14 +186,14 @@ const Board = ({
   )
   const session = useSession()
   const household = session.household
-  const me = session.member
   const locale = household?.locale ?? 'fi'
   const weekBoard = useWeekBoard(clock)
   const { board, backlog, weekPlanId, householdName, weekStart } = weekBoard
   const boardState = loadState(weekBoard)
   const { changedDays, markChanged } = useRecentlyChangedDays()
   useWeekRealtime(weekStart, markChanged)
-  const present = usePresence(weekStart, me)
+  // Nobody is shown as here too: presence needed a live channel, and the relay is a mailbox.
+  const present: readonly PresentMember[] = []
   const library = useHouseholdMeals()
   const { meals } = library
   const { add, hasFailed } = useAddToBacklog(clock)
@@ -228,13 +225,21 @@ const Board = ({
   const autoScroll = useEdgeAutoScroll(scroll)
   const dayOffsets = useRef(new Map<string, number>())
 
-  const shareUrl = household === undefined ? '' : boardUrl(origin, household.shareToken)
+  const [shareUrl, setShareUrl] = useState('')
+  const [shareFailed, setShareFailed] = useState(false)
 
   /** Opens the panel rather than copying silently: the link alone is half of
    *  what a recipient needs, and nothing used to say so. */
   const onShare = (): void => {
-    if (household === undefined) return
+    if (household === undefined || createInvite === undefined) return
+    setShareUrl('')
+    setShareFailed(false)
     setSharing(true)
+    // Each opening makes a new seat: a link is a key, so it is not reused.
+    void createInvite().then((made) => {
+      if (isOk(made)) setShareUrl(made.value)
+      else setShareFailed(true)
+    })
   }
 
   const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
@@ -306,6 +311,7 @@ const Board = ({
       actions={planningActions}
       leftoverCountFor={leftoverCountFor}
       shareUrl={shareUrl}
+      shareFailed={shareFailed}
       shared={shared}
       onShare={onShare}
       onCopyShareUrl={() => {
@@ -313,7 +319,7 @@ const Board = ({
       }}
       onOpenSettings={onOpenSettings}
       onLeave={() => {
-        void signOut(session.client)
+        onLeave?.()
       }}
       onWriteOwnMeal={onWriteOwnMeal}
     />

@@ -1,6 +1,6 @@
 import { fakeRandom } from '../domain/fake-random'
 import { memberKeyOf, newIdentity } from '../domain/identity'
-import { loadIdentity, recallBoard, rememberBoard } from './device'
+import { forgetBoard, loadIdentity, recallBoard, rememberBoard } from './device'
 import type { KeyValue } from './engine'
 
 const memoryKv = (initial: Record<string, string> = {}): KeyValue => {
@@ -37,5 +37,7 @@ describe('device', () => {
     const recalled = await recallBoard(deps)
     expect(recalled?.household).toBe('board-1')
     expect(recalled && memberKeyOf(recalled.identity)).toBe(memberKeyOf(seat))
+    await forgetBoard(deps)
+    expect(await recallBoard(deps)).toBeUndefined()
   })
 })

@@ -69,10 +69,14 @@ commit, and the app must run after each:
    device identity in the secure store. It mounts only when `EXPO_PUBLIC_RELAY_URL`
    is set. Known limits: the web vault is `localStorage`; the secure store's value
    size limit may be hit after many epochs (the vault holds every epoch key).
-2. **Household slice.** Replace `useAuthSession`, `useHouseholdSession`, anonymous
-   sign-in, `create_board`, `join_board`, `board_preview` and the password with
-   create-board, invite link (the seat) and join. Drop the beta key. Slots,
-   Household Size and Locale become `household:<id>` fields.
+2. ~~Household slice~~ done in the app shell: start, join by invite link, share,
+   Members (promote, remove) in Settings, settings as synced rows. Still on
+   Supabase and broken at runtime until their slices move: Meals, Planning and
+   Shopping read `useSession().client` and the Supabase RLS identity, which no
+   longer exists. Left to remove with them: `createSupabaseClient`, the
+   `client` field of `SessionProvider`, `Household`'s Supabase-era fields,
+   `demo-accounts`, `e2e` and `scripts/seed*`. Presence ("also here") is gone;
+   it needed a live channel.
 3. **Meals slice.** `meal`, `meal_ingredient`, `ingredient` as rows; the
    Catalogue ships as static JSON from `data/` and `copy_catalogue_meal`
    becomes a client function (ADR 0005). Photos need encrypted blob storage.

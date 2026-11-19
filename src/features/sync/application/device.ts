@@ -53,10 +53,14 @@ export const rememberBoard = async (
   await deps.storage.set(CURRENT, household)
 }
 
+/** Let go of the open board on this device; the next start shows none. */
+export const forgetBoard = (deps: Pick<Deps, 'storage'>): Promise<void> =>
+  deps.storage.set(CURRENT, '')
+
 export const recallBoard = async (
   deps: Pick<Deps, 'storage' | 'vault'>,
 ): Promise<{ readonly household: string; readonly identity: Identity } | undefined> => {
   const household = await deps.storage.get(CURRENT)
   const identity = await read(deps.vault, SEAT)
-  return household !== undefined && identity ? { household, identity } : undefined
+  return household && identity ? { household, identity } : undefined
 }

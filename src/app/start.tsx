@@ -2,52 +2,38 @@ import { useState } from 'react'
 import { router } from 'expo-router'
 import { isErr } from '@/shared/types/result'
 import { useTranslation } from '@/shared/i18n'
-import { memberColours } from '@/shared/theme/tokens'
-import {
-  StartBoardScreen,
-  createBoard,
-  useBetaKeyRequired,
-  useRefreshHousehold,
-  useSession,
-  type CreateBoardError,
-} from '@/features/household'
+import { StartBoardScreen, startBoard } from '@/features/household'
+import { useSync } from '@/features/sync'
 
 export default function Start(): React.JSX.Element {
-  const { client } = useSession()
-  const refreshHousehold = useRefreshHousehold()
-  const askBetaKey = useBetaKeyRequired()
+  const { deps, identity, adopt } = useSync()
   const { i18n } = useTranslation()
   const [isPending, setPending] = useState(false)
-  const [error, setError] = useState<CreateBoardError | undefined>(undefined)
+  const [failed, setFailed] = useState(false)
 
   return (
     <StartBoardScreen
       isPending={isPending}
-      error={error}
-      askBetaKey={askBetaKey}
-      onSignInInstead={() => {
-        router.push('/sign-in')
-      }}
+      failed={failed}
       onJoinInstead={() => {
         router.push('/join')
       }}
-      onCreate={({ boardName, displayName, password, betaKey }) => {
+      onCreate={({ boardName, displayName }) => {
+        if (identity === undefined) return
         setPending(true)
-        setError(undefined)
-        void createBoard(client, {
+        setFailed(false)
+        void startBoard(deps, identity, {
           boardName,
           displayName,
-          colour: memberColours[0],
           locale: i18n.language === 'fi' ? 'fi' : 'en',
-          password,
-          betaKey,
-        }).then((result) => {
-          setPending(false)
+        }).then(async (result) => {
           if (isErr(result)) {
-            setError(result.error)
+            setPending(false)
+            setFailed(true)
             return
           }
-          void refreshHousehold()
+          await adopt(result.value, identity)
+          setPending(false)
           router.replace('/')
         })
       }}

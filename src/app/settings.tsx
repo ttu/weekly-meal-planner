@@ -4,57 +4,62 @@ import { isErr, isOk, ok, type Result } from '@/shared/types/result'
 import { DEFAULT_LOCALE } from '@/shared/i18n'
 import {
   SettingsScreen,
-  addEmail,
-  saveLocale,
-  saveSize,
   DEFAULT_SIZE,
   addNamedSlot,
   addPresetSlot,
   moveSlot,
   removeSlot,
-  saveSlots,
-  useRefreshHousehold,
+  readMembers,
+  saveSettings,
   useSession,
   type Slot,
-  type AddEmailError,
   type SlotEditError,
   type SlotKey,
 } from '@/features/household'
-
-/** Where the link in the inbox lands. Back on Settings, which is where the
- *  person was standing when they asked for it. */
-const redirectTo = (): string =>
-  process.env.EXPO_OS === 'web' ? `${window.location.origin}/settings` : 'menami://settings'
+import { useData, useSync, useView } from '@/features/sync'
 
 export default function Settings(): React.JSX.Element {
-  const { client, household, householdChecked, email, pendingEmail } = useSession()
-  const refreshHousehold = useRefreshHousehold()
+  const { household, householdChecked, userId } = useSession()
+  const { engine } = useSync()
+  const view = useView()
+  const data = useData()
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<SlotEditError | 'write-failed' | undefined>(undefined)
-  const [emailPending, setEmailPending] = useState(false)
-  const [emailError, setEmailError] = useState<AddEmailError | undefined>(undefined)
-  const [sentTo, setSentTo] = useState<string | undefined>(undefined)
 
   if (householdChecked && household === undefined) return <Redirect href="/" />
 
-  /** Every edit is "work out the new list, then write the whole list": the
+  const members = view && data ? readMembers(view, data) : []
+  const isAdmin = view?.role === 'admin'
+
+  /** Settings are rows of the board: written here at once, sent when there is a connection. */
+  const write = (fields: Parameters<typeof saveSettings>[1]): void => {
+    if (!data) return
+    setError(undefined)
+    setPending(true)
+    void saveSettings(data, fields)
+      .catch(() => {
+        setError('write-failed')
+      })
+      .finally(() => {
+        setPending(false)
+      })
+  }
+
+  /** Every Slot edit is "work out the new list, then write the whole list": the
    *  Slots are one ordered value, not rows. */
   const apply = (edit: Result<readonly Slot[], SlotEditError>): void => {
-    setError(undefined)
     if (isErr(edit)) {
       setError(edit.error)
       return
     }
-    if (household === undefined) return
+    write({ slots: edit.value })
+  }
 
-    setPending(true)
-    void saveSlots(client, household.id, edit.value).then((written) => {
-      setPending(false)
-      if (!isOk(written)) {
-        setError('write-failed')
-        return
-      }
-      void refreshHousehold()
+  /** A removal or role change is an admin's signed act; the relay may refuse it. */
+  const admin = (act: Promise<Result<void, unknown>> | undefined): void => {
+    setError(undefined)
+    void act?.then((result) => {
+      if (!isOk(result)) setError('write-failed')
     })
   }
 
@@ -64,52 +69,20 @@ export default function Settings(): React.JSX.Element {
     <SettingsScreen
       locale={household?.locale ?? DEFAULT_LOCALE}
       onChangeLocale={(next) => {
-        if (household === undefined) return
-        setPending(true)
-        setError(undefined)
-        void saveLocale(client, household.id, next).then((written) => {
-          setPending(false)
-          if (!isOk(written)) {
-            setError('write-failed')
-            return
-          }
-          void refreshHousehold()
-        })
+        write({ locale: next })
       }}
       size={household?.size ?? DEFAULT_SIZE}
       onChangeSize={(next) => {
-        if (household === undefined) return
-        setPending(true)
-        setError(undefined)
-        // Pending until the Household has been read again: in between it is
-        // briefly undefined, and a tap then would be dropped.
-        void saveSize(client, household.id, next).then(async (written) => {
-          if (!isOk(written)) {
-            setError('write-failed')
-            setPending(false)
-            return
-          }
-          await refreshHousehold()
-          setPending(false)
-        })
+        write({ size: next })
       }}
-      account={{
-        ...(email === undefined ? {} : { email }),
-        ...((pendingEmail ?? sentTo) === undefined ? {} : { pendingEmail: pendingEmail ?? sentTo }),
-        isPending: emailPending,
-        ...(emailError === undefined ? {} : { error: emailError }),
-        onAddEmail: (next) => {
-          setEmailPending(true)
-          setEmailError(undefined)
-          void addEmail(client, next, redirectTo()).then((result) => {
-            setEmailPending(false)
-            if (isErr(result)) {
-              setEmailError(result.error)
-              return
-            }
-            setSentTo(next.trim())
-          })
-        },
+      members={members}
+      me={userId}
+      isAdmin={isAdmin}
+      onSetRole={(member, role) => {
+        admin(engine?.setRole(member, role))
+      }}
+      onRemoveMember={(member) => {
+        admin(engine?.removeMember(member))
       }}
       slots={slots}
       isPending={isPending}

@@ -18,7 +18,7 @@ const KIND = 'household'
 const ID = 'main'
 const PROFILE = 'member'
 
-export type BoardSettings = Omit<Household, 'shareToken'>
+export type BoardSettings = Household
 export type BoardMember = Member & { readonly role: 'admin' | 'member' }
 
 const DEFAULT_SLOTS = SLOT_PRESETS.filter((s) => s.key === 'lunch' || s.key === 'dinner')

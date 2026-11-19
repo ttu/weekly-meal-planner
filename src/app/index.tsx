@@ -3,7 +3,8 @@ import { Redirect, router } from 'expo-router'
 import { Share, StyleSheet, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { themed, useThemed } from '@/shared/theme/theme'
-import { NoHouseholdScreen, useSession } from '@/features/household'
+import { NoHouseholdScreen, createInviteLink, useSession } from '@/features/household'
+import { useSync } from '@/features/sync'
 import { BoardScreen } from '@/features/planning'
 import { useShoppingList } from '@/features/shopping'
 
@@ -13,25 +14,42 @@ const sheets = themed((tokens) =>
 
 export default function Index(): React.JSX.Element {
   const styles = useThemed(sheets)
-  const { client, userId, household, householdChecked } = useSession()
+  const { household, householdChecked } = useSession()
+  const { engine, leave } = useSync()
   const [shared, setShared] = useState(false)
   // The badge on the Shopping destination: what is still to buy for the week
   // on screen. Derived, like the list itself (ADR 0003).
   const { list } = useShoppingList()
 
-  // No identity at all: start a board. Signing in with an email is offered
-  // there, rather than being the first thing anyone is asked for (ADR 0010).
-  if (userId === undefined) return <Redirect href="/start" />
+  // No board on this device: start one, or join with an invite (ADR 0013).
+  const loading = <View style={styles.loading} testID="board-loading" />
+  if (engine === undefined) return householdChecked ? <Redirect href="/start" /> : loading
+  if (!householdChecked) return loading
 
-  if (!householdChecked) {
-    return <View style={styles.loading} testID="board-loading" />
+  if (household === undefined) {
+    return (
+      <NoHouseholdScreen
+        onStart={() => {
+          router.push('/start')
+        }}
+        onJoin={() => {
+          router.push('/join')
+        }}
+      />
+    )
   }
-
-  if (household === undefined) return <NoHouseholdScreen client={client} />
 
   return (
     <BoardScreen
-      origin={process.env.EXPO_OS === 'web' ? window.location.origin : 'https://menami.app'}
+      createInvite={() =>
+        createInviteLink(
+          engine,
+          process.env.EXPO_OS === 'web' ? window.location.origin : 'https://menami.app',
+        )
+      }
+      onLeave={() => {
+        void leave()
+      }}
       shared={shared}
       onShare={(url) => {
         // Copy on web, the OS share sheet on a device: on a phone the link is

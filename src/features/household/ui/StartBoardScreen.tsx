@@ -5,31 +5,15 @@ import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
-import { PasswordField } from '@/shared/ui/PasswordField'
 import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
-import type { CreateBoardError } from '../application/boards'
-import { BetaKeyField } from './BetaKeyField'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
-
-const errorKeys: Record<CreateBoardError, string> = {
-  'short-password': 'board.shortPassword',
-  'invalid-beta-key': 'board.invalidBetaKey',
-  'write-failed': 'board.createFailed',
-}
 
 type Props = {
   readonly isPending: boolean
-  readonly error?: CreateBoardError | undefined
-  /** True while a beta key is set; see supabase/schemas/12_beta_key.sql. */
-  readonly askBetaKey?: boolean | undefined
-  readonly onCreate: (input: {
-    boardName: string
-    displayName: string
-    password: string
-    betaKey: string
-  }) => void
-  readonly onSignInInstead: () => void
+  /** Whether starting the board failed; there is nothing more to say than "try again". */
+  readonly failed?: boolean | undefined
+  readonly onCreate: (input: { boardName: string; displayName: string }) => void
   readonly onJoinInstead?: (() => void) | undefined
 }
 
@@ -77,16 +61,14 @@ const sheets = themed((tokens) =>
 )
 
 /**
- * The first screen for someone with no account. It asks for three things and
- * nothing else — a board name, their own name, and the password the family
- * will use to join (ADR 0010).
+ * The first screen for someone with no board. It asks for two things and
+ * nothing else — a board name and their own name. The family joins by invite
+ * link (ADR 0013).
  */
 export const StartBoardScreen = ({
   isPending,
-  error,
-  askBetaKey = false,
+  failed = false,
   onCreate,
-  onSignInInstead,
   onJoinInstead,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
@@ -95,8 +77,6 @@ export const StartBoardScreen = ({
   const insets = useSafeAreaInsets()
   const [boardName, setBoardName] = useState('')
   const [displayName, setDisplayName] = useState('')
-  const [password, setPassword] = useState('')
-  const [betaKey, setBetaKey] = useState('')
 
   return (
     <KeyboardAvoiding>
@@ -135,29 +115,9 @@ export const StartBoardScreen = ({
         />
         <Text style={styles.hint}>{t('board.yourNameHint')}</Text>
 
-        <Text style={formStyles.label}>{t('board.password')}</Text>
-        <PasswordField
-          value={password}
-          onChangeText={setPassword}
-          isNew
-          placeholder={t('board.passwordPlaceholder')}
-          hasError={error === 'short-password'}
-          testID="start-password"
-        />
-        <Text style={[styles.hint, { marginTop: tokens.space.xs }]}>{t('board.passwordHint')}</Text>
-
-        {askBetaKey && (
-          <BetaKeyField
-            value={betaKey}
-            onChangeText={setBetaKey}
-            hasError={error === 'invalid-beta-key'}
-            testID="start-beta-key"
-          />
-        )}
-
-        {error !== undefined && (
+        {failed && (
           <Text style={formStyles.error} testID="start-error">
-            {t(errorKeys[error])}
+            {t('board.createFailed')}
           </Text>
         )}
 
@@ -170,7 +130,7 @@ export const StartBoardScreen = ({
           style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
           disabled={isPending}
           onPress={() => {
-            onCreate({ boardName, displayName, password, betaKey })
+            onCreate({ boardName, displayName })
           }}
           accessibilityRole="button"
           accessibilityLabel={t('board.create')}
@@ -197,14 +157,6 @@ export const StartBoardScreen = ({
               </Pressable>
             </View>
           )}
-          <Pressable
-            onPress={onSignInInstead}
-            accessibilityRole="button"
-            accessibilityLabel={t('board.signInInstead')}
-            testID="start-sign-in-instead"
-          >
-            <Text style={styles.muted}>{t('board.signInInstead')}</Text>
-          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoiding>

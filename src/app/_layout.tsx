@@ -20,8 +20,7 @@ import { platformDeps, SyncProvider } from '@/features/sync'
 import {
   createSupabaseClient,
   SessionProvider,
-  useAuthSession,
-  useHouseholdSession,
+  useBoardSession,
   type AppSupabaseClient,
 } from '@/features/household'
 
@@ -32,15 +31,13 @@ const sheets = themed((tokens) =>
 )
 
 /**
- * Inside the QueryClientProvider so the Household can be a query, and every
- * route renders: gating here would make /start and /join unreachable, which is
- * exactly who needs them.
+ * Every route renders: gating here would make /start and /join unreachable,
+ * which is exactly who needs them.
  */
 const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.JSX.Element => {
-  const { userId, email, pendingEmail, isLoading } = useAuthSession(client)
-  const { household, member, checked } = useHouseholdSession(client, userId)
+  const { household, member, userId, checked } = useBoardSession()
 
-  if (isLoading) return <Blank />
+  if (!checked) return <Blank />
 
   return (
     <SessionProvider
@@ -48,8 +45,6 @@ const AppSession = ({ client }: { readonly client: AppSupabaseClient }): React.J
       household={household}
       member={member}
       userId={userId}
-      email={email}
-      pendingEmail={pendingEmail}
       householdChecked={checked}
     >
       {/* Above the Stack: the board and the Shopping List are two views of
@@ -73,11 +68,7 @@ const App = (): React.JSX.Element => {
   const appState = useMemo(() => createAppStateSource(), [])
   useQueryLifecycle(network, appState)
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
-  const syncDeps = useMemo(() => {
-    const url = readRelayUrl()
-    return url ? platformDeps(url) : undefined
-  }, [])
-  const session = fontsLoaded ? <AppSession client={client} /> : <Blank />
+  const syncDeps = useMemo(() => platformDeps(readRelayUrl()), [])
 
   return (
     // The ground the whole app sits on. Screens that cap their own width —
@@ -87,7 +78,13 @@ const App = (): React.JSX.Element => {
       <SafeAreaProvider>
         <NetworkSourceProvider source={network}>
           <QueryClientProvider client={queryClient}>
-            {syncDeps ? <SyncProvider deps={syncDeps}>{session}</SyncProvider> : session}
+            {fontsLoaded ? (
+              <SyncProvider deps={syncDeps}>
+                <AppSession client={client} />
+              </SyncProvider>
+            ) : (
+              <Blank />
+            )}
           </QueryClientProvider>
         </NetworkSourceProvider>
       </SafeAreaProvider>

@@ -30,6 +30,7 @@ type Props = {
   >
   readonly leftoverCountFor: (id: CookEventId) => number
   readonly shareUrl: string
+  readonly shareFailed: boolean
   readonly shared: boolean
   readonly onShare: () => void
   readonly onCopyShareUrl: () => void
@@ -55,6 +56,7 @@ export const BoardOverlays = ({
   actions,
   leftoverCountFor,
   shareUrl,
+  shareFailed,
   shared,
   onShare,
   onCopyShareUrl,
@@ -208,6 +210,7 @@ export const BoardOverlays = ({
       <ShareSheet
         visible={isSharing}
         url={shareUrl}
+        failed={shareFailed}
         justCopied={shared}
         onCopy={onCopyShareUrl}
         onClose={() => {

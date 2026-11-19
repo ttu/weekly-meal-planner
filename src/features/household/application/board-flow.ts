@@ -3,6 +3,7 @@ import type { Locale } from '@/shared/i18n'
 import {
   createHousehold,
   dataOf,
+  identityFromInvite,
   joinHousehold,
   type Engine,
   type Identity,
@@ -10,7 +11,7 @@ import {
   type RelayError,
   type SyncDeps,
 } from '@/features/sync'
-import type { InviteSeat } from '../domain/invite-link'
+import { inviteLink, parseInviteLink, type InviteSeat } from '../domain/invite-link'
 import { nextColour, readMembers, saveProfile, saveSettings } from './board-data'
 
 const colourFor = (engine: Engine): string => {
@@ -53,4 +54,30 @@ export const joinBoard = async (
   })
   await engine.sync()
   return ok(engine)
+}
+
+/** What a person can be told when joining does not work. */
+export type JoinFailure = 'bad-link' | 'offline' | 'rejected'
+
+/** Join from whatever was pasted. The seat is read first, so a bad paste costs no network. */
+export const joinFromLink = async (
+  deps: SyncDeps,
+  pasted: string,
+  displayName: string,
+): Promise<Result<{ readonly engine: Engine; readonly identity: Identity }, JoinFailure>> => {
+  const seat = parseInviteLink(pasted)
+  if (!seat) return err('bad-link')
+  const joined = await joinBoard(deps, seat, displayName)
+  if (isErr(joined)) return err(joined.error === 'offline' ? 'offline' : 'rejected')
+  return ok({ engine: joined.value, identity: identityFromInvite(seat) })
+}
+
+/** A link for a new seat on the open board. Only an admin can make one. */
+export const createInviteLink = async (
+  engine: Engine,
+  origin: string,
+  role: 'admin' | 'member' = 'member',
+): Promise<Result<string, 'failed'>> => {
+  const made = await engine.invite(role)
+  return isErr(made) ? err('failed') : ok(inviteLink(origin, made.value))
 }

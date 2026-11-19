@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useSyncExternalStore } from 'react'
 import { createAppStateSource } from '@/shared/net/useQueryLifecycle'
 import { dataOf, type Data } from '../application/data'
-import { loadIdentity, recallBoard, rememberBoard } from '../application/device'
+import { forgetBoard, loadIdentity, recallBoard, rememberBoard } from '../application/device'
 import { openHousehold, type Deps, type Engine, type View } from '../application/engine'
 import { startSyncLoop, platformTimers } from '../application/sync-loop'
 import { viewStore } from '../application/view-store'
@@ -16,6 +16,8 @@ type Session = {
   readonly engine: Engine | undefined
   /** Make this the board the device shows, as this identity, and remember both. */
   readonly adopt: (engine: Engine, identity: Identity) => Promise<void>
+  /** Stop showing the open board on this device. Does not give up the seat. */
+  readonly leave: () => Promise<void>
 }
 
 const SessionContext = createContext<Session | undefined>(undefined)
@@ -66,9 +68,14 @@ export const SyncProvider = ({ deps, children }: Props): React.JSX.Element => {
     [deps],
   )
 
+  const leave = useCallback(async () => {
+    await forgetBoard(deps)
+    setEngine(undefined)
+  }, [deps])
+
   const session = useMemo(
-    () => ({ ready, deps, identity, engine, adopt }),
-    [ready, deps, identity, engine, adopt],
+    () => ({ ready, deps, identity, engine, adopt, leave }),
+    [ready, deps, identity, engine, adopt, leave],
   )
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }
