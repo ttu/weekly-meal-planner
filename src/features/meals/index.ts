@@ -30,5 +30,11 @@ export { catalogueIngredients } from './domain/catalogue'
 export { unitsFor, dimensionOf, defaultAmountFor, parseQuantity } from '@/shared/units'
 export type { Ingredient, Dimension } from './domain/types'
 export type { MealDetail } from './domain/types'
-export { listMeals, getMeal, copyCatalogueMeal, deleteMeal } from './application/meals-data'
+export {
+  listMeals,
+  getMeal,
+  mealIndex,
+  copyCatalogueMeal,
+  deleteMeal,
+} from './application/meals-data'
 export { useMeal, useMealActions, type MealActions } from './ui/useMealActions'

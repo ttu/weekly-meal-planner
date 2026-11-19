@@ -11,7 +11,7 @@ import {
   removeSlot,
   readMembers,
   saveSettings,
-  useSession,
+  useBoardSession,
   type Slot,
   type SlotEditError,
   type SlotKey,
@@ -19,7 +19,7 @@ import {
 import { useData, useSync, useView } from '@/features/sync'
 
 export default function Settings(): React.JSX.Element {
-  const { household, householdChecked, userId } = useSession()
+  const { household, checked: householdChecked, userId } = useBoardSession()
   const { engine } = useSync()
   const view = useView()
   const data = useData()

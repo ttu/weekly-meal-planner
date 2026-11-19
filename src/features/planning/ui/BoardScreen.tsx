@@ -5,7 +5,7 @@ import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
-import { useSession, type SlotKey } from '@/features/household'
+import { useBoardSession, type SlotKey } from '@/features/household'
 import { isOk, type Result } from '@/shared/types/result'
 import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
 import { systemClock, type Clock } from '@/shared/time/clock'
@@ -23,7 +23,6 @@ import { useSelectedWeek } from './SelectedWeek'
 import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
-import { useWeekRealtime } from './useWeekRealtime'
 import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
 import { DragProvider } from './DragContext'
@@ -184,20 +183,18 @@ const Board = ({
     () => StyleSheet.create({ top: { paddingTop: insets.top } }),
     [insets.top],
   )
-  const session = useSession()
-  const household = session.household
+  const { household } = useBoardSession()
   const locale = household?.locale ?? 'fi'
   const weekBoard = useWeekBoard(clock)
-  const { board, backlog, weekPlanId, householdName, weekStart } = weekBoard
+  const { board, backlog, householdName } = weekBoard
   const boardState = loadState(weekBoard)
-  const { changedDays, markChanged } = useRecentlyChangedDays()
-  useWeekRealtime(weekStart, markChanged)
+  const { changedDays } = useRecentlyChangedDays()
   // Nobody is shown as here too: presence needed a live channel, and the relay is a mailbox.
   const present: readonly PresentMember[] = []
   const library = useHouseholdMeals()
   const { meals } = library
   const { add, hasFailed } = useAddToBacklog(clock)
-  const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal(clock)
+  const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal()
   const boardSheets = useBoardSheets()
   const {
     setPickerOpen,
@@ -210,12 +207,11 @@ const Board = ({
     setMenuOpen,
     setSharing,
   } = boardSheets
-  const planningActions = usePlanningActions(clock)
+  const planningActions = usePlanningActions()
   const { addLeftoverFor, leftoverFailed, moveFailed, unplanFailed } = planningActions
   const { offset, goToWeek } = useSelectedWeek(clock)
   const { onDropped, orderRefused } = useBoardDrop({
     board,
-    weekPlanId,
     add,
     plan,
     actions: planningActions,
@@ -306,7 +302,6 @@ const Board = ({
     <BoardOverlays
       sheets={boardSheets}
       board={board}
-      weekPlanId={weekPlanId}
       today={today}
       locale={locale}
       slots={household?.slots ?? []}
@@ -501,7 +496,7 @@ const Board = ({
         >
           <View style={styles.boardNameRow}>
             <BoardNameButton
-              boardName={session.household?.name ?? ''}
+              boardName={household?.name ?? ''}
               onPress={() => {
                 setMenuOpen(true)
               }}

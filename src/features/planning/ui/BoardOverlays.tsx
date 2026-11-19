@@ -14,7 +14,6 @@ import { ServingsSheet } from './ServingsSheet'
 type Props = {
   readonly sheets: BoardSheets
   readonly board: readonly BoardDay[]
-  readonly weekPlanId: string | undefined
   readonly today: string
   readonly locale: Locale
   readonly slots: readonly Slot[]
@@ -45,7 +44,6 @@ type Props = {
 export const BoardOverlays = ({
   sheets,
   board,
-  weekPlanId,
   today,
   locale,
   slots,
@@ -92,7 +90,7 @@ export const BoardOverlays = ({
 
   return (
     <>
-      {planning !== undefined && weekPlanId !== undefined && (
+      {planning !== undefined && (
         <PlanSheet
           visible
           mealName={planning.mealName}
@@ -105,7 +103,6 @@ export const BoardOverlays = ({
           isPending={planPending}
           onSubmit={(choice) => {
             plan({
-              weekPlanId,
               mealId: planning.mealId,
               backlogItemId: planning.id,
               ...choice,
@@ -242,7 +239,6 @@ export const BoardOverlays = ({
             add(mealId)
           } else {
             plan({
-              weekPlanId,
               mealId,
               date: target.date,
               slotKey: target.slotKey,

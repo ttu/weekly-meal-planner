@@ -13,7 +13,7 @@ export type Row = { readonly id: string; readonly doc: Doc }
 export type Data = {
   readonly list: (kind: string) => readonly Row[]
   readonly get: (kind: string, id: string) => Doc | undefined
-  /** Writes only the fields given; the row's other fields are untouched. */
+  /** Writes only the fields given; the row's other fields are untouched. A removed row comes back. */
   readonly put: (kind: string, id: string, fields: Doc) => Promise<void>
   readonly remove: (kind: string, id: string) => Promise<void>
 }
@@ -42,9 +42,16 @@ export const dataOf = (engine: Pick<Engine, 'view' | 'write'>): Data => {
         })
     },
     put: async (kind, id, fields) => {
+      const entity = entityOf(kind, id)
+      const cells = Object.hasOwn(engine.view().store, entity)
+        ? engine.view().store[entity]
+        : undefined
       for (const [field, value] of Object.entries(fields)) {
-        await engine.write(entityOf(kind, id), field, value)
+        await engine.write(entity, field, value)
       }
+      // Writing to a removed row brings it back: a Meal moved off the Backlog and
+      // back again is the same row, not a second one.
+      if (cells?.deleted?.value === true) await engine.write(entity, 'deleted', false)
     },
     remove: (kind, id) => engine.write(entityOf(kind, id), 'deleted', true),
   }

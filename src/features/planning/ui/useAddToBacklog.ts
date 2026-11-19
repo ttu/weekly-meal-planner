@@ -1,10 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { isErr } from '@/shared/types/result'
 import { systemClock, type Clock } from '@/shared/time/clock'
-import { useSession } from '@/features/household'
+import { useBoardSession } from '@/features/household'
 import type { MealId } from '@/features/meals'
-import { addToBacklog } from '../application/add-to-backlog'
+import { useData, useSync } from '@/features/sync'
+import { addToBacklog } from '../application/planning-data'
 import { useSelectedWeek } from './SelectedWeek'
+import { useWrite } from './useWrite'
 
 export type AddToBacklog = {
   readonly add: (mealId: MealId) => void
@@ -13,36 +13,24 @@ export type AddToBacklog = {
 }
 
 export const useAddToBacklog = (clock: Clock = systemClock): AddToBacklog => {
-  const { client, household, userId } = useSession()
-  const queryClient = useQueryClient()
+  const { userId } = useBoardSession()
+  const data = useData()
+  const { deps } = useSync()
   const { weekStart } = useSelectedWeek(clock)
-
-  const mutation = useMutation({
-    mutationFn: async (mealId: MealId) => {
-      if (household === undefined || userId === undefined) throw new Error('not-signed-in')
-
-      const result = await addToBacklog(client, {
-        householdId: household.id,
-        weekStart,
-        mealId,
-        addedBy: userId,
-      })
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: () => {
-      // Refetch rather than patch the cache: the server assigns the id and the
-      // Member's display name comes from a join, so a hand-built optimistic row
-      // would be a guess at both.
-      void queryClient.invalidateQueries({ queryKey: ['week', household?.id, weekStart] })
-    },
-  })
+  const write = useWrite()
 
   return {
     add: (mealId) => {
-      mutation.mutate(mealId)
+      if (!data || userId === undefined) return
+      write.run(() =>
+        addToBacklog(data, deps.random, deps.clock.now().getTime(), {
+          weekStart,
+          mealId,
+          addedBy: userId,
+        }),
+      )
     },
-    isPending: mutation.isPending,
-    hasFailed: mutation.isError,
+    isPending: write.pending,
+    hasFailed: write.failed,
   }
 }

@@ -153,3 +153,15 @@ export const deleteMeal = async (data: Data, id: MealId): Promise<Result<void, '
     return err('write-failed')
   }
 }
+
+/**
+ * Every Meal by id, with its Ingredients, in one pass: Household Meals and the
+ * Catalogue alike. A Meal that is gone is simply not in it, which is how what
+ * was planned from it drops off the board.
+ */
+export const mealIndex = (
+  data: Data,
+  household: HouseholdId,
+  locale: Locale,
+): ReadonlyMap<string, MealDetail> =>
+  new Map([...catalogueMeals(locale), ...own(data, household)].map((m) => [String(m.id), m]))

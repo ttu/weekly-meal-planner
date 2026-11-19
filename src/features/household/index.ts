@@ -19,8 +19,6 @@ export {
   type SlotEditError,
 } from './domain/slot-edit'
 export { DEFAULT_SIZE, MAX_SIZE, MIN_SIZE, stepSize } from './domain/size'
-export { createSupabaseClient, type AppSupabaseClient } from './infrastructure/supabase-client'
-export { SessionProvider, useSession } from './ui/SessionProvider'
 export { NoHouseholdScreen } from './ui/NoHouseholdScreen'
 export { ShareSheet } from './ui/ShareSheet'
 export { StartBoardScreen } from './ui/StartBoardScreen'

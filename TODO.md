@@ -84,16 +84,20 @@ commit, and the app must run after each:
    a photo needs resizing plus a chunked or separate encrypted store. Deleting a
    Meal leaves planned rows pointing at nothing; the Planning slice must hide
    them (and their Leftovers).
-4. **Planning slice.** `week_plan`, `backlog_item`, `cook_event`, `leftover`.
-   Port the rules now in `plan_once`, `plan_meal`, `move_*` and the write limits
-   to domain functions. Realtime hooks go: the loop replaces them.
-5. **Shopping slice.** `shopping_check`, `shopping_override`, `shopping_extra`,
-   `household_staple`; the derivation (ADR 0003) is already client-side.
-6. **Recovery and cleanup.** A recovery seat for a lost last device; remove
+4. ~~Planning slice~~ and 5. ~~Shopping slice~~ done: Backlog Items, Cook Events,
+   Leftovers, checks, Staples and Extras are rows keyed by the week's Monday (no
+   Week Plan row). `plan_meal`/`unplan_meal` are client functions where planning a
+   Backlog Item gives the Cook Event the Item's own id, so two Members planning it
+   at once converge on one; the row caps are enforced where the write is made.
+   The Realtime hooks and presence are gone, and so is the "this day just changed"
+   highlight (`useRecentlyChangedDays` is never fed): feed it from the engine's
+   incoming events. Backlog and week caps are per device view, not global: two
+   offline devices can together exceed a cap.
+5. **Recovery and cleanup.** A recovery seat for a lost last device; remove
    Supabase entirely: Auth, the household tables, RLS, `supabase/`, the
    `@supabase/supabase-js` and `supabase` packages, PGlite fixtures,
    `db:*` scripts and `catalogue:sync`; rewrite `docs/03`, `06`, `02`; supersede ADRs 0002 and 0010.
-7. **Event authorship.** Events are not signed per author, so any Member can
+6. **Event authorship.** Events are not signed per author, so any Member can
    write as another. Sign them with the Member's key and show who wrote what.
    This also covers: a Member can overwrite another's `member:<key>` profile
    (name, colour), and anyone can write the admin-only `household:main` settings,

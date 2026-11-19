@@ -3,7 +3,7 @@ import { Redirect, router } from 'expo-router'
 import { Share, StyleSheet, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { themed, useThemed } from '@/shared/theme/theme'
-import { NoHouseholdScreen, createInviteLink, useSession } from '@/features/household'
+import { NoHouseholdScreen, createInviteLink, useBoardSession } from '@/features/household'
 import { useSync } from '@/features/sync'
 import { BoardScreen } from '@/features/planning'
 import { useShoppingList } from '@/features/shopping'
@@ -14,7 +14,7 @@ const sheets = themed((tokens) =>
 
 export default function Index(): React.JSX.Element {
   const styles = useThemed(sheets)
-  const { household, householdChecked } = useSession()
+  const { household, checked: householdChecked } = useBoardSession()
   const { engine, leave } = useSync()
   const [shared, setShared] = useState(false)
   // The badge on the Shopping destination: what is still to buy for the week

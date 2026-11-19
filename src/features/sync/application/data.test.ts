@@ -63,4 +63,12 @@ describe('dataOf', () => {
   it('answers undefined for a row nobody wrote', () => {
     expect(data.get('meal', 'nope')).toBeUndefined()
   })
+
+  it('brings a removed row back when it is written to again, keeping its other fields', async () => {
+    await data.put('meal', 'm1', { name: 'Soup', servings: 4 })
+    await data.remove('meal', 'm1')
+    expect(data.get('meal', 'm1')).toBeUndefined()
+    await data.put('meal', 'm1', { servings: 6 })
+    expect(data.get('meal', 'm1')).toMatchObject({ name: 'Soup', servings: 6 })
+  })
 })
