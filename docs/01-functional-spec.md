@@ -27,9 +27,9 @@ have.
 
 | Area             | Decision                                                          |
 | ---------------- | ----------------------------------------------------------------- |
-| Sharing          | Hosted app, shared household account                              |
+| Sharing          | Invite link per Member; no accounts; any admin can remove anyone  |
 | Platform         | Expo (React Native), iOS/Android, web target via react-native-web |
-| Backend          | Supabase — Postgres, auth, RLS, realtime                          |
+| Backend          | None of ours holding data: local-first, E2E-encrypted, a relay    |
 | Leftovers        | Cook once, plus explicit leftover cards linked to the cook event  |
 | Pantry           | Staples flag with a "running low" check, no quantity inventory    |
 | Meal source      | Household library plus a curated public catalogue                 |
@@ -42,16 +42,11 @@ have.
 
 ### Backend cost position
 
-Supabase free tier: 500 MB database, 5 GB egress/month, 50,000 MAU, no backups,
-projects paused after a week of inactivity. Estimated footprint is ~0.5 MB per
-household-year, so database size and egress bind at roughly 1,000 households;
-MAU never binds. The reason to move to Pro ($25/month, 8 GB, daily backups) is
-**backups**, and it arrives long before any quota does.
-
-Monetisation is a v1 non-goal. Ad revenue would plausibly cover $25/month
-somewhere in the low hundreds of households, but the EU consent platform work,
-the $100 AdMob payout threshold and the cost to a shared kitchen app's feel are
-not worth it at that scale.
+There is no database to pay for. The only thing we run is the relay, a Cloudflare
+Worker with one Durable Object per board, holding encrypted records. Its cost
+scales with requests (every open device polls every 15 s while visible), not with
+data, which is about half a megabyte per household-year. See `08-deployment.md`;
+check Cloudflare's current limits and price before depending on a figure.
 
 ## Glossary — ubiquitous language
 
@@ -96,8 +91,9 @@ TypeScript types and feature folders follow.
 
 ## Domain model
 
-All tables are scoped by `household_id` and gated by RLS on household
-membership, except the global catalogue rows.
+Rows belong to one Household's board and are shared only between its Members
+(`03-datamodel.md`); the Catalogue ships with the app. Where this section says
+"table" or "column", read "kind of row" and "field".
 
 ### Household and identity
 
@@ -221,18 +217,15 @@ slot. Leftover cards render as a lighter variant naming their parent
 `servings_cooked` against the number of cards depending on it, as information.
 The app never blocks claiming four dinners from one pot.
 
-### Realtime and conflicts
+### Syncing and conflicts
 
-Supabase realtime subscriptions on `backlog_item`, `cook_event` and
-`leftover`, scoped to the current `week_plan`. Writes go to Postgres with
-an optimistic local update; the subscription reconciles.
-
-**Presence** is a second, separate channel (Supabase Realtime Presence, not row
-changes): who is looking at this week, and which day they are editing. The
-design surfaces it as member avatars in the header, an "Aino is editing
-Thursday" line, and a two-second sage hairline on a day that just changed. No
-toasts, no scroll jumps — a change someone else made must never move the card
-under your thumb.
+Every change is an event merged last-writer-wins per field (`11-sync.md`). A
+write lands in the local copy at once and is sent when there is a connection, so
+the board works offline. Other Members' changes arrive when the device next syncs
+(on start, on foreground, about every 15 s while visible): there is no live
+channel, and so no "who is here" presence and no "this day just changed" highlight
+yet (TODO.md). When two people change the same field, the later write wins; when
+they change different fields of one row, both survive.
 
 Slots are **not exclusive** — a day-slot holds more than one entry. When two
 people drop different meals on Tuesday dinner at once, both land and the family
@@ -360,27 +353,20 @@ and the dev-build workflow is justified. 4 only on request.
 
 ## Testing
 
-Full strategy in `04-testing.md`. In summary, and correcting an earlier draft of
-this section: the weighting is a **test diamond** — roughly 70% integration, 20%
-E2E, 10% unit — not unit-heavy.
+Full strategy in `04-testing.md`. In summary: a **test diamond** — roughly 70%
+integration, 20% E2E, 10% unit — not unit-heavy. The risk in this app is
+collaboration: several devices converging, removal actually cutting someone off,
+and a hostile Member not breaking the others. Those are integration tests over the
+real sync engine and a relay in memory.
 
-The earlier draft put the heaviest coverage on unit tests for the shopping-list
-derivation. That derivation is pure and does deserve thorough tests, but it is
-small and testing it is cheap. The real risk in this app is collaboration: RLS
-policies, realtime reconciliation, the offline queue and the catalogue sync.
-Those are integration tests, run against pglite.
-
-- **Integration (bulk)** — RLS tested adversarially (household A cannot reach
-  household B, across every table); feature use cases against a real database;
-  catalogue sync idempotency; offline queue convergence.
-- **Unit (pure logic only)** — the derivation and its unit conversion: scaling,
-  dimension rules, leftovers contributing zero, staples filtering,
-  running-low promotion, overrides, the incomplete-meal line, ISO week
-  boundaries with an injected clock.
-- **E2E (one flow)** — sign in, add a meal, backlog it, plan it, see the
-  shopping list, copy the agent prompt.
-- **Not unit-tested** — realtime sync and presence, which are verified with two
-  real clients and airplane mode.
+- **Integration (bulk)** — the protocol adversarially; feature use cases over a
+  real board; rows another Member wrote that make no sense; offline convergence.
+- **Unit (pure logic only)** — the Shopping List derivation and its unit
+  conversion, the clock and the merge, ISO week boundaries with an injected clock.
+- **E2E** — to be rebuilt against a local relay: start a board, add a meal, backlog
+  it, plan it, see the shopping list, copy the agent prompt.
+- **Not unit-tested** — reconnection on a real network, verified with two real
+  clients and airplane mode.
 
 ## Non-goals for v1
 

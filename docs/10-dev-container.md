@@ -188,9 +188,10 @@ install churn); Playwright browsers are one shared `menami-playwright-browsers`
 volume. pnpm's store gets its own volume too: by default pnpm would create it
 on the bind mount, inside your host checkout.
 
-## Supabase
+## The relay
 
-Tests run on pglite and need nothing. For manual work run `supabase start` on
-the host. The browser reaches it at `127.0.0.1:54421` as usual; scripts run in
-the container (`catalogue:sync`, `db:seed`) need `.env` to point at
-`http://host.docker.internal:54421` instead.
+Tests need nothing: they run the relay code in memory. For manual work run
+`pnpm dlx wrangler dev --config relay/wrangler.toml` on the host (it listens on
+`127.0.0.1:8787`; scripts and the app inside the container reach it as
+`http://host.docker.internal:8787`, so set `EXPO_PUBLIC_RELAY_URL` in `.env`
+accordingly).

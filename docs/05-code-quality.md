@@ -152,7 +152,7 @@ Ingredients through `loadIngredients` instead of repeating the query.
 
 ## Observability
 
-Structured logging at boundaries: auth, every Supabase call that fails, the
+Structured logging at boundaries: every relay call that fails, the
 offline queue flush, the catalogue sync. Log context, not prose. Correlation id
 per session so a family's bug report is traceable.
 

@@ -76,7 +76,7 @@ contradict this one, this one wins and the other is a bug.
   - Ensure all important behavior is covered by automated tests
   - Use test diamond strategy — roughly 70% integration / 20% E2E / 10% unit (unit = pure logic only, E2E = critical flows only)
   - Prefer integration tests over mocks when validating collaboration between modules
-  - For integration tests prefer in-memory databases — pglite for Postgres in-process; Testcontainers when vendor-specific behavior matters; avoid SQLite standing in for Postgres
+  - For integration tests prefer real collaborators over in-memory fakes of the boundary (here: the real sync engine over the real relay code in memory); Testcontainers only when vendor-specific behavior matters
   - E2E selectors: `data-testid` only — never CSS classes, text content, or structural position; `getByRole`/`aria-label` preferred for interactive controls
   - Coverage policy: project `target: auto` (never decrease) + hard floor on the patch (80% for new code)
   - Mutation testing (Stryker) scoped to pure logic, run on a schedule — write behavior tests to close real gaps, not mutant-killing tests

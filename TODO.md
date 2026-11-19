@@ -55,55 +55,30 @@ you want to overturn one, change the spec first.
   root-owned file in `/etc` that `post-create.sh` writes and then locks, so
   neither Bash nor Edit/Write can add an alias, include or autocorrect.
 
-## Local-first migration (ADR 0013)
+## Local-first migration (ADR 0013) — what is left
 
-The sync core and the relay (a Cloudflare Worker, `relay/`) are built and tested
-(`docs/11-sync.md`), but nothing in the app uses them yet: every screen still
-reads Supabase. Supabase goes entirely, relay included. In order, each its own
-commit, and the app must run after each:
+The app runs entirely on the synced board and the relay; Supabase is gone from the
+repo. Nothing has been run against a deployed relay, and no screen has been
+looked at in a browser or on a device since the migration. What is left:
 
-0. **Deploy the relay** (`relay/wrangler.toml`; never run against Cloudflare
-   yet) and set `EXPO_PUBLIC_RELAY_URL`.
-
-1. ~~Provider and sync loop~~ done: `SyncProvider`, `useView`, `useData`, `startSyncLoop`,
-   device identity in the secure store. It mounts only when `EXPO_PUBLIC_RELAY_URL`
-   is set. Known limits: the web vault is `localStorage`; the secure store's value
-   size limit may be hit after many epochs (the vault holds every epoch key).
-2. ~~Household slice~~ done in the app shell: start, join by invite link, share,
-   Members (promote, remove) in Settings, settings as synced rows. Still on
-   Supabase and broken at runtime until their slices move: Meals, Planning and
-   Shopping read `useSession().client` and the Supabase RLS identity, which no
-   longer exists. Left to remove with them: `createSupabaseClient`, the
-   `client` field of `SessionProvider`, `Household`'s Supabase-era fields,
-   `demo-accounts`, `e2e` and `scripts/seed*`. Presence ("also here") is gone;
-   it needed a live channel.
-3. ~~Meals slice~~ done: Household Meals are `meal:<id>` rows, the Catalogue ships
-   as JSON from `data/catalogue`, copy/save/delete are client functions with the
-   unit-dimension rules checked on save. **Photos are gone** from the editor: they
-   need encrypted blob storage, and a record holds at most 32 KB of plaintext, so
-   a photo needs resizing plus a chunked or separate encrypted store. Deleting a
-   Meal leaves planned rows pointing at nothing; the Planning slice must hide
-   them (and their Leftovers).
-4. ~~Planning slice~~ and 5. ~~Shopping slice~~ done: Backlog Items, Cook Events,
-   Leftovers, checks, Staples and Extras are rows keyed by the week's Monday (no
-   Week Plan row). `plan_meal`/`unplan_meal` are client functions where planning a
-   Backlog Item gives the Cook Event the Item's own id, so two Members planning it
-   at once converge on one; the row caps are enforced where the write is made.
-   The Realtime hooks and presence are gone, and so is the "this day just changed"
-   highlight (`useRecentlyChangedDays` is never fed): feed it from the engine's
-   incoming events. Backlog and week caps are per device view, not global: two
-   offline devices can together exceed a cap.
-5. **Recovery and cleanup.** A recovery seat for a lost last device; remove
-   Supabase entirely: Auth, the household tables, RLS, `supabase/`, the
-   `@supabase/supabase-js` and `supabase` packages, PGlite fixtures,
-   `db:*` scripts and `catalogue:sync`; rewrite `docs/03`, `06`, `02`; supersede ADRs 0002 and 0010.
-6. **Event authorship.** Events are not signed per author, so any Member can
-   write as another. Sign them with the Member's key and show who wrote what.
-   This also covers: a Member can overwrite another's `member:<key>` profile
-   (name, colour), and anyone can write the admin-only `household:main` settings,
-   because `readMembers` and `readSettings` do not check who wrote a cell. Ignore
-   profile cells not written by their own key, and settings cells not written by
-   an admin.
+1. **Deploy the relay** (`relay/wrangler.toml`; the deploy workflows have never run
+   against Cloudflare) and set `EXPO_PUBLIC_RELAY_URL`. Check Durable Objects'
+   limits and price, and the cost of every device polling every 15 s.
+2. **Rebuild the e2e suite** against `wrangler dev` (`docs/04-testing.md`); the
+   Supabase-based one was removed. Until then, look at every screen by hand:
+   start, join, share, settings, library, editor, board, shopping, in `fi` and `en`
+   and on a wide screen.
+3. **Recovery seat** for a lost last device (a way to keep a second copy).
+4. **Photos**: resize, encrypt, and store outside the 32 KB record limit.
+5. **Event authorship** (see Security): sign events with the Member's key; ignore
+   profile cells not written by their own key and settings cells not written by an
+   admin; show who wrote what.
+6. **Live-ish extras**: feed `useRecentlyChangedDays` from incoming events, and
+   consider presence (it needed a live channel).
+7. **An outside review of the cryptography and the protocol** before any release.
+8. Known limits: the web vault is `localStorage`; the secure store's value size
+   limit may be hit after many epochs; leaving a board leaves its snapshot on the
+   device; the row caps are per device view.
 
 ## Household
 

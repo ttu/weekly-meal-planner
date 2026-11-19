@@ -1,6 +1,6 @@
 # 0007 — pglite for integration tests
 
-Status: Accepted · 2026-09-08
+Status: Superseded by [0013](0013-local-first-encrypted-sync.md) — there is no Postgres to test
 
 ## Context
 

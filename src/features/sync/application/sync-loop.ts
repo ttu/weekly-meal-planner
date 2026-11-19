@@ -1,4 +1,4 @@
-import type { AppStateSource } from '@/shared/net/useQueryLifecycle'
+import type { AppStateSource } from '@/shared/net/appState'
 import type { Engine } from './engine'
 
 export type Timers = { readonly every: (task: () => void, ms: number) => () => void }

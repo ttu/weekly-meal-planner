@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useSyncExternalStore } from 'react'
-import { createAppStateSource } from '@/shared/net/useQueryLifecycle'
+import { createAppStateSource } from '@/shared/net/appState'
 import { dataOf, type Data } from '../application/data'
 import { forgetBoard, loadIdentity, recallBoard, rememberBoard } from '../application/device'
 import { openHousehold, type Deps, type Engine, type View } from '../application/engine'

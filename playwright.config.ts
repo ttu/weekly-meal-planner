@@ -4,15 +4,15 @@ const PORT = 8099
 const BASE_URL = `http://127.0.0.1:${String(PORT)}`
 
 /**
- * Drives the real app in a browser against the real local Supabase. Nothing is
- * mocked: these tests exist to catch what unit tests cannot — a screen that
- * renders a raw translation key, a drag that lands on the wrong Slot, a save
- * that succeeds but never navigates.
+ * Drives the real app in a browser against a local relay. Nothing is mocked:
+ * these tests exist to catch what unit tests cannot — a screen that renders a
+ * raw translation key, a drag that lands on the wrong Slot, a save that
+ * succeeds but never navigates.
  *
- * Run `pnpm exec supabase start` first; the suite resets the database itself.
+ * The suite from before ADR 0013 needed Supabase and was removed; it has to be
+ * rebuilt against `pnpm dlx wrangler dev --config relay/wrangler.toml` (TODO.md).
  */
 export default defineConfig({
-  globalSetup: './e2e/global-setup.ts',
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,

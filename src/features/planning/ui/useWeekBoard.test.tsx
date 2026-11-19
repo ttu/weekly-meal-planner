@@ -3,7 +3,7 @@ import { randomBytes } from '@noble/hashes/utils'
 import { boardWrapper, testClock, TEST_WEEK } from '@/test/session-wrapper'
 import { testBoard } from '@/test/test-board'
 import { brand } from '@/shared/types/brand'
-import { saveMeal } from '@/features/meals'
+import { saveMeal, type MealId } from '@/features/meals'
 
 import { addToBacklog } from '../application/planning-data'
 import type { WeekStart } from '../domain/types'
@@ -18,13 +18,17 @@ const setup = async () => {
 }
 
 const makeMeal = async (board: Awaited<ReturnType<typeof testBoard>>, name: string) => {
-  const saved = await saveMeal(board.data, randomBytes, {
-    name,
-    servings: brand<number, 'Servings'>(4),
-    ingredients: [],
+  let id: MealId | undefined
+  await act(async () => {
+    const saved = await saveMeal(board.data, randomBytes, {
+      name,
+      servings: brand<number, 'Servings'>(4),
+      ingredients: [],
+    })
+    if (saved.kind === 'ok') id = saved.value
   })
-  if (saved.kind !== 'ok') throw new Error('not saved')
-  return saved.value
+  if (id === undefined) throw new Error('not saved')
+  return id
 }
 
 describe('useWeekBoard', () => {

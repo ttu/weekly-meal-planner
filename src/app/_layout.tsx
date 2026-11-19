@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Stack } from 'expo-router'
 import { useFonts } from 'expo-font'
-import { QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { StyleSheet } from 'react-native'
@@ -10,10 +9,8 @@ import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readRelayUrl } from '@/shared/env'
 import { DEFAULT_LOCALE, initI18n } from '@/shared/i18n'
-import { createQueryClient } from '@/shared/net/queryClient'
 import { createPlatformNetworkSource } from '@/shared/net/platformNetworkSource'
 import { NetworkSourceProvider } from '@/shared/net/NetworkSourceContext'
-import { createAppStateSource, useQueryLifecycle } from '@/shared/net/useQueryLifecycle'
 import { ThemeProvider, themed, useThemed } from '@/shared/theme/theme'
 import { SelectedWeekProvider } from '@/features/planning'
 import { useBoardSession } from '@/features/household'
@@ -50,10 +47,7 @@ const App = (): React.JSX.Element => {
     'InstrumentSerif-Regular': InstrumentSerif,
     'InstrumentSans-Variable': InstrumentSans,
   })
-  const queryClient = useMemo(() => createQueryClient(), [])
   const network = useMemo(() => createPlatformNetworkSource(), [])
-  const appState = useMemo(() => createAppStateSource(), [])
-  useQueryLifecycle(network, appState)
   const syncDeps = useMemo(() => platformDeps(readRelayUrl()), [])
 
   return (
@@ -63,15 +57,13 @@ const App = (): React.JSX.Element => {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <NetworkSourceProvider source={network}>
-          <QueryClientProvider client={queryClient}>
-            {fontsLoaded ? (
-              <SyncProvider deps={syncDeps}>
-                <AppSession />
-              </SyncProvider>
-            ) : (
-              <Blank />
-            )}
-          </QueryClientProvider>
+          {fontsLoaded ? (
+            <SyncProvider deps={syncDeps}>
+              <AppSession />
+            </SyncProvider>
+          ) : (
+            <Blank />
+          )}
         </NetworkSourceProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

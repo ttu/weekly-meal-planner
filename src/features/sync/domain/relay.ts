@@ -18,7 +18,7 @@ export type RelayRecord = {
 /** `offline` is a network failure; the rest are answers from the relay itself. */
 export type RelayError = 'forbidden' | 'epoch' | 'exists' | 'offline' | 'rejected'
 
-/** The mailbox, as the engine sees it. Implemented over Supabase, and over pglite in tests. */
+/** The mailbox, as the engine sees it. Implemented over HTTP (`http-relay.ts`) against `relay/`. */
 export type Relay = {
   create: (
     board: string,
@@ -52,6 +52,6 @@ export const tokenFor = (key: EpochKey, household: string): string =>
 
 const KNOWN: readonly RelayError[] = ['forbidden', 'epoch', 'exists']
 
-/** The relay's functions raise `relay_<reason>`; anything else is a refusal we do not understand. */
+/** The relay answers `relay_<reason>`; anything else is a refusal we do not understand. */
 export const relayErrorFromMessage = (message: string): RelayError =>
   KNOWN.find((reason) => message.includes(`relay_${reason}`)) ?? 'rejected'

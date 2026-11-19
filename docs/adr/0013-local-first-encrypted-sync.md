@@ -2,10 +2,12 @@
 
 Status: Accepted · 2026-11-17
 
-Supersedes [0002](0002-rls-as-sole-authorization-point.md) and
-[0010](0010-anonymous-boards-with-link-and-password.md), and replaces the
-Supabase half of [0001](0001-expo-and-supabase.md), once the
-migration slices land. Until then the old ADRs describe the running system.
+Supersedes [0002](0002-rls-as-sole-authorization-point.md),
+[0007](0007-pglite-for-integration-tests.md),
+[0010](0010-anonymous-boards-with-link-and-password.md) and
+[0012](0012-closed-beta-key-in-vault.md), and replaces the Supabase half of
+[0001](0001-expo-and-supabase.md). The migration is done: nothing in the app uses
+Supabase.
 
 ## Context
 
@@ -71,7 +73,8 @@ small.
 - **We own the crypto and protocol.** The core is pure TypeScript with
   adversarial tests, written before any UI moves, and reviewed before release.
 - **No server-side Board Preview.** The relay cannot read the Household name.
-- **Photos need encrypted blob storage** instead of the private bucket.
+- **Photos are dropped for now**: they need encrypted blob storage instead of the
+  private bucket, and a record holds at most 32 KB of plaintext.
 - **Supabase goes entirely**: Auth, the data tables, RLS and the database. The
   relay's token check is its only access control.
 - **Tests change.** PGlite (ADR 0007) and RLS-adversarial tests give way to

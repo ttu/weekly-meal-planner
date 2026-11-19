@@ -7,43 +7,45 @@ This is a correction to an earlier draft of the functional spec, which put the
 heaviest coverage on unit tests for the shopping-list aggregation. The
 aggregation is pure and deserves thorough unit tests — but it is small, and
 thoroughness there is cheap. The bulk of the risk in this app is collaboration:
-RLS policies, realtime reconciliation, the offline queue, and the catalogue sync
-script. Those are integration tests.
+convergence of several devices, the relay's rules, the membership log and the
+offline queue. Those are integration tests.
 
 ## Integration — the bulk
 
-Run against **pglite**: real Postgres, in-process, no container, fast enough for
-the pre-commit hook. Not SQLite — this schema uses `jsonb`, check constraints
-calling functions, and RLS, none of which SQLite would honour.
+Run against **the real engine over a relay in memory**. `src/test/memory-relay.ts`
+runs the actual relay code (`relay/`) behind the actual HTTP client, so a test
+covers the wire too; the only things faked are the network (an `online` switch)
+and the device's storage. `src/test/test-board.tsx` starts a real board on it and
+gives hooks a provider with that board open (`boardWrapper` adds the week on
+screen). Nothing about planning, meals or shopping is mocked: a test writes rows,
+or calls the hook's action, and reads what the screen would see.
 
-What pglite does not give us is Supabase's auth layer, so `auth.uid()` is
-provided by a test shim that reads a session-local setting. Tests set the
-current member and then exercise the real policies. This is the one place we
-knowingly diverge from production, and it is documented here so nobody discovers
-it while debugging.
+The relay's own tests (`relay/relay.test.ts`) call its HTTP-shaped entry point
+over in-memory storage with the same contract a Durable Object has. Neither the
+Worker wrapper (`relay/worker.ts`) nor a real Cloudflare deployment is covered
+here: that is checked by hand (`pnpm dlx wrangler dev`).
 
-Testcontainers is reserved for anything where vendor-specific behaviour actually
-matters — realtime replication, storage — and is not part of the default loop.
-
-**One drift risk to know about.** The harness loads `supabase/schemas/*.sql`,
-while the running database is built from `supabase/migrations/*.sql`. Migrations
-are generated from the schema files, so they normally agree — but a policy added
-only to a migration is invisible to every test. Anything that must be proven
-absent has to be checked against a real database as well, not only in pglite.
+Randomness and the clock are injected, so the protocol tests are deterministic
+(`fakeRandom`); the slice tests use real randomness, because they assert on
+behaviour, not on ids.
 
 Covered here:
 
-- **RLS, adversarially.** A test proving a member reads their own household
-  proves nothing. The tests that count: household A cannot read, update or
-  delete household B's rows, across every table; a catalogue meal cannot be
-  edited by any household; leaving a household revokes access immediately; a
-  cook event cannot be inserted into another household's week plan.
-- **Feature use cases** against a real database with real repositories — plan a
-  backlog item, add a leftover, delete a cook event and watch its leftovers go,
-  copy a catalogue meal and confirm the copy is independent of the original.
-- **The catalogue sync script** — the reference data in `data/` loads, validates
-  and applies idempotently.
-- **The offline write queue** — queued writes flush in order and converge.
+- **The protocol, adversarially.** Several devices converge on the same data; a
+  Member removed by an admin can read and write nothing after the removal while
+  everyone else carries on; a hostile Member cannot stall the others with garbage
+  records, poison the store with `__proto__`-style names, or win a field with a
+  far-future clock; two admins acting at once give `conflict` to the loser; the
+  relay refuses a wrong token, a stale epoch, a replayed old token and every
+  malformed input, and an old token reads only up to its rotation.
+- **Feature use cases** over a real board — plan a Backlog Item, add a Leftover,
+  unplan and watch the Leftovers go, copy a Catalogue Meal and confirm the copy is
+  independent, delete a Meal and watch what was planned from it drop off.
+- **Rows another Member wrote that make no sense** are left out, never thrown on.
+- **The Catalogue's data** — `scripts/catalogue-schema.test.ts` validates
+  `data/catalogue/` as a whole, and `meals/domain/catalogue.test.ts` checks both
+  Locales and every unit against its Ingredient's dimension.
+- **The offline queue** — writes made offline are sent in order and converge.
 
 ## Unit — pure logic only
 
@@ -66,86 +68,29 @@ with tests written to kill a mutant.
 
 ## E2E — critical flows only
 
-Playwright against the web build (`pnpm run test:e2e`), in `e2e/`. Maestro on a
-device build covers the same flow when a native change warrants it.
-
-Four specs, one story each:
-
-| Spec                   | The story                                                            |
-| ---------------------- | -------------------------------------------------------------------- |
-| `board.spec.ts`        | Start a board, fill a week, read the Shopping List, copy the prompt  |
-| `drag.spec.ts`         | Carry cards — Backlog, planned, Leftover — and take them off again   |
-| `meals.spec.ts`        | Write a Household Meal, copy a Catalogue one, delete, reach the list |
-| `sharing.spec.ts`      | A second Member joins by link and password, and sees the same week   |
-| `translations.spec.ts` | No screen shows a raw key                                            |
-
-### Known gaps
-
-Honest ones, not aspirational:
-
-- **Adding a Leftover above 1024px** — the wide day column has no such action,
-  and neither has it an unplan button: a planned card there is tap-to-unplan
-  only.
-
-### Reconcile the Shopping List by hand, sometimes
-
-Two of the worst bugs found so far were arithmetic, and no assertion in the
-suite would have caught either: a Meal planned twice asked for four times its
-Ingredients, and the Catalogue was listed twice over. Both were found by
-planning a real week and adding the numbers up independently from
-`data/catalogue/meals.json`.
-
-A test can say "there is an onion line". Only the arithmetic says the line is
-right.
+Playwright against the web build, in `e2e/` (config: `playwright.config.ts`).
+**The suite from before ADR 0013 needed Supabase and was removed; it is to be
+rebuilt** against a local relay (`pnpm dlx wrangler dev --config relay/wrangler.toml`,
+`EXPO_PUBLIC_RELAY_URL=http://127.0.0.1:8787`). Until then nothing drives the
+real app in a browser, so a change to a screen is checked by running it and
+looking (CLAUDE.md).
 
 Selectors are `data-testid` only, or `getByRole`/`aria-label` for interactive
 controls. Never CSS classes, text content or structural position — the copy is
 translated and the layout has a breakpoint, so both would be lying.
 
-### One page per spec
-
-An anonymous board lives entirely in browser storage, and Playwright gives each
-test a fresh context. A spec that tells one story therefore shares one page
-(`openSharedPage`, `test.describe.configure({ mode: 'serial' })`); a test that
-needs its own board calls `asNewVisitor` and creates one.
-
-### Drag needs real mouse moves
-
-`dragTo` sends too few pointer events for a gesture recogniser to activate.
-`dragOnto` in `e2e/fixtures.ts` walks the pointer across in twenty steps, which
-is what react-native-gesture-handler is waiting to see.
-
-### Resetting between specs
-
-`resetDatabase` deletes the Households and the users — which cascades through
-Members, Week Plans, Backlog Items, Cook Events and Household Meals — and
-leaves the Catalogue and the Ingredient taxonomy alone, so nothing needs
-re-syncing. It runs `psql` inside the database container.
-
-`DELETE`, not `TRUNCATE`. `truncate household cascade` empties every table with
-a foreign key to it, which includes all of `meal`: it took the Catalogue with
-it and the library came up empty. `DELETE` follows `on delete cascade` one row
-at a time, so the Catalogue rows — the ones with no Household — survive.
-
-Not `supabase db reset`: that re-runs every migration and cycles the
-containers, taking the better part of a minute per spec. It is also the only
-part of the harness that has ever taken the whole local stack down with it.
-
-### `count()` does not retry
-
-Playwright's auto-waiting lives in `expect`, not in `Locator.count()`. Wait for
-`expect(rows.first()).toBeVisible()` before counting, or the count is of
-whatever had rendered by that microsecond.
+Things the old suite learned that apply again: a board lives in browser storage
+and Playwright gives each test a fresh context, so a spec that tells one story
+shares one page; a drag needs real mouse moves (`dragOnto` walked the pointer
+across in twenty steps, which is what react-native-gesture-handler waits to see);
+and `Locator.count()` does not retry, so wait for an element before counting.
 
 ## Not unit-tested
 
-Realtime sync and presence. Both are dominated by integration behaviour, and a
-mocked socket tests the mock. They are covered end to end instead
-(`e2e/realtime.spec.ts`): two browser contexts on one board, asserting that a
-Meal wanted, planned and unplanned in one reaches the other without a reload,
-and that each sees the other's avatar. Losing the network is still checked by
-hand with two real clients and airplane mode — Playwright's offline mode does
-not reproduce a socket that drops mid-session.
+Reconnection behaviour on a real network: the loop retrying after the relay is
+unreachable, and the app resuming from the background. The engine's offline
+paths are tested with the `online` switch; losing signal mid-session is checked
+by hand with two real clients and airplane mode.
 
 ## Also run
 

@@ -66,14 +66,22 @@ describe('useShoppingList', () => {
 
   it('ticks a line at once, and unticks it', async () => {
     const view = await setup()
-    await act(() => {
+    await act(async () => {
       view.result.current.toggle(onion, true)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.buy.find((l) => l.ingredientId === onion)?.checked).toBe(true)
     })
-    await act(() => {
+    await act(async () => {
       view.result.current.toggle(onion, false)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.buy.find((l) => l.ingredientId === onion)?.checked).toBe(
@@ -84,23 +92,35 @@ describe('useShoppingList', () => {
 
   it('keeps a line in the cupboard, brings it back when it runs out, and forgets it', async () => {
     const view = await setup()
-    await act(() => {
+    await act(async () => {
       view.result.current.keepInCupboard(onion)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.cupboard.some((l) => l.ingredientId === onion)).toBe(true)
     })
     expect(view.result.current.list.buy.some((l) => l.ingredientId === onion)).toBe(false)
 
-    await act(() => {
+    await act(async () => {
       view.result.current.outOf(onion)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.buy.some((l) => l.ingredientId === onion)).toBe(true)
     })
 
-    await act(() => {
+    await act(async () => {
       view.result.current.stopKeeping(onion)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.cupboard).toEqual([])
@@ -109,17 +129,25 @@ describe('useShoppingList', () => {
 
   it('adds an Extra, ticks it, and ignores an empty one', async () => {
     const view = await setup()
-    await act(() => {
+    await act(async () => {
       view.result.current.addItem('Coffee')
       view.result.current.addItem('   ')
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Coffee'])
     })
     const extra = view.result.current.list.extras[0]
     if (!extra) throw new Error('no extra')
-    await act(() => {
+    await act(async () => {
       view.result.current.toggleExtra(extra.id, true)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.extras[0]?.checked).toBe(true)

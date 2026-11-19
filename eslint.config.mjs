@@ -246,7 +246,7 @@ export default defineConfig([
     },
   },
   {
-    // The e2e suite runs against a local Supabase container and dumps
+    // The e2e suite runs against a local relay and dumps
     // screenshots under /tmp: `docker` comes off the developer's PATH and the
     // screenshot paths are throwaway. Neither is a production concern.
     files: ['e2e/**'],

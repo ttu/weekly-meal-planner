@@ -63,5 +63,4 @@ The product says so where it removes someone.
 
 See `TODO.md`: relay rotation is authorised by the current token alone, board
 creation is capped for everyone together, events are not signed per author, and
-the app's feature slices still read Supabase tables until they are migrated.
-Supabase is to go entirely; the relay does not use it.
+the relay is a Cloudflare Worker and the app does not use Supabase at all.
