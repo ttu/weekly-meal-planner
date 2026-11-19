@@ -18,6 +18,7 @@
     ".storybook/**/*.ts",
     ".storybook/**/*.tsx",
     "scripts/**/*.ts",
+    "relay/**/*.ts",
     "e2e/**/*.ts",
     "playwright.config.ts",
     "src/types/*.d.ts"

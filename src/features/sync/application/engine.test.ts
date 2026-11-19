@@ -1,5 +1,5 @@
-import { createTestDb, type TestDb } from '@/test/db/harness'
-import { pgliteRelay } from '@/test/db/pglite-relay'
+import { memoryRelay } from '@/test/memory-relay'
+import { memoryDirectory } from '../../../../relay/memory'
 import { isErr, isOk, type Result } from '@/shared/types/result'
 import type { Clock } from '@/shared/time/clock'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
@@ -35,7 +35,7 @@ const must = <T, E>(r: Result<T, E>): T => {
 const errorOf = <T, E>(r: Result<T, E>): E | undefined => (isErr(r) ? r.error : undefined)
 
 describe('sync engine', () => {
-  let db: TestDb
+  let server = memoryDirectory()
   let online = true
   let wall = 1_700_000_000_000
   const clock: Clock = { now: () => new Date(wall) }
@@ -43,13 +43,10 @@ describe('sync engine', () => {
     wall += ms
   }
 
-  beforeEach(async () => {
-    db = await createTestDb()
+  beforeEach(() => {
+    server = memoryDirectory()
     online = true
     wall = Date.now()
-  })
-  afterEach(async () => {
-    await db.close()
   })
 
   const device = (name: string) => ({
@@ -57,7 +54,7 @@ describe('sync engine', () => {
     vault: memoryKv(),
     random: fakeRandom(name),
     clock,
-    relay: pgliteRelay(db, () => online),
+    relay: memoryRelay(server, () => online),
   })
   type Device = ReturnType<typeof device>
 
@@ -242,7 +239,7 @@ describe('sync engine', () => {
       const key = keys[epoch]
       if (!key) throw new Error('no key')
       const token = tokenFor(key, e.household)
-      return pgliteRelay(db).append(e.household, token, epoch, kind, payload)
+      return memoryRelay(server).append(e.household, token, epoch, kind, payload)
     }
 
     it('cannot stall everyone with garbage records', async () => {

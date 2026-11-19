@@ -4,7 +4,7 @@ Status: Accepted · 2026-11-17
 
 Supersedes [0002](0002-rls-as-sole-authorization-point.md) and
 [0010](0010-anonymous-boards-with-link-and-password.md), and replaces the
-Supabase-as-source-of-truth half of [0001](0001-expo-and-supabase.md), once the
+Supabase half of [0001](0001-expo-and-supabase.md), once the
 migration slices land. Until then the old ADRs describe the running system.
 
 ## Context
@@ -50,9 +50,11 @@ small.
    public key.
 5. **Removing a Member starts a new epoch.** A fresh key is sealed only to the
    remaining Members, and the relay stops accepting the old epoch's writes.
-6. **The relay is a table of `(household, epoch, seq, ciphertext)`**, with Supabase
-   Realtime for delivery. It holds no keys and no plaintext. It may later become
-   a small Worker; clients only know the relay interface.
+6. **The relay is a small Cloudflare Worker**, one Durable Object per board
+   holding `(epoch, seq, ciphertext)` records, reached by plain HTTP (`relay/`).
+   It holds no keys and no plaintext, stamps receipt time itself, and checks one
+   thing: knowledge of the board's token. Clients only know the `Relay` port, so
+   it can move. Delivery is by polling. Supabase is not used at all.
 7. **The Catalogue is shipped, not synced.** `data/` becomes versioned static
    JSON in the app. ADR 0005 already copies a Catalogue Meal on add.
 8. **The Shopping List stays derived** (ADR 0003), now over local data.
@@ -70,8 +72,8 @@ small.
   adversarial tests, written before any UI moves, and reviewed before release.
 - **No server-side Board Preview.** The relay cannot read the Household name.
 - **Photos need encrypted blob storage** instead of the private bucket.
-- **Supabase Auth, the data tables and RLS go away.** The relay table keeps a
-  minimal, data-free access check.
+- **Supabase goes entirely**: Auth, the data tables, RLS and the database. The
+  relay's token check is its only access control.
 - **Tests change.** PGlite (ADR 0007) and RLS-adversarial tests give way to
   tests of the core and a fake relay.
 - **Authorization is the signed membership list**, checked by clients.

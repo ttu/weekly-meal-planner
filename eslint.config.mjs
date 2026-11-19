@@ -145,6 +145,7 @@ export default defineConfig([
       '.storybook/**/*.ts',
       '.storybook/**/*.tsx',
       'scripts/**/*.ts',
+      'relay/**/*.ts',
       'e2e/**/*.ts',
       'playwright.config.ts',
     ],
@@ -172,6 +173,8 @@ export default defineConfig([
       'src/**/fixtures/**',
       '.storybook/**',
       'scripts/**',
+      'relay/memory.ts',
+      'relay/**/*.test.ts',
       'e2e/**',
     ],
     rules: {
@@ -191,6 +194,7 @@ export default defineConfig([
         { type: 'feature', pattern: 'src/features/*', capture: ['feature'], partialMatch: true },
         { type: 'shared', pattern: 'src/shared', partialMatch: true },
         { type: 'test', pattern: 'src/test', partialMatch: true },
+        { type: 'relay', pattern: 'relay', partialMatch: true },
       ],
       // Font and image files are assets, not architectural elements.
       'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg'],

@@ -2,7 +2,7 @@
 
 How a Household's data reaches every Member's phone without a server that can
 read it. The decision is [ADR 0013](adr/0013-local-first-encrypted-sync.md); this
-is how it works now. Code: `src/features/sync`, `supabase/schemas/80_relay.sql`.
+is how it works now. Code: `src/features/sync`, `relay/`.
 
 ## The idea
 
@@ -13,17 +13,17 @@ decrypt, and merge. The relay never holds a key.
 
 ## Pieces
 
-| Piece                | File                    | Job                                                      |
-| -------------------- | ----------------------- | -------------------------------------------------------- |
-| Hybrid logical clock | `domain/hlc.ts`         | Orders events from phones whose clocks disagree          |
-| Store                | `domain/store.ts`       | Last-writer-wins per field; order- and duplicate-proof   |
-| Crypto               | `domain/crypto.ts`      | XChaCha20-Poly1305 events, X25519 sealed key delivery    |
-| Identity             | `domain/identity.ts`    | A Member is their ed25519 signing key                    |
-| Membership log       | `domain/membership.ts`  | Signed, chained add / role / remove operations           |
-| Relay port           | `domain/relay.ts`       | create, append, rotate, pull; implemented over Postgres  |
-| Ingest               | `application/ingest.ts` | Pure: one relay record into a device's state             |
-| Engine               | `application/engine.ts` | Create, join, write, sync, invite, setRole, removeMember |
-| Data                 | `application/data.ts`   | Rows of a kind, by id, over the store                    |
+| Piece                | File                    | Job                                                                          |
+| -------------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| Hybrid logical clock | `domain/hlc.ts`         | Orders events from phones whose clocks disagree                              |
+| Store                | `domain/store.ts`       | Last-writer-wins per field; order- and duplicate-proof                       |
+| Crypto               | `domain/crypto.ts`      | XChaCha20-Poly1305 events, X25519 sealed key delivery                        |
+| Identity             | `domain/identity.ts`    | A Member is their ed25519 signing key                                        |
+| Membership log       | `domain/membership.ts`  | Signed, chained add / role / remove operations                               |
+| Relay port           | `domain/relay.ts`       | create, append, rotate, pull; `application/http-relay.ts` is the HTTP client |
+| Ingest               | `application/ingest.ts` | Pure: one relay record into a device's state                                 |
+| Engine               | `application/engine.ts` | Create, join, write, sync, invite, setRole, removeMember                     |
+| Data                 | `application/data.ts`   | Rows of a kind, by id, over the store                                        |
 
 ## Rules that matter
 
@@ -64,3 +64,4 @@ The product says so where it removes someone.
 See `TODO.md`: relay rotation is authorised by the current token alone, board
 creation is capped for everyone together, events are not signed per author, and
 the app's feature slices still read Supabase tables until they are migrated.
+Supabase is to go entirely; the relay does not use it.

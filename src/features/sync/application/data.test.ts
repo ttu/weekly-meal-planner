@@ -1,5 +1,4 @@
-import { createTestDb, type TestDb } from '@/test/db/harness'
-import { pgliteRelay } from '@/test/db/pglite-relay'
+import { memoryRelay } from '@/test/memory-relay'
 import { isOk } from '@/shared/types/result'
 import { fakeRandom } from '../domain/fake-random'
 import { newIdentity } from '../domain/identity'
@@ -18,15 +17,13 @@ const memoryKv = (): KeyValue => {
 }
 
 describe('dataOf', () => {
-  let db: TestDb
   let data: Data
 
   beforeEach(async () => {
-    db = await createTestDb()
     const random = fakeRandom('data')
     const made = await createHousehold(
       {
-        relay: pgliteRelay(db),
+        relay: memoryRelay(),
         storage: memoryKv(),
         vault: memoryKv(),
         random,
@@ -36,9 +33,6 @@ describe('dataOf', () => {
     )
     if (!isOk(made)) throw new Error('could not start a board')
     data = dataOf(made.value)
-  })
-  afterEach(async () => {
-    await db.close()
   })
 
   it('reads back what was put, field by field', async () => {

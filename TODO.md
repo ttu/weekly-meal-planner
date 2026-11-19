@@ -20,11 +20,12 @@ you want to overturn one, change the spec first.
 
 ## Security
 
-- Relay (ADR 0013, `supabase/schemas/80_relay.sql`): `relay_create` is capped for
-  everyone together (1000 boards an hour) because nothing identifies the caller,
-  so anyone can fill the quota and block new boards for an hour. A per-caller
-  gate needs an identity: the beta key, or proof-of-work on creation.
-- Relay: `relay_rotate` is authorised by the current epoch token alone, so any
+- Relay (ADR 0013, `relay/`): board creation is capped for everyone together
+  (1000 an hour, one `GateObject`) because nothing identifies the caller, so
+  anyone can fill the quota and block new boards for an hour. A per-caller gate
+  needs an identity: Cloudflare's rate-limit binding per IP, or proof-of-work on
+  creation.
+- Relay: `rotate` is authorised by the current epoch token alone, so any
   current Member could move the board to a token only they know and lock the
   others out, and nothing recovers it. It is a denial of service by someone
   already in the family, not a way to read data. The fix is an admin-only
@@ -56,15 +57,18 @@ you want to overturn one, change the spec first.
 
 ## Local-first migration (ADR 0013)
 
-The sync core is built and tested (`docs/11-sync.md`), but nothing in the app
-uses it yet: every screen still reads Supabase. In order, each its own commit,
-and the app must run after each:
+The sync core and the relay (a Cloudflare Worker, `relay/`) are built and tested
+(`docs/11-sync.md`), but nothing in the app uses them yet: every screen still
+reads Supabase. Supabase goes entirely, relay included. In order, each its own
+commit, and the app must run after each:
+
+0. **Deploy the relay** (`relay/wrangler.toml`; never run against Cloudflare
+   yet) and set `EXPO_PUBLIC_RELAY_URL`.
 
 1. **Provider and sync loop.** A React provider holding the `Engine`, a
    `useSyncExternalStore` view with a cached snapshot, and a loop that syncs on
-   start, on foreground, every ~15 s while visible, and after local writes. A
-   Supabase-backed `Relay` over `relay_*` (the pglite adapter in
-   `src/test/db/pglite-relay.ts` is the model). Device identity in the secure
+   start, on foreground, every ~15 s while visible, and after local writes. The
+   `httpRelay` client exists; wire it with the URL. Device identity in the secure
    store (add `expo-secure-store`; web falls back to `localStorage`).
 2. **Household slice.** Replace `useAuthSession`, `useHouseholdSession`, anonymous
    sign-in, `create_board`, `join_board`, `board_preview` and the password with
@@ -79,8 +83,9 @@ and the app must run after each:
 5. **Shopping slice.** `shopping_check`, `shopping_override`, `shopping_extra`,
    `household_staple`; the derivation (ADR 0003) is already client-side.
 6. **Recovery and cleanup.** A recovery seat for a lost last device; remove
-   Supabase Auth, the household tables, RLS, PGlite fixtures and
-   `catalogue:sync`; rewrite `docs/03`, `06`, `02`; supersede ADRs 0002 and 0010.
+   Supabase entirely: Auth, the household tables, RLS, `supabase/`, the
+   `@supabase/supabase-js` and `supabase` packages, PGlite fixtures,
+   `db:*` scripts and `catalogue:sync`; rewrite `docs/03`, `06`, `02`; supersede ADRs 0002 and 0010.
 7. **Event authorship.** Events are not signed per author, so any Member can
    write as another. Sign them with the Member's key and show who wrote what.
 
