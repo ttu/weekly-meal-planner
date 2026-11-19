@@ -28,8 +28,8 @@ export default function NewMeal(): React.JSX.Element {
         : { initial: { name, servings: size, ingredients: [] } })}
       isPending={isPending}
       error={error}
-      onSave={(draft, photo) => {
-        save({ ...draft, photo }, () => {
+      onSave={(draft) => {
+        save(draft, () => {
           goBackTo('/meals')
         })
       }}

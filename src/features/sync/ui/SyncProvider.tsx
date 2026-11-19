@@ -30,15 +30,21 @@ const useSession = (): Session => {
 
 export const useSync = useSession
 
-type Props = { readonly deps: Deps; readonly children: React.ReactNode }
+type Props = {
+  readonly deps: Deps
+  /** A board already open, to skip looking for one: what tests and the first screens after start hand over. */
+  readonly initial?: { readonly engine: Engine; readonly identity: Identity } | undefined
+  readonly children: React.ReactNode
+}
 
 /** Opens the board this device had, keeps it syncing, and offers it to the screens. */
-export const SyncProvider = ({ deps, children }: Props): React.JSX.Element => {
-  const [identity, setIdentity] = useState<Identity | undefined>()
-  const [engine, setEngine] = useState<Engine | undefined>()
-  const [ready, setReady] = useState(false)
+export const SyncProvider = ({ deps, initial, children }: Props): React.JSX.Element => {
+  const [identity, setIdentity] = useState<Identity | undefined>(initial?.identity)
+  const [engine, setEngine] = useState<Engine | undefined>(initial?.engine)
+  const [ready, setReady] = useState(initial !== undefined)
 
   useEffect(() => {
+    if (initial) return undefined
     const task = { live: true }
     void (async () => {
       const board = await recallBoard(deps)
@@ -52,7 +58,7 @@ export const SyncProvider = ({ deps, children }: Props): React.JSX.Element => {
     return () => {
       task.live = false
     }
-  }, [deps])
+  }, [deps, initial])
 
   useEffect(() => {
     if (!engine) return undefined

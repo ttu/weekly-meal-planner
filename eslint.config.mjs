@@ -197,7 +197,7 @@ export default defineConfig([
         { type: 'relay', pattern: 'relay', partialMatch: true },
       ],
       // Font and image files are assets, not architectural elements.
-      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg'],
+      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg', '**/*.json'],
       'boundaries/files': [{ category: 'feature-public', pattern: 'src/features/*/index.ts' }],
     },
     rules: {

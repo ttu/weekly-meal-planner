@@ -77,9 +77,13 @@ commit, and the app must run after each:
    `client` field of `SessionProvider`, `Household`'s Supabase-era fields,
    `demo-accounts`, `e2e` and `scripts/seed*`. Presence ("also here") is gone;
    it needed a live channel.
-3. **Meals slice.** `meal`, `meal_ingredient`, `ingredient` as rows; the
-   Catalogue ships as static JSON from `data/` and `copy_catalogue_meal`
-   becomes a client function (ADR 0005). Photos need encrypted blob storage.
+3. ~~Meals slice~~ done: Household Meals are `meal:<id>` rows, the Catalogue ships
+   as JSON from `data/catalogue`, copy/save/delete are client functions with the
+   unit-dimension rules checked on save. **Photos are gone** from the editor: they
+   need encrypted blob storage, and a record holds at most 32 KB of plaintext, so
+   a photo needs resizing plus a chunked or separate encrypted store. Deleting a
+   Meal leaves planned rows pointing at nothing; the Planning slice must hide
+   them (and their Leftovers).
 4. **Planning slice.** `week_plan`, `backlog_item`, `cook_event`, `leftover`.
    Port the rules now in `plan_once`, `plan_meal`, `move_*` and the write limits
    to domain functions. Realtime hooks go: the loop replaces them.

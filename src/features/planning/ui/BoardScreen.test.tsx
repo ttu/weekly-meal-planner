@@ -2,6 +2,7 @@ import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
 import { fakeSupabase, failure, rows, type FakeResponse } from '@/test/fake-supabase'
 import { newQueryClient, sessionWrapper, testClock } from '@/test/session-wrapper'
+import { testBoard } from '@/test/test-board'
 import { initI18n, setLocale } from '@/shared/i18n'
 import { BoardScreen } from './BoardScreen'
 
@@ -29,6 +30,7 @@ const renderBoard = async (initial: Record<string, FakeResponse>) => {
   const Wrapper = sessionWrapper(
     fakeSupabase(() => responses),
     queryClient,
+    await testBoard(),
   )
   const view = await renderWithProviders(
     <Wrapper>

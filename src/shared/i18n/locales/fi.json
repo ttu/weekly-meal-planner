@@ -161,12 +161,7 @@
     "copied": "Kopioitu omiin aterioihin.",
     "catalogueReadOnly": "Luettelon aterioita ei voi muokata. Kopioi se ensin.",
     "servesCount": "{{count}} annosta",
-    "libraryPane": "Ateriakirjasto",
-    "photo": "Kuva",
-    "addPhoto": "Lisää kuva",
-    "replacePhoto": "Vaihda",
-    "removePhoto": "Poista",
-    "photoFailed": "Ruoka tallentui, mutta kuvan lähetys ei onnistunut."
+    "libraryPane": "Ateriakirjasto"
   },
   "ingredient": {
     "add": "Lisää raaka-aine",

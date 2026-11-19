@@ -4,6 +4,7 @@ import { SessionProvider, type AppSupabaseClient, type HouseholdSize } from '@/f
 import { SelectedWeekProvider } from '@/features/planning'
 import { NetworkSourceProvider } from '@/shared/net/NetworkSourceContext'
 import { onlineSource } from './render'
+import type { TestBoard } from './test-board'
 import { fixedClock } from '@/shared/time/clock'
 import type { HouseholdId, MemberId } from '@/shared/types/ids'
 
@@ -22,6 +23,7 @@ export const newQueryClient = (): QueryClient =>
 export const sessionWrapper = (
   client: AppSupabaseClient,
   queryClient: QueryClient = newQueryClient(),
+  board?: TestBoard,
 ): ((props: { readonly children: ReactNode }) => React.JSX.Element) => {
   const Wrapper = ({ children }: { readonly children: ReactNode }): React.JSX.Element => (
     <QueryClientProvider client={queryClient}>
@@ -49,5 +51,12 @@ export const sessionWrapper = (
       </NetworkSourceProvider>
     </QueryClientProvider>
   )
-  return Wrapper
+  const Board = board?.wrapper
+  if (!Board) return Wrapper
+  const WithBoard = ({ children }: { readonly children: ReactNode }): React.JSX.Element => (
+    <Board>
+      <Wrapper>{children}</Wrapper>
+    </Board>
+  )
+  return WithBoard
 }

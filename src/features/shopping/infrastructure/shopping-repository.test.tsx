@@ -4,7 +4,6 @@ import { loadShoppingData } from './shopping-repository'
 describe('loadShoppingData', () => {
   it.each([
     'cook_event',
-    'ingredient',
     'household_staple',
     'shopping_check',
     'shopping_override',

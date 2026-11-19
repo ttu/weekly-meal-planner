@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { brand } from '@/shared/types/brand'
-import { ok, err, isErr, type Result } from '@/shared/types/result'
+import { ok, err, type Result } from '@/shared/types/result'
 import type { AppSupabaseClient } from '@/features/household'
-import { loadIngredients } from '@/features/meals'
+import { catalogueIngredients } from '@/features/meals'
 import type { Locale } from '@/shared/i18n'
 import type { DeriveInput } from '../domain/derive'
 
@@ -45,7 +45,6 @@ export const loadShoppingData = async (
 ): Promise<Result<DeriveInput, LoadShoppingError>> => {
   const [
     { data: cookEvents, error: cookEventError },
-    ingredientResult,
     { data: staples, error: stapleError },
     { data: checks, error: checkError },
     { data: overrides, error: overrideError },
@@ -57,9 +56,6 @@ export const loadShoppingData = async (
         'meal_id,servings_cooked,meal(name,servings,meal_ingredient(ingredient_id,quantity,unit))',
       )
       .eq('week_plan_id', weekPlanId),
-    // One source of truth for how an Ingredient is read, including its
-    // Locale name.
-    loadIngredients(client, locale),
     client.from('household_staple').select('ingredient_id,running_low'),
     client.from('shopping_check').select('ingredient_id').eq('week_plan_id', weekPlanId),
     client
@@ -78,7 +74,7 @@ export const loadShoppingData = async (
   const queryFailed = [cookEventError, stapleError, checkError, overrideError, extraError].some(
     (e) => e !== null,
   )
-  if (queryFailed || (isErr(ingredientResult) && ingredientResult.error === 'query-failed')) {
+  if (queryFailed) {
     return err('query-failed')
   }
 
@@ -89,7 +85,6 @@ export const loadShoppingData = async (
   const parsedExtras = z.array(extraRow).safeParse(extras ?? [])
 
   if (
-    isErr(ingredientResult) ||
     !parsedEvents.success ||
     !parsedStaples.success ||
     !parsedChecks.success ||
@@ -130,7 +125,7 @@ export const loadShoppingData = async (
         ),
       ).values(),
     ],
-    ingredients: ingredientResult.value.map((i) => ({
+    ingredients: catalogueIngredients(locale).map((i) => ({
       id: i.id,
       name: i.name,
       category: i.category,
