@@ -1,5 +1,6 @@
 import {
-  admitCreation,
+  checkCreation,
+  recordCreation,
   appendRecord,
   createBoard,
   pullRecords,
@@ -66,13 +67,14 @@ export const handleCall = async (
   call: Call,
   now: number,
 ): Promise<Reply> => {
-  if (call.op === 'create') {
-    try {
-      await admitCreation(directory.gate, now)
-    } catch (e) {
-      if (e instanceof RelayFailure) return { status: STATUS[e.reason], body: { error: e.message } }
-      throw e
-    }
+  if (call.op !== 'create') return handleBoardCall(directory.board(call.board), call, now)
+  try {
+    await checkCreation(directory.gate, now)
+  } catch (e) {
+    if (e instanceof RelayFailure) return { status: STATUS[e.reason], body: { error: e.message } }
+    throw e
   }
-  return handleBoardCall(directory.board(call.board), call, now)
+  const reply = await handleBoardCall(directory.board(call.board), call, now)
+  if (reply.status === 200) await recordCreation(directory.gate, now)
+  return reply
 }

@@ -152,10 +152,16 @@ export const pullRecords = async (
   return [...found.values()].filter((r) => r.seq <= (mine.endsAt ?? Infinity))
 }
 
+const HOUR = 3_600_000
+const recentCreations = async (kv: Kv, now: number): Promise<number[]> =>
+  ((await kv.get<number[]>('created')) ?? []).filter((t) => t > now - HOUR)
+
 /** Creation is capped for everyone, as nothing authenticates a caller. Kept by one registry. */
-export const admitCreation = async (kv: Kv, now: number): Promise<void> => {
-  const HOUR = 3_600_000
-  const recent = ((await kv.get<number[]>('created')) ?? []).filter((t) => t > now - HOUR)
-  if (recent.length >= 1000) return fail('busy')
-  await kv.put({ created: [...recent, now] })
+export const checkCreation = async (kv: Kv, now: number): Promise<void> => {
+  if ((await recentCreations(kv, now)).length >= 1000) return fail('busy')
+}
+
+/** Counted only once a board was really made, so refused attempts cost the quota nothing. */
+export const recordCreation = async (kv: Kv, now: number): Promise<void> => {
+  await kv.put({ created: [...(await recentCreations(kv, now)), now] })
 }

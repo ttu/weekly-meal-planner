@@ -1,4 +1,4 @@
-import { admitCreation } from './core'
+import { checkCreation, recordCreation } from './core'
 import { handleBoardCall } from './api'
 
 /**
@@ -7,7 +7,7 @@ import { handleBoardCall } from './api'
  * Types are declared here, not imported, so the app's type-check needs no
  * Workers typings.
  */
-type Storage = Parameters<typeof admitCreation>[0]
+type Storage = Parameters<typeof checkCreation>[0]
 type Stub = { fetch: (request: Request) => Promise<Response> }
 type Namespace = { idFromName: (name: string) => unknown; get: (id: unknown) => Stub }
 type State = { storage: Storage }
@@ -38,9 +38,10 @@ export class BoardObject {
 
 export class GateObject {
   constructor(private readonly state: State) {}
-  async fetch(): Promise<Response> {
+  async fetch(request: Request): Promise<Response> {
+    const record = new URL(request.url).pathname === '/record'
     try {
-      await admitCreation(this.state.storage, Date.now())
+      await (record ? recordCreation : checkCreation)(this.state.storage, Date.now())
       return json(200, {})
     } catch {
       return json(429, { error: 'relay_busy' })
@@ -53,10 +54,13 @@ export default {
     const match = ROUTE.exec(new URL(request.url).pathname)
     if (request.method !== 'POST' || !match) return json(404, { error: 'not_found' })
     const [, board = '', op = ''] = match
-    if (op === 'create') {
-      const admitted = await env.GATE.get(env.GATE.idFromName('gate')).fetch(request.clone())
-      if (admitted.status !== 200) return admitted
-    }
-    return env.BOARD.get(env.BOARD.idFromName(decodeURIComponent(board))).fetch(request)
+    const target = env.BOARD.get(env.BOARD.idFromName(decodeURIComponent(board)))
+    if (op !== 'create') return target.fetch(request)
+    const gate = env.GATE.get(env.GATE.idFromName('gate'))
+    const open = await gate.fetch(new Request('https://gate/check'))
+    if (open.status !== 200) return open
+    const reply = await target.fetch(request)
+    if (reply.status === 200) await gate.fetch(new Request('https://gate/record'))
+    return reply
   },
 }

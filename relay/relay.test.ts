@@ -222,6 +222,13 @@ describe('relay', () => {
       refused(await rotate(NEXT, TOKEN), 'full')
     })
 
+    it('does not count refused creations against the quota', async () => {
+      await create()
+      for (let i = 0; i < 1100; i++) await create()
+      refused(await create('short'), 'bad_request')
+      expect((await create('board-eeeeeeee')).status).toBe(200)
+    })
+
     it('stops board creation being used to fill the relay, and recovers after an hour', async () => {
       for (let i = 0; i < 1000; i++) await create(`flood-board-${String(i)}`)
       refused(await create(), 'busy')
