@@ -87,6 +87,11 @@ commit, and the app must run after each:
    `db:*` scripts and `catalogue:sync`; rewrite `docs/03`, `06`, `02`; supersede ADRs 0002 and 0010.
 7. **Event authorship.** Events are not signed per author, so any Member can
    write as another. Sign them with the Member's key and show who wrote what.
+   This also covers: a Member can overwrite another's `member:<key>` profile
+   (name, colour), and anyone can write the admin-only `household:main` settings,
+   because `readMembers` and `readSettings` do not check who wrote a cell. Ignore
+   profile cells not written by their own key, and settings cells not written by
+   an admin.
 
 ## Household
 
