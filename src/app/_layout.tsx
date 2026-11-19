@@ -8,7 +8,7 @@ import { StyleSheet } from 'react-native'
 import { Blank } from '@/shared/ui/Blank'
 import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
-import { readAppEnv } from '@/shared/env'
+import { readAppEnv, readRelayUrl } from '@/shared/env'
 import { DEFAULT_LOCALE, initI18n } from '@/shared/i18n'
 import { createQueryClient } from '@/shared/net/queryClient'
 import { createPlatformNetworkSource } from '@/shared/net/platformNetworkSource'
@@ -16,6 +16,7 @@ import { NetworkSourceProvider } from '@/shared/net/NetworkSourceContext'
 import { createAppStateSource, useQueryLifecycle } from '@/shared/net/useQueryLifecycle'
 import { ThemeProvider, themed, useThemed } from '@/shared/theme/theme'
 import { SelectedWeekProvider } from '@/features/planning'
+import { platformDeps, SyncProvider } from '@/features/sync'
 import {
   createSupabaseClient,
   SessionProvider,
@@ -72,6 +73,11 @@ const App = (): React.JSX.Element => {
   const appState = useMemo(() => createAppStateSource(), [])
   useQueryLifecycle(network, appState)
   const client = useMemo(() => createSupabaseClient(readAppEnv()), [])
+  const syncDeps = useMemo(() => {
+    const url = readRelayUrl()
+    return url ? platformDeps(url) : undefined
+  }, [])
+  const session = fontsLoaded ? <AppSession client={client} /> : <Blank />
 
   return (
     // The ground the whole app sits on. Screens that cap their own width —
@@ -81,7 +87,7 @@ const App = (): React.JSX.Element => {
       <SafeAreaProvider>
         <NetworkSourceProvider source={network}>
           <QueryClientProvider client={queryClient}>
-            {fontsLoaded ? <AppSession client={client} /> : <Blank />}
+            {syncDeps ? <SyncProvider deps={syncDeps}>{session}</SyncProvider> : session}
           </QueryClientProvider>
         </NetworkSourceProvider>
       </SafeAreaProvider>

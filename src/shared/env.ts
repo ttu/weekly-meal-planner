@@ -30,3 +30,13 @@ export const readAppEnv = (): Env => {
 
   return readEnv(source)
 }
+
+/**
+ * Where the relay lives (ADR 0013). Optional until the app stops using
+ * Supabase: without it the sync provider is simply not mounted.
+ */
+export const readRelayUrl = (): string | undefined => {
+  const raw: unknown = process.env.EXPO_PUBLIC_RELAY_URL
+  const parsed = z.url().safeParse(raw)
+  return parsed.success ? parsed.data.replace(/\/$/, '') : undefined
+}

@@ -65,11 +65,10 @@ commit, and the app must run after each:
 0. **Deploy the relay** (`relay/wrangler.toml`; never run against Cloudflare
    yet) and set `EXPO_PUBLIC_RELAY_URL`.
 
-1. **Provider and sync loop.** A React provider holding the `Engine`, a
-   `useSyncExternalStore` view with a cached snapshot, and a loop that syncs on
-   start, on foreground, every ~15 s while visible, and after local writes. The
-   `httpRelay` client exists; wire it with the URL. Device identity in the secure
-   store (add `expo-secure-store`; web falls back to `localStorage`).
+1. ~~Provider and sync loop~~ done: `SyncProvider`, `useView`, `useData`, `startSyncLoop`,
+   device identity in the secure store. It mounts only when `EXPO_PUBLIC_RELAY_URL`
+   is set. Known limits: the web vault is `localStorage`; the secure store's value
+   size limit may be hit after many epochs (the vault holds every epoch key).
 2. **Household slice.** Replace `useAuthSession`, `useHouseholdSession`, anonymous
    sign-in, `create_board`, `join_board`, `board_preview` and the password with
    create-board, invite link (the seat) and join. Drop the beta key. Slots,
