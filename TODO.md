@@ -58,8 +58,11 @@ you want to overturn one, change the spec first.
 ## Local-first migration (ADR 0013) — what is left
 
 The app runs entirely on the synced board and the relay; Supabase is gone from the
-repo. Nothing has been run against a deployed relay, and no screen has been
-looked at in a browser or on a device since the migration. What is left:
+repo. Checked by hand once, in a desktop browser against `wrangler dev` (start a
+board, add and plan a Meal, derived Shopping List, reload, invite, join from a
+second isolated browser context, remove that Member and watch their device lose
+the board). **Not** checked: a deployed relay, a phone or simulator, `fi`, dark vs
+light screens beyond Settings, drag and drop, the wide layout. What is left:
 
 1. **Deploy the relay** (`relay/wrangler.toml`; the deploy workflows have never run
    against Cloudflare) and set `EXPO_PUBLIC_RELAY_URL`. Check Durable Objects'

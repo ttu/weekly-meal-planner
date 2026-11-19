@@ -14,8 +14,23 @@ type State = { storage: Storage }
 type Env = { BOARD: Namespace; GATE: Namespace }
 
 const ROUTE = /^\/v1\/boards\/([^/]+)\/(create|append|rotate|pull)$/
+/**
+ * The app is served from another origin than the relay, so the browser asks
+ * first. Access is by a bearer token in a header, never a cookie, so any origin
+ * may call: knowing the token is the only thing that matters.
+ */
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-headers': 'authorization, content-type',
+  'access-control-max-age': '86400',
+}
+
 const json = (status: number, body: unknown): Response =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', ...CORS },
+  })
 
 const callOf = async (request: Request, board: string, op: string) => {
   const body: unknown = await request.json().catch(() => undefined)
@@ -51,6 +66,7 @@ export class GateObject {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
     const match = ROUTE.exec(new URL(request.url).pathname)
     if (request.method !== 'POST' || !match) return json(404, { error: 'not_found' })
     const [, board = '', op = ''] = match
