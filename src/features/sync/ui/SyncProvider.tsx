@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useSyncExternalStore } from 'react'
 import { createAppStateSource } from '@/shared/net/useQueryLifecycle'
 import { dataOf, type Data } from '../application/data'
-import { currentHousehold, loadIdentity, rememberHousehold } from '../application/device'
+import { loadIdentity, recallBoard, rememberBoard } from '../application/device'
 import { openHousehold, type Deps, type Engine, type View } from '../application/engine'
 import { startSyncLoop, platformTimers } from '../application/sync-loop'
 import { viewStore } from '../application/view-store'
@@ -14,8 +14,8 @@ type Session = {
   readonly deps: Deps
   readonly identity: Identity | undefined
   readonly engine: Engine | undefined
-  /** Make this the board the device shows, and remember it. */
-  readonly adopt: (engine: Engine) => Promise<void>
+  /** Make this the board the device shows, as this identity, and remember both. */
+  readonly adopt: (engine: Engine, identity: Identity) => Promise<void>
 }
 
 const SessionContext = createContext<Session | undefined>(undefined)
@@ -39,9 +39,9 @@ export const SyncProvider = ({ deps, children }: Props): React.JSX.Element => {
   useEffect(() => {
     const task = { live: true }
     void (async () => {
-      const me = await loadIdentity(deps.vault, deps.random)
-      const household = await currentHousehold(deps.storage)
-      const opened = household ? await openHousehold(deps, me, household) : undefined
+      const board = await recallBoard(deps)
+      const opened = board ? await openHousehold(deps, board.identity, board.household) : undefined
+      const me = board?.identity ?? (await loadIdentity(deps.vault, deps.random))
       if (!task.live) return
       setIdentity(me)
       setEngine(opened)
@@ -58,8 +58,9 @@ export const SyncProvider = ({ deps, children }: Props): React.JSX.Element => {
   }, [engine])
 
   const adopt = useCallback(
-    async (next: Engine) => {
-      await rememberHousehold(deps.storage, next.household)
+    async (next: Engine, as: Identity) => {
+      await rememberBoard(deps, next.household, as)
+      setIdentity(as)
       setEngine(next)
     },
     [deps],

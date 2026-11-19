@@ -71,10 +71,11 @@ describe('SyncProvider', () => {
     await waitFor(() => {
       expect(screen.getByText('ready|none|-|-')).toBeTruthy()
     })
-    const made = await createHousehold(d, grabbed.session?.identity ?? newIdentity(fakeRandom('x')))
+    const me = grabbed.session?.identity ?? newIdentity(fakeRandom('x'))
+    const made = await createHousehold(d, me)
     if (made.kind !== 'ok') throw new Error('no board')
     await act(async () => {
-      await grabbed.session?.adopt(made.value)
+      await grabbed.session?.adopt(made.value, me)
     })
     expect(screen.getByText(/^ready\|open\|admin/)).toBeTruthy()
     await act(async () => {

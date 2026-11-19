@@ -62,3 +62,13 @@ export {
 } from './ui/useHouseholdSession'
 export { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoAccount } from './domain/demo-accounts'
 export { BoardMenu } from './ui/BoardMenu'
+export { inviteLink, parseInviteLink, type InviteSeat } from './domain/invite-link'
+export {
+  readMembers,
+  readSettings,
+  saveProfile,
+  saveSettings,
+  type BoardMember,
+  type BoardSettings,
+} from './application/board-data'
+export { joinBoard as joinBoardWithInvite, startBoard } from './application/board-flow'

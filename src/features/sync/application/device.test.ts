@@ -1,6 +1,6 @@
 import { fakeRandom } from '../domain/fake-random'
-import { memberKeyOf } from '../domain/identity'
-import { currentHousehold, loadIdentity, rememberHousehold } from './device'
+import { memberKeyOf, newIdentity } from '../domain/identity'
+import { loadIdentity, recallBoard, rememberBoard } from './device'
 import type { KeyValue } from './engine'
 
 const memoryKv = (initial: Record<string, string> = {}): KeyValue => {
@@ -29,10 +29,13 @@ describe('device', () => {
     ).rejects.toThrow()
   })
 
-  it('remembers which board is open', async () => {
-    const storage = memoryKv()
-    expect(await currentHousehold(storage)).toBeUndefined()
-    await rememberHousehold(storage, 'board-1')
-    expect(await currentHousehold(storage)).toBe('board-1')
+  it('remembers the open board and who this device is on it', async () => {
+    const deps = { storage: memoryKv(), vault: memoryKv() }
+    expect(await recallBoard(deps)).toBeUndefined()
+    const seat = newIdentity(fakeRandom('seat'))
+    await rememberBoard(deps, 'board-1', seat)
+    const recalled = await recallBoard(deps)
+    expect(recalled?.household).toBe('board-1')
+    expect(recalled && memberKeyOf(recalled.identity)).toBe(memberKeyOf(seat))
   })
 })
