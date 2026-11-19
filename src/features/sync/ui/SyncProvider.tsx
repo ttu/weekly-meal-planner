@@ -70,6 +70,8 @@ export const SyncProvider = ({ deps, children }: Props): React.JSX.Element => {
 
   const leave = useCallback(async () => {
     await forgetBoard(deps)
+    // The seat's keys are known to whoever made the invite: never start anything on them.
+    setIdentity(await loadIdentity(deps.vault, deps.random))
     setEngine(undefined)
   }, [deps])
 

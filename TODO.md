@@ -99,6 +99,12 @@ commit, and the app must run after each:
 
 ## Household
 
+- Invites (ADR 0013): a link is a seat that stays valid until an admin removes it,
+  with no expiry or single use, and unclaimed seats show only as "Unnamed"
+  Members. Add an expiry and a list of unclaimed invites to revoke. Also, leaving
+  a board does not delete its snapshot or keys from the device (`KeyValue` has no
+  delete).
+
 - One board per account is enforced only by `join_board` (`already-member`);
   `create_board` still lets a Member start a second board, and
   `household_member` has no unique `user_id`. Decide with `leave_board` below.

@@ -52,7 +52,8 @@
     "leftoverOrder": "Leftovers come after the Meal they are from. Move the Meal first.",
     "joinOffline": "Could not reach the relay. Check your connection and try again.",
     "shareCreating": "Making an invite…",
-    "shareFailed": "Could not make an invite. Only admins can, and you need to be online."
+    "shareFailed": "Could not make an invite. Only admins can, and you need to be online.",
+    "shareMake": "Make an invite link"
   },
   "slot": {
     "lunch": "Lunch",

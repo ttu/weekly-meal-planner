@@ -227,6 +227,7 @@ const Board = ({
 
   const [shareUrl, setShareUrl] = useState('')
   const [shareFailed, setShareFailed] = useState(false)
+  const [shareBusy, setShareBusy] = useState(false)
 
   /** Opens the panel rather than copying silently: the link alone is half of
    *  what a recipient needs, and nothing used to say so. */
@@ -235,8 +236,15 @@ const Board = ({
     setShareUrl('')
     setShareFailed(false)
     setSharing(true)
-    // Each opening makes a new seat: a link is a key, so it is not reused.
+  }
+
+  /** On request only: each link is a new seat that stays valid until an admin removes it. */
+  const onCreateInvite = (): void => {
+    if (createInvite === undefined) return
+    setShareBusy(true)
+    setShareFailed(false)
     void createInvite().then((made) => {
+      setShareBusy(false)
       if (isOk(made)) setShareUrl(made.value)
       else setShareFailed(true)
     })
@@ -312,6 +320,8 @@ const Board = ({
       leftoverCountFor={leftoverCountFor}
       shareUrl={shareUrl}
       shareFailed={shareFailed}
+      shareBusy={shareBusy}
+      onCreateInvite={onCreateInvite}
       shared={shared}
       onShare={onShare}
       onCopyShareUrl={() => {
