@@ -68,6 +68,8 @@ export type Engine = {
   readonly invite: (role: Role) => Promise<Result<Invite, AdminError>>
   readonly setRole: (member: string, role: Role) => Promise<Result<void, AdminError>>
   readonly removeMember: (member: string) => Promise<Result<void, AdminError>>
+  /** This device's own seat, to take on a new device. Undefined before the keys arrive. */
+  readonly ownSeat: () => Invite | undefined
   /** The epoch keys this device holds. For tests: nothing in the app needs them. */
   readonly debugKeys: () => EngineState['keys']
 }
@@ -304,6 +306,17 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     invite,
     setRole,
     removeMember,
+    ownSeat: () => {
+      const token = tokenOf(state)
+      return token === undefined
+        ? undefined
+        : {
+            household: state.household,
+            token,
+            signSecretKey: bytesToHex(me.signSecretKey),
+            boxSecretKey: bytesToHex(me.box.secretKey),
+          }
+    },
     debugKeys: () => state.keys,
   }
 }
@@ -335,6 +348,8 @@ export const createHousehold = async (
   const nonce = bytesToHex(deps.random(32))
   const household = householdIdFor(memberKeyOf(me), nonce)
   const key = newEpochKey(deps.random)
+  const sealed = sealKey(key, { household, epoch: 1 }, me.box.publicKey, deps.random)
+  if (isErr(sealed)) return err('rejected')
   const genesis = signOp(
     {
       kind: 'create',
@@ -343,6 +358,7 @@ export const createHousehold = async (
       prev: undefined,
       admin: { sign: memberKeyOf(me), box: bytesToHex(me.box.publicKey) },
       epoch: 1,
+      sealed: bytesToHex(sealed.value),
     },
     me,
   )

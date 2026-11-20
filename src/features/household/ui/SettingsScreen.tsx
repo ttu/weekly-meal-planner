@@ -48,6 +48,9 @@ type Props = {
   readonly onRemove: (key: SlotKey) => void
   readonly onMove: (key: SlotKey, by: -1 | 1) => void
   readonly onBack: () => void
+  /** Copy (web) or share (phone) this device's own seat, to take on a new device. */
+  readonly onSaveRecoveryLink: () => void
+  readonly recoveryCopied?: boolean | undefined
 }
 
 const sheets = themed((tokens) =>
@@ -110,6 +113,8 @@ export const SettingsScreen = ({
   onRemove,
   onMove,
   onBack,
+  onSaveRecoveryLink,
+  recoveryCopied = false,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
@@ -302,6 +307,22 @@ export const SettingsScreen = ({
             onRemove={onRemoveMember}
           />
         </View>
+
+        <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
+          {t('settings.recovery')}
+        </Text>
+        <Text style={styles.hint}>{t('settings.recoveryBody')}</Text>
+        <Pressable
+          style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
+          onPress={onSaveRecoveryLink}
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.recoverySave')}
+          testID="settings-recovery"
+        >
+          <Text style={formStyles.primaryText}>
+            {recoveryCopied ? t('settings.recoveryCopied') : t('settings.recoverySave')}
+          </Text>
+        </Pressable>
       </ScrollView>
 
       {error !== undefined && <Notice message={t(errorKey(error))} testID="settings-error" />}

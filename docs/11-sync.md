@@ -46,6 +46,11 @@ decrypt, and merge. The relay never holds a key.
   log, and hands over the secret in a link. Nobody needs to be online to join,
   and a lost phone is replaced the same way. Anyone holding the link is that
   Member until an admin removes them.
+- **A recovery link is the holder's own seat.** It carries the Household, the
+  current token and the Member's own keys, so a new device joins as that Member.
+  An older token still reads up to its rotation, where the next key is sealed to
+  the Member, so the link outlives removals of others. The board's first key is
+  sealed to its creator in the `create` record for the same reason.
 - **Events that arrive before their key are held** and retried when it arrives.
 
 ## What the relay sees

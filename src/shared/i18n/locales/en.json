@@ -19,7 +19,7 @@
     "create": "Create board",
     "createFailed": "Could not create the board. Try again.",
     "joinTitle": "Join a board",
-    "joinBody": "Paste the invite link you were sent, and give your name.",
+    "joinBody": "Paste the invite link you were sent, and give your name. On a new phone, paste your recovery link: your name stays as it was.",
     "join": "Join board",
     "joinRejected": "That invite does not work. It may have been withdrawn, or the link is incomplete.",
     "share": "Share this board",
@@ -31,7 +31,7 @@
     "boardNamePlaceholder": "Koivisto household",
     "yourNamePlaceholder": "What the family calls you",
     "yourNameHint": "Shown on meals you add — \"Dad wants this\".",
-    "keyWarning": "This phone holds your key to the board. If you lose every device on it, the board is gone — invite a second device to keep a copy.",
+    "keyWarning": "This phone holds your key to the board. Save your recovery link in Settings, or you lose the board along with your last device.",
     "haveInvite": "Got an invite?",
     "joinABoard": "Join a board",
     "notThisOne": "Not this one?",
@@ -289,7 +289,11 @@
     "remove": "Remove",
     "cancel": "Cancel",
     "removeTitle": "Remove {{name}}?",
-    "removeBody": "They lose access from now on. What they have already synced stays on their phone."
+    "removeBody": "They lose access from now on. What they have already synced stays on their phone.",
+    "recovery": "Recovery link",
+    "recoveryBody": "Keep this link in your password manager. On a new or replacement phone, open it or paste it on the join screen and you carry on as yourself. Anyone who has it can use the board as you until an admin removes you.",
+    "recoverySave": "Save my recovery link",
+    "recoveryCopied": "Recovery link copied"
   },
   "dayOne": {
     "title": "Nothing on the board yet.",

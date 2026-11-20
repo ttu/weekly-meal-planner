@@ -10,7 +10,7 @@ import {
 } from '@/features/sync'
 import { isOk } from '@/shared/types/result'
 import { readMembers, readSettings, saveSettings } from './board-data'
-import { joinBoard, startBoard } from './board-flow'
+import { joinBoard, joinFromLink, recoveryLink, startBoard } from './board-flow'
 import { inviteLink, parseInviteLink } from '../domain/invite-link'
 import { memoryDirectory } from '../../../../relay/memory'
 
@@ -81,6 +81,25 @@ describe('starting and joining a board', () => {
     ])
     expect(new Set(members.map((m) => m.colour)).size).toBe(2)
     expect(members.find((m) => m.displayName === 'Bob')?.role).toBe('member')
+  })
+
+  it('restores a Member from their recovery link as themselves, name and colour kept', async () => {
+    const started = await startBoard(device(), newIdentity(randomBytes), {
+      boardName: 'Home',
+      displayName: 'Alice',
+      locale: 'en',
+    })
+    if (!isOk(started)) throw new Error('could not start')
+    const alice = started.value
+    const before = readMembers(alice.view(), dataOf(alice))
+    const link = recoveryLink(alice, 'https://menami.app')
+    if (link === undefined) throw new Error('no recovery link')
+
+    const restored = await joinFromLink(device(), link, 'Someone else')
+    if (!isOk(restored)) throw new Error('could not restore')
+    const engine = restored.value.engine
+    expect(engine.view().me).toBe(alice.view().me)
+    expect(readMembers(engine.view(), dataOf(engine))).toEqual(before)
   })
 
   it('reads settings safely when another Member wrote nonsense', async () => {

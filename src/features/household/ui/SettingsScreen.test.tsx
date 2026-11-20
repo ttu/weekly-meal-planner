@@ -53,11 +53,22 @@ const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
       onRemove={jest.fn()}
       onMove={jest.fn()}
       onBack={jest.fn()}
+      onSaveRecoveryLink={jest.fn()}
       {...over}
     />,
   )
 
 describe('SettingsScreen', () => {
+  it('hands over your recovery link when asked, and says it was copied', async () => {
+    const onSaveRecoveryLink = jest.fn()
+    const view = await show({ onSaveRecoveryLink })
+    await fireEvent.press(view.getByTestId('settings-recovery'))
+    expect(onSaveRecoveryLink).toHaveBeenCalled()
+
+    const copied = await show({ recoveryCopied: true })
+    expect(copied.getByText('Recovery link copied')).toBeTruthy()
+  })
+
   it('shows how many the household cooks for', async () => {
     const view = await show({ size: brand<number, 'HouseholdSize'>(3) })
     expect(view.getByTestId('settings-size-value').props.children).toBe('3')

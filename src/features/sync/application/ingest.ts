@@ -37,6 +37,9 @@ const takeKeys = (state: EngineState, me: Identity, body: OpBody): EngineState =
   if (body.kind === 'add' && body.member.sign === mine) {
     return body.keys.reduce((s, k) => open(s, me, k.epoch, k.sealed), state)
   }
+  if (body.kind === 'create' && body.admin.sign === mine && body.sealed !== undefined) {
+    return open(state, me, 1, body.sealed)
+  }
   if (body.kind !== 'remove') return state
   if (body.member === mine) return { ...state, status: 'removed' }
   const delivery = body.keys.find((k) => k.member === mine)

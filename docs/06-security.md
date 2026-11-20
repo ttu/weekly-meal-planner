@@ -36,8 +36,11 @@ are public-key signatures, not names).
   read only up to the record that ended its epoch.
 - **A removed Member keeps what they had already synced.** Rotation protects only
   what is written afterwards. The product says so where it removes someone.
-- **Losing every device loses the Household** unless another device holds a copy;
-  the share sheet's copy says so. A recovery seat is still to build (TODO.md).
+- **A recovery link is your own seat as a link** (Settings). Opened or pasted on
+  the join screen of a new device, it carries on as the same Member, name and
+  colour kept. It is the same secret as an invite and handled the same way: the
+  person keeps it in a password manager; whoever holds it is that Member until an
+  admin removes them. Losing every device without it loses the Household.
 
 ## Abuse limits
 

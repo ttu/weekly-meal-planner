@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Share } from 'react-native'
+import * as Clipboard from 'expo-clipboard'
 import { Redirect, router } from 'expo-router'
 import { isErr, isOk, ok, type Result } from '@/shared/types/result'
 import { DEFAULT_LOCALE } from '@/shared/i18n'
@@ -10,6 +12,7 @@ import {
   moveSlot,
   removeSlot,
   readMembers,
+  recoveryLink,
   saveSettings,
   useBoardSession,
   type Slot,
@@ -25,6 +28,7 @@ export default function Settings(): React.JSX.Element {
   const data = useData()
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<SlotEditError | 'write-failed' | undefined>(undefined)
+  const [recoveryCopied, setRecoveryCopied] = useState(false)
 
   if (householdChecked && household === undefined) return <Redirect href="/" />
 
@@ -65,6 +69,27 @@ export default function Settings(): React.JSX.Element {
 
   const slots = household?.slots ?? []
 
+  // Copy on web, the OS share sheet on a phone: there it goes into a password manager or Notes.
+  const saveRecoveryLink = (): void => {
+    const link =
+      engine &&
+      recoveryLink(
+        engine,
+        process.env.EXPO_OS === 'web' ? window.location.origin : 'https://menami.app',
+      )
+    if (link === undefined) return
+    if (process.env.EXPO_OS !== 'web') {
+      void Share.share({ message: link })
+      return
+    }
+    void Clipboard.setStringAsync(link).then(() => {
+      setRecoveryCopied(true)
+      setTimeout(() => {
+        setRecoveryCopied(false)
+      }, 2000)
+    })
+  }
+
   return (
     <SettingsScreen
       locale={household?.locale ?? DEFAULT_LOCALE}
@@ -90,6 +115,8 @@ export default function Settings(): React.JSX.Element {
       onBack={() => {
         router.back()
       }}
+      onSaveRecoveryLink={saveRecoveryLink}
+      recoveryCopied={recoveryCopied}
       onAddPreset={(preset) => {
         apply(addPresetSlot(slots, preset))
       }}

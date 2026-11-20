@@ -19,7 +19,7 @@
     "create": "Luo taulu",
     "createFailed": "Taulun luonti epäonnistui. Yritä uudelleen.",
     "joinTitle": "Liity taululle",
-    "joinBody": "Liitä saamasi kutsulinkki ja kirjoita nimesi.",
+    "joinBody": "Liitä saamasi kutsulinkki ja kirjoita nimesi. Uudella puhelimella liitä palautuslinkkisi: nimesi pysyy ennallaan.",
     "join": "Liity tauluun",
     "joinRejected": "Kutsu ei toimi. Se on voitu peruuttaa, tai linkki on vajaa.",
     "share": "Jaa tämä taulu",
@@ -31,7 +31,7 @@
     "boardNamePlaceholder": "Koiviston perhe",
     "yourNamePlaceholder": "Millä nimellä sinua kutsutaan",
     "yourNameHint": "Näkyy lisäämissäsi aterioissa — \"Isä haluaa tämän\".",
-    "keyWarning": "Tämä puhelin pitää avaintasi taululle. Jos menetät kaikki laitteesi, taulu katoaa – kutsu toinen laite pitämään kopiota.",
+    "keyWarning": "Tämä puhelin pitää avaintasi taululle. Tallenna palautuslinkkisi Asetuksista, tai menetät taulun viimeisen laitteesi mukana.",
     "haveInvite": "Onko sinulla kutsu?",
     "joinABoard": "Liity tauluun",
     "notThisOne": "Eikö tämä ole oikea?",
@@ -289,7 +289,11 @@
     "remove": "Poista",
     "cancel": "Peruuta",
     "removeTitle": "Poistetaanko {{name}}?",
-    "removeBody": "Hän menettää pääsyn tästä hetkestä alkaen. Jo synkattu pysyy hänen puhelimessaan."
+    "removeBody": "Hän menettää pääsyn tästä hetkestä alkaen. Jo synkattu pysyy hänen puhelimessaan.",
+    "recovery": "Palautuslinkki",
+    "recoveryBody": "Tallenna tämä linkki salasanojen hallintaan. Uudella tai korvaavalla puhelimella avaa se tai liitä se liittymisnäkymään, niin jatkat omana itsenäsi. Kuka tahansa, jolla linkki on, voi käyttää taulua sinuna, kunnes ylläpitäjä poistaa sinut.",
+    "recoverySave": "Tallenna palautuslinkkini",
+    "recoveryCopied": "Palautuslinkki kopioitu"
   },
   "dayOne": {
     "title": "Taululla ei ole vielä mitään.",

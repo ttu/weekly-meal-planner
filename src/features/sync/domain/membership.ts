@@ -24,6 +24,8 @@ const body = z.discriminatedUnion('kind', [
     nonce: key,
     admin: publicKeys,
     epoch: z.literal(1),
+    /** The first key, sealed to the admin, so their seat can be taken on a new device. */
+    sealed: sealedKey.optional(),
   }),
   z.object({
     kind: z.literal('add'),

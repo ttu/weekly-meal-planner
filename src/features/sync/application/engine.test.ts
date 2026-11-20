@@ -32,6 +32,11 @@ const must = <T, E>(r: Result<T, E>): T => {
   if (!isOk(r)) throw new Error(`expected ok, got ${JSON.stringify(r.error)}`)
   return r.value
 }
+const seatOf = (e: Engine): Invite => {
+  const seat = e.ownSeat()
+  if (!seat) throw new Error('no seat')
+  return seat
+}
 const errorOf = <T, E>(r: Result<T, E>): E | undefined => (isErr(r) ? r.error : undefined)
 
 describe('sync engine', () => {
@@ -145,6 +150,39 @@ describe('sync engine', () => {
     expect(reopened && title(reopened)).toBe('Soup')
     expect(reopened && readField(reopened.view().store, 'meal:soup', 'servings')).toBe(4)
     expect(reopened?.view().pending).toBe(1)
+  })
+
+  describe('restoring a Member on a new device from their own seat', () => {
+    it('brings back the same Member, role and data', async () => {
+      const { engine: alice } = await start('alice')
+      await alice.write('meal:soup', 'title', 'Soup')
+      must(await alice.sync())
+      const { engine: restored } = await joinAs('alice-new-phone', seatOf(alice))
+      expect(restored.view().me).toBe(alice.view().me)
+      expect(restored.view().role).toBe('admin')
+      expect(title(restored)).toBe('Soup')
+    })
+
+    it('still works after someone was removed and the board moved to a new token', async () => {
+      const { engine: alice } = await start('alice')
+      const seat = seatOf(alice)
+      const { engine: bob } = await joinAs('bob', must(await alice.invite('member')))
+      must(await alice.removeMember(bob.view().me))
+      tick()
+      await alice.write('meal:secret', 'title', 'After bob')
+      must(await alice.sync())
+      const { engine: restored } = await joinAs('alice-new-phone', seat)
+      expect(title(restored, 'meal:secret')).toBe('After bob')
+    })
+
+    it('keeps the old and new phone in agreement when both edit at the same instant', async () => {
+      const { engine: alice } = await start('alice')
+      const { engine: again } = await joinAs('alice-new-phone', seatOf(alice))
+      await alice.write('meal:soup', 'title', 'Soup')
+      await again.write('meal:soup', 'title', 'Stew')
+      for (const e of [alice, again, alice, again]) must(await e.sync())
+      expect(title(alice)).toBe(title(again))
+    })
   })
 
   describe('removing a Member', () => {

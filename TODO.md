@@ -71,7 +71,11 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
    Supabase-based one was removed. Until then, look at every screen by hand:
    start, join, share, settings, library, editor, board, shopping, in `fi` and `en`
    and on a wide screen.
-3. **Recovery seat** for a lost last device (a way to keep a second copy).
+3. **Recovery link follow-ups.** The link (Settings) is built. Not yet: a one-tap
+   backup to iCloud Keychain / Android Block Store (both need a native module); a
+   reminder to save the link. Boards created before the link existed did not seal
+   their first key to the creator, so a creator restoring one cannot read
+   epoch-1 events until someone else re-delivers that key.
 4. **Photos**: resize, encrypt, and store outside the 32 KB record limit.
 5. **Event authorship** (see Security): sign events with the Member's key; ignore
    profile cells not written by their own key and settings cells not written by an
@@ -79,7 +83,9 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
 6. **Live-ish extras**: feed `useRecentlyChangedDays` from incoming events, and
    consider presence (it needed a live channel).
 7. **An outside review of the cryptography and the protocol** before any release.
-8. Known limits: the web vault is `localStorage`; the secure store's value size
+8. `relay/.wrangler/` (local `wrangler dev` state, 34 files) is committed; untrack
+   it and add it to `.gitignore`, so running the relay locally stops dirtying the tree.
+9. Known limits: the web vault is `localStorage`; the secure store's value size
    limit may be hit after many epochs; leaving a board leaves its snapshot on the
    device; the row caps are per device view.
 

@@ -37,4 +37,9 @@ export {
 export { joinBoard as joinBoardWithInvite, startBoard } from './application/board-flow'
 export { MembersSection } from './ui/MembersSection'
 export { useBoardSession, type BoardSession } from './ui/useBoardSession'
-export { createInviteLink, joinFromLink, type JoinFailure } from './application/board-flow'
+export {
+  createInviteLink,
+  joinFromLink,
+  recoveryLink,
+  type JoinFailure,
+} from './application/board-flow'
