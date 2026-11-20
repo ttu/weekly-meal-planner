@@ -84,7 +84,17 @@ const encodeBody = (b: OpBody): Uint8Array => {
   const head = ['menami/v1/membership', b.kind, b.household, b.prev ?? '']
   switch (b.kind) {
     case 'create':
-      return encoder.encode(JSON.stringify([...head, b.nonce, b.admin.sign, b.admin.box, b.epoch]))
+      // `sealed` only when present, so boards created before it keep their signatures.
+      return encoder.encode(
+        JSON.stringify([
+          ...head,
+          b.nonce,
+          b.admin.sign,
+          b.admin.box,
+          b.epoch,
+          ...(b.sealed === undefined ? [] : [b.sealed]),
+        ]),
+      )
     case 'add':
       return encoder.encode(
         JSON.stringify([

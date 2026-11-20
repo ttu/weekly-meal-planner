@@ -77,6 +77,17 @@ describe('creating a board', () => {
     expect(Object.keys(state.members)).toHaveLength(1)
   })
 
+  it('signs the first key sealed to its creator, so a relay cannot swap, add or strip it', () => {
+    const signed = signOp({ ...genesis().body, sealed: sealed(0) } as OpBody, alice)
+    expect(isOk(applyOp(undefined, signed))).toBe(true)
+    const swapped = { ...signed, body: { ...signed.body, sealed: sealed(1) } }
+    expect(errorOf(applyOp(undefined, swapped as SignedOp))).toBe('badSignature')
+    const stripped = { ...signed, body: { ...signed.body, sealed: undefined } }
+    expect(errorOf(applyOp(undefined, stripped as SignedOp))).toBe('badSignature')
+    const added = { ...genesis(), body: { ...genesis().body, sealed: sealed(1) } }
+    expect(errorOf(applyOp(undefined, added as SignedOp))).toBe('badSignature')
+  })
+
   it('must be signed by the admin it names', () => {
     const forged = signOp(
       {
