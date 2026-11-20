@@ -1,5 +1,41 @@
 # 02 — Architecture
 
+## Overview
+
+```
+ Member's device (Expo: iOS / Android / web)            Cloudflare
+┌──────────────────────────────────────────────┐       ┌──────────────┐
+│ app/ routes ─► feature ui ─► application     │       │ relay/       │
+│                    │             │           │       │ Worker       │
+│                    ▼             ▼           │       │              │
+│              useData/useView   domain (pure) │       │ ordered,     │
+│                    │                         │       │ encrypted    │
+│                    ▼                         │ HTTPS │ records per  │
+│   SyncProvider ─► sync engine ─► rows on     │◄─────►│ board; no    │
+│                   (encrypt, merge, verify    │       │ keys, no     │
+│                    membership log)  device   │       │ plaintext    │
+└──────────────────────────────────────────────┘       └──────────────┘
+        ▲ other Members' devices pull the same records and merge ▲
+```
+
+- **The device is the system.** Every Member's device holds the Household's
+  full data as rows and works offline. Screens read rows and derive everything
+  else (the week board, the Shopping List) on the fly; nothing derived is stored.
+- **The relay is a mailbox.** It stores opaque, encrypted records in arrival
+  order and stamps when it got them. It cannot read, merge or authorise
+  content — see `11-sync.md`.
+- **Writes are local first.** A write lands in the device's rows at once; the
+  sync loop encrypts it as an event and appends it to the relay, then pulls
+  others' events and merges them per field (last writer wins by hybrid
+  logical clock).
+- **Trust is the signed membership log**, checked by every client, not the
+  relay or application code (ADR 0013, `06-security.md`).
+- **Reference data ships in the app.** The Catalogue and the ingredient
+  taxonomy are files in `data/catalogue/`, not synced rows.
+- **Leaving the app.** The Shopping List exits through the device (an Agent
+  Prompt, a share; Apple Reminders is specified but not built). No backend of
+  ours is involved.
+
 ## Shape
 
 Domain-driven, vertical slices, impurity at the edges. One Expo app, local-first
@@ -12,8 +48,8 @@ src/
     household/      Members, slots, invites, settings
     meals/          Household library, catalogue copy-on-add, meal editor
     planning/       Week plan, backlog, cook events, leftovers, the board
-    pantry/         Staples, running-low
-    shopping/       List derivation, cupboard check, extras, overrides, exits
+    shopping/       List derivation, staples, cupboard check, extras, overrides, exits
+    sync/           Engine, encryption, membership log, relay client, SyncProvider
   shared/           Generic only: ui kit, i18n, result, branded types, clock
   app/              Expo Router routes; thin, delegates into feature `ui`
 ```
