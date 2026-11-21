@@ -1,5 +1,5 @@
 import { brand } from '@/shared/types/brand'
-import { resolveDrop, type DropTarget } from './drop'
+import { resolveDrop, samePayload, type DropTarget } from './drop'
 import type { BacklogItem, CookEvent, Leftover } from './types'
 
 const slot = (date: string, slotKey: string): DropTarget => ({
@@ -133,5 +133,20 @@ describe('resolveDrop', () => {
     const action = resolveDrop({ kind: 'leftover', leftover }, { kind: 'backlog' })
 
     expect(action).toEqual({ kind: 'none' })
+  })
+})
+
+describe('samePayload', () => {
+  it('matches the card being carried, of every kind, and nothing else', () => {
+    const payloads = [
+      { kind: 'backlog', item: backlogItem },
+      { kind: 'cook-event', cookEvent },
+      { kind: 'leftover', leftover },
+      { kind: 'library', meal: libraryMeal },
+    ] as const
+    for (const a of payloads) {
+      for (const b of payloads) expect(samePayload(a, b)).toBe(a === b)
+    }
+    expect(samePayload(undefined, payloads[0])).toBe(false)
   })
 })

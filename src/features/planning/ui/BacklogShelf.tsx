@@ -4,7 +4,7 @@ import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
 import { MealCard } from '@/features/meals'
 import { DraggableCard } from './DraggableCard'
-import { isSameTarget, useDrag, type DragPayload, type DropTarget } from './DragContext'
+import { isSameTarget, useDrag, useHovered, type DragPayload, type DropTarget } from './DragContext'
 import type { BacklogItem, BacklogItemId } from '../domain/types'
 
 /**
@@ -185,7 +185,8 @@ export const BacklogShelf = ({
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
-  const { dragging, hovered, registerTarget } = useDrag()
+  const { dragging, registerTarget } = useDrag()
+  const hovered = useHovered()
   const ref = useRef<View>(null)
   const isShelf = layout === 'shelf'
   const isHovered = isSameTarget(hovered, { kind: 'backlog' })

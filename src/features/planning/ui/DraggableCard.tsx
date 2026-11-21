@@ -4,6 +4,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { motion } from '@/shared/motion'
+import { samePayload } from '../domain/drop'
 import { useDrag, type DragPayload, type DropTarget } from './DragContext'
 
 type Props = {
@@ -43,24 +44,24 @@ export const DraggableCard = ({
 }: Props): React.JSX.Element => {
   const { dragging, pointer, begin, moveTo, end } = useDrag()
   const ref = useRef<View>(null)
+  /** Which gesture is current. The measurement is async on web, and a quick
+   *  release can end the drag before it answers; that late begin is stale. */
+  const gestureId = useRef(0)
 
-  const isMe =
-    dragging !== undefined &&
-    (dragging.kind === 'backlog' && payload.kind === 'backlog'
-      ? dragging.item.id === payload.item.id
-      : dragging.kind === 'cook-event' &&
-        payload.kind === 'cook-event' &&
-        dragging.cookEvent.id === payload.cookEvent.id)
+  const isMe = samePayload(dragging, payload)
 
   /** Measured here rather than in the provider: only this card knows where it
    *  is, and the grab offset is what keeps the card under the finger. */
   const start = (): void => {
+    gestureId.current += 1
+    const id = gestureId.current
     ref.current?.measureInWindow((x, y, width, height) => {
-      begin(payload, { x, y, width, height })
+      if (id === gestureId.current) begin(payload, { x, y, width, height })
     })
   }
 
   const finish = (): void => {
+    gestureId.current += 1
     const target = end()
     if (target !== undefined) onDropped?.(payload, target)
   }

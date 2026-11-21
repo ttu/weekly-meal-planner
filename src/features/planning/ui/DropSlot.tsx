@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { themed, useThemed } from '@/shared/theme/theme'
 import type { SlotKey } from '@/features/household'
-import { isSameTarget, useDrag } from './DragContext'
+import { isSameTarget, useDrag, useHovered } from './DragContext'
 
 /**
  * A Slot that can receive a dragged card. It reports its own position to the
@@ -27,7 +27,8 @@ const sheets = themed((tokens) =>
 
 export const DropSlot = ({ date, slotKey, style, children }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
-  const { hovered, registerTarget } = useDrag()
+  const { registerTarget } = useDrag()
+  const hovered = useHovered()
   const ref = useRef<View>(null)
   const isHovered = isSameTarget(hovered, { kind: 'slot', date, slotKey })
 
