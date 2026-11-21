@@ -53,7 +53,8 @@ export const joinBoard = async (
   const restoring = readMembers(engine.view(), dataOf(engine)).some(
     (m) => m.id === me && m.displayName !== '',
   )
-  if (!restoring)
+  // A blank name is not written: the Member shows as unnamed until they give one.
+  if (!restoring && displayName.trim() !== '')
     await saveProfile(dataOf(engine), me, { name: displayName, colour: colourFor(engine) })
   await engine.sync()
   return ok(engine)

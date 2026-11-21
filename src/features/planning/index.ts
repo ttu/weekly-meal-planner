@@ -1,6 +1,5 @@
 export type {
   WeekStart,
-  WeekPlanId,
   CookEvent,
   CookEventId,
   Leftover,

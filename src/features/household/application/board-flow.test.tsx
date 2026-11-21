@@ -102,6 +102,25 @@ describe('starting and joining a board', () => {
     expect(readMembers(engine.view(), dataOf(engine))).toEqual(before)
   })
 
+  it('trims names and cuts them to what every device reads back, and never writes a blank one', async () => {
+    const started = await startBoard(device(), newIdentity(randomBytes), {
+      boardName: `  ${'B'.repeat(100)}  `,
+      displayName: `  ${'A'.repeat(50)}  `,
+      locale: 'en',
+    })
+    if (!isOk(started)) throw new Error('could not start')
+    const alice = started.value
+    expect(readSettings(alice.view(), dataOf(alice)).name).toBe('B'.repeat(80))
+    expect(readMembers(alice.view(), dataOf(alice))[0]?.displayName).toBe('A'.repeat(40))
+
+    const invited = await alice.invite('member')
+    if (!isOk(invited)) throw new Error('no invite')
+    const joined = await joinBoard(device(), invited.value, '   ')
+    if (!isOk(joined)) throw new Error('could not join')
+    const bob = joined.value
+    expect(dataOf(bob).get('member', bob.view().me)).toBeUndefined()
+  })
+
   it('reads settings safely when another Member wrote nonsense', async () => {
     const deps = device()
     const started = await startBoard(deps, newIdentity(randomBytes), {

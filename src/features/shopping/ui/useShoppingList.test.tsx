@@ -49,7 +49,6 @@ describe('useShoppingList', () => {
     const line = view.result.current.list.buy.find((l) => l.ingredientId === onion)
     expect(line?.amounts[0]).toMatchObject({ quantity: 4, unit: 'pcs' })
     expect(view.result.current.list.sittings).toBe(1)
-    expect(view.result.current.isError).toBe(false)
   })
 
   it('leaves out what is planned in a Slot the Household no longer has, as the board does', async () => {
@@ -82,7 +81,6 @@ describe('useShoppingList', () => {
       expect(view.result.current.hasData).toBe(true)
     })
     expect(view.result.current.list.buy).toEqual([])
-    expect(view.result.current.isError).toBe(false)
   })
 
   it('ticks a line at once, and unticks it', async () => {

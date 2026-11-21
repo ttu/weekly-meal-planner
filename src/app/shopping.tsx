@@ -18,7 +18,7 @@ export default function Shopping(): React.JSX.Element {
       <ShoppingListScreen
         list={list}
         loadState={loadState(shopping)}
-        onRetry={shopping.refetch}
+        writeFailed={shopping.failed}
         onToggle={toggle}
         onOutOf={outOf}
         onKeepInCupboard={keepInCupboard}

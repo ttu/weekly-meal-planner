@@ -54,7 +54,11 @@ export type View = {
   readonly membership: Membership | undefined
   /** Writes made here that the relay has not yet taken. */
   readonly pending: number
+  /** Why the last sync was refused, when it is something the Household should be told. */
+  readonly problem: SyncProblem | undefined
 }
+
+export type SyncProblem = Extract<RelayError, 'full' | 'busy'>
 
 export type AdminError = MembershipError | RelayError | 'conflict' | 'noKey'
 export type JoinError = RelayError | 'noSeat'
@@ -64,7 +68,8 @@ export type Engine = {
   readonly view: () => View
   readonly subscribe: (listener: () => void) => () => void
   readonly write: (entity: string, field: string, value: FieldValue) => Promise<void>
-  readonly sync: () => Promise<Result<void, RelayError>>
+  /** `all` keeps pulling until the relay has nothing more, however long the board. */
+  readonly sync: (options?: { readonly all?: boolean }) => Promise<Result<void, RelayError>>
   readonly invite: (role: Role) => Promise<Result<Invite, AdminError>>
   readonly setRole: (member: string, role: Role) => Promise<Result<void, AdminError>>
   readonly removeMember: (member: string) => Promise<Result<void, AdminError>>
@@ -85,12 +90,28 @@ const tokenOf = (state: EngineState): string | undefined => {
   return key ? tokenFor(key, state.household) : state.bootToken
 }
 
+/** What to tell the Household after a sync. Offline says nothing about the relay, so the last answer stands. */
+const problemAfter = (
+  result: Result<void, RelayError>,
+  last: SyncProblem | undefined,
+): SyncProblem | undefined => {
+  if (isOk(result)) return undefined
+  if (result.error === 'full' || result.error === 'busy') return result.error
+  return result.error === 'offline' ? last : undefined
+}
+
 const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
   let state = initial
   const listeners = new Set<() => void>()
   const applied = new Set<string>()
   const mine = memberKeyOf(me)
   const now = () => deps.clock.now().getTime()
+  let problem: SyncProblem | undefined
+  const notify = () => {
+    listeners.forEach((l) => {
+      l()
+    })
+  }
 
   // One thing at a time: a write must not interleave with a pull that rewrites the state.
   let chain: Promise<unknown> = Promise.resolve()
@@ -103,9 +124,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
   const commit = async (next: EngineState): Promise<void> => {
     state = next
     await save(deps, next)
-    listeners.forEach((l) => {
-      l()
-    })
+    notify()
   }
 
   const take = async (records: readonly RelayRecord[]): Promise<void> => {
@@ -125,8 +144,8 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     await commit(next)
   }
 
-  const pull = async (): Promise<Result<void, RelayError>> => {
-    for (let round = 0; round < PULL_ROUNDS; round++) {
+  const pull = async (rounds = PULL_ROUNDS): Promise<Result<void, RelayError>> => {
+    for (let round = 0; round < rounds; round++) {
       const token = tokenOf(state)
       if (!token) return err('forbidden')
       const got = await deps.relay.pull(state.household, token, state.lastSeq)
@@ -177,10 +196,10 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
    * Pull, then send. A rotation can land between the two, in which case the send
    * is refused for a stale epoch or token; pulling again fetches the new key.
    */
-  const syncNow = async (): Promise<Result<void, RelayError>> => {
+  const syncNow = async (rounds = PULL_ROUNDS): Promise<Result<void, RelayError>> => {
     for (let attempt = 0; attempt < 3; attempt++) {
       if (!active()) return err('forbidden')
-      const pulled = await pull()
+      const pulled = await pull(rounds)
       if (isErr(pulled)) return pulled
       if (!active()) return err('forbidden')
       const sent = await flush()
@@ -324,6 +343,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
         store: applyEvents(state.store, pending),
         membership: state.membership,
         pending: state.outbox.length,
+        problem,
       }
     },
     subscribe: (listener) => {
@@ -331,7 +351,16 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
       return () => listeners.delete(listener)
     },
     write,
-    sync: () => serial(syncNow),
+    sync: (options) =>
+      serial(async () => {
+        const result = await syncNow(options?.all ? Infinity : PULL_ROUNDS)
+        const next = problemAfter(result, problem)
+        if (next !== problem) {
+          problem = next
+          notify()
+        }
+        return result
+      }),
     invite,
     setRole,
     removeMember,
@@ -424,7 +453,8 @@ export const joinHousehold = async (
     bootToken: invite.token,
   }
   const engine = make(deps, me, state)
-  const synced = await engine.sync()
+  // All of it: a recovery link must find the Member's own name, however far back it was written.
+  const synced = await engine.sync({ all: true })
   if (isErr(synced)) return err(synced.error)
   return engine.view().role ? ok(engine) : err('noSeat')
 }

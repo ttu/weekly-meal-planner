@@ -99,23 +99,13 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
   a board does not delete its snapshot or keys from the device (`KeyValue` has no
   delete).
 
-- One board per account is enforced only by `join_board` (`already-member`);
-  `create_board` still lets a Member start a second board, and
-  `household_member` has no unique `user_id`. Decide with `leave_board` below.
-- A Member cannot leave a board or change their own name or colour:
-  `household_member` has no update or delete policy, and the only writers are
-  `create_board` and `join_board`. Needs a decision on what leaving means for
-  the last Member and for their Backlog Items, then a `leave_board` /
-  `update_member` RPC. Found in the Supabase review that closed the direct
-  `household_insert` door.
+- A Member cannot change their own name or colour after joining, and leaving
+  a board only forgets it on this device: the seat stays until an admin removes
+  it. Needs a decision on what leaving means for the last admin and for their
+  Backlog Items, then a profile editor and a leave that gives up the seat.
 
 ## Tests
 
-- Nothing compares the policies, grants and indexes of the migrated database
-  with `supabase/schemas`, and the pglite tests only see the schemas. A policy
-  that lives only in a migration (`household_insert` did, until 20261018000000) is invisible to every test. Add a check that diffs the two
-  (`supabase db diff --local`) and fails on any difference; `schema_paths` in
-  `config.toml` is empty, so nothing generates one from the other today.
 - The e2e suite waits out animations, navigation and the auto-scroll dwell with
   `page.waitForTimeout` in six places, so `sonarjs/no-fixed-wait-in-tests` is
   off for `e2e/**`. Found when the sonarjs rules were added. Replace each with
@@ -146,5 +136,4 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
   stacks two `Notice` banners at the same spot (both are absolutely
   positioned at the bottom). Merge them into one notice, or offset the second.
 - Other loaders (`useIngredients`, `useMeal`, `useMealActions`) were not
-  audited for the same "error read as empty" pattern; the repositories now
-  return `query-failed`, but the hooks over them have not been checked.
+  audited for the same "error read as empty" pattern.

@@ -24,11 +24,8 @@ const EMPTY: ShoppingList = { sittings: 0, buy: [], cupboard: [], extras: [], in
 export type ShoppingListView = {
   readonly list: ShoppingList
   readonly isLoading: boolean
-  /** Kept for the screens' load states: reading the local copy cannot fail. */
-  readonly isError: boolean
   /** The device has looked for its board, so an empty list really is empty. */
   readonly hasData: boolean
-  readonly refetch: () => void
   /** The last change could not be saved. */
   readonly failed: boolean
   readonly toggle: (ingredientId: IngredientId, checked: boolean) => void
@@ -40,8 +37,6 @@ export type ShoppingListView = {
   /** No longer kept in; it returns to the Buy list. */
   readonly stopKeeping: (id: IngredientId) => void
 }
-
-const noop = (): void => undefined
 
 /**
  * The Shopping List, derived on every read and never stored (ADR 0003). A tick
@@ -77,9 +72,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
   return {
     list,
     isLoading: !checked,
-    isError: false,
     hasData: checked,
-    refetch: noop,
     failed: write.failed,
     toggle: (id, isChecked) => {
       run((d) => setChecked(d, weekStart, id, isChecked))

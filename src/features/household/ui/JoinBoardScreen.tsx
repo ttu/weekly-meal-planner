@@ -8,6 +8,7 @@ import { Field } from '@/shared/ui/Field'
 import { Wordmark } from '@/shared/ui/Wordmark'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 import { useTranslation } from '@/shared/i18n'
+import { MAX_MEMBER_NAME } from '../application/board-data'
 import type { JoinFailure } from '../application/board-flow'
 
 type Props = {
@@ -90,6 +91,7 @@ export const JoinBoardScreen = ({
           autoComplete="name"
           autoCapitalize="words"
           returnKeyType="done"
+          maxLength={MAX_MEMBER_NAME}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
           testID="join-your-name"
@@ -106,8 +108,10 @@ export const JoinBoardScreen = ({
             formStyles.primary,
             { marginTop: tokens.space.lg },
             pressed && formStyles.primaryPressed,
+            link.trim() === '' && formStyles.primaryDisabled,
           ]}
-          disabled={isPending}
+          disabled={isPending || link.trim() === ''}
+          aria-disabled={isPending || link.trim() === ''}
           onPress={() => {
             onJoin({ link, displayName })
           }}

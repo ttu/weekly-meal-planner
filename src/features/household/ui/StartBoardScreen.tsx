@@ -7,6 +7,7 @@ import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
 import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
+import { MAX_BOARD_NAME, MAX_MEMBER_NAME } from '../application/board-data'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 type Props = {
@@ -77,6 +78,7 @@ export const StartBoardScreen = ({
   const insets = useSafeAreaInsets()
   const [boardName, setBoardName] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const incomplete = boardName.trim() === '' || displayName.trim() === ''
 
   return (
     <KeyboardAvoiding>
@@ -96,6 +98,7 @@ export const StartBoardScreen = ({
           onChangeText={setBoardName}
           autoCapitalize="words"
           returnKeyType="next"
+          maxLength={MAX_BOARD_NAME}
           placeholder={t('board.boardNamePlaceholder')}
           accessibilityLabel={t('board.boardName')}
           testID="start-board-name"
@@ -109,6 +112,7 @@ export const StartBoardScreen = ({
           autoComplete="name"
           autoCapitalize="words"
           returnKeyType="next"
+          maxLength={MAX_MEMBER_NAME}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
           testID="start-your-name"
@@ -127,8 +131,13 @@ export const StartBoardScreen = ({
         </View>
 
         <Pressable
-          style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
-          disabled={isPending}
+          style={({ pressed }) => [
+            formStyles.primary,
+            pressed && formStyles.primaryPressed,
+            incomplete && formStyles.primaryDisabled,
+          ]}
+          disabled={isPending || incomplete}
+          aria-disabled={isPending || incomplete}
           onPress={() => {
             onCreate({ boardName, displayName })
           }}

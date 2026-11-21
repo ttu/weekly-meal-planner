@@ -410,6 +410,42 @@ describe('sync engine', () => {
       expect(title(alice)).toBe('Soup')
     })
 
+    it('says the board is full, and stops saying so once a sync goes through', async () => {
+      const { engine: alice } = await start('alice')
+      const kv = server.board(alice.household)
+      const meta = await kv.get<{ lastSeq: number }>('meta')
+      await kv.put({ meta: { ...meta, lastSeq: 100_000 } })
+      await alice.write('meal:soup', 'title', 'Soup')
+      expect(errorOf(await alice.sync())).toBe('full')
+      expect(alice.view().problem).toBe('full')
+      online = false
+      await alice.sync()
+      expect(alice.view().problem).toBe('full')
+      online = true
+      await kv.put({ meta: { ...meta, lastSeq: 1 } })
+      must(await alice.sync())
+      expect(alice.view().problem).toBeUndefined()
+    })
+
+    it('joins with everything, however many pulls the history takes', async () => {
+      const { engine: alice } = await start('alice')
+      for (let i = 0; i < 60; i++) await alice.write(`meal:m${String(i)}`, 'title', 't')
+      must(await alice.sync())
+      const invite = must(await alice.invite('member'))
+      const dev = device('slow')
+      const relay = memoryRelay(server)
+      // One record a page: fifty pulls, the most one sync takes, reach only part of it.
+      const slow = {
+        ...relay,
+        pull: async (...args: Parameters<typeof relay.pull>) => {
+          const got = await relay.pull(...args)
+          return isOk(got) ? { ...got, value: got.value.slice(0, 1) } : got
+        },
+      }
+      const late = must(await joinHousehold({ ...dev, relay: slow }, invite))
+      expect(Object.keys(late.view().store)).toHaveLength(Object.keys(alice.view().store).length)
+    })
+
     it('refuses a write the other devices would drop, instead of losing it later', async () => {
       const { engine: alice } = await start('alice')
       await expect(alice.write('meal:soup', 'title', 'x'.repeat(9000))).rejects.toThrow()

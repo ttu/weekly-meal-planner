@@ -7,13 +7,7 @@ import type {
   SlotKey,
 } from '@/shared/types/ids'
 
-export type {
-  BacklogItemId,
-  CookEventId,
-  LeftoverId,
-  WeekPlanId,
-  WeekStart,
-} from '@/shared/types/ids'
+export type { BacklogItemId, CookEventId, LeftoverId, WeekStart } from '@/shared/types/ids'
 
 /**
  * The only thing that contributes Ingredients to a Shopping List.

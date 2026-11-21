@@ -16,7 +16,16 @@ export type RelayRecord = {
 }
 
 /** `offline` is a network failure; the rest are answers from the relay itself. */
-export type RelayError = 'forbidden' | 'epoch' | 'exists' | 'offline' | 'rejected'
+export type RelayError =
+  | 'forbidden'
+  | 'epoch'
+  | 'exists'
+  | 'offline'
+  | 'rejected'
+  /** The board holds as many records as the relay keeps. */
+  | 'full'
+  /** The relay is turning callers away for a while. */
+  | 'busy'
 
 /** The mailbox, as the engine sees it. Implemented over HTTP (`http-relay.ts`) against `relay/`. */
 export type Relay = {
@@ -52,7 +61,7 @@ export type Relay = {
 export const tokenFor = (key: EpochKey, household: string): string =>
   bytesToHex(hkdf(sha256, key, new TextEncoder().encode('menami/v1/relay-token'), household, 32))
 
-const KNOWN: readonly RelayError[] = ['forbidden', 'epoch', 'exists']
+const KNOWN: readonly RelayError[] = ['forbidden', 'epoch', 'exists', 'full', 'busy']
 
 /** The relay answers `relay_<reason>`; anything else is a refusal we do not understand. */
 export const relayErrorFromMessage = (message: string): RelayError =>

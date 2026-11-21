@@ -33,16 +33,21 @@ export default function Join(): React.JSX.Element {
       onJoin={({ link, displayName }) => {
         setPending(true)
         setError(undefined)
-        void joinFromLink(deps, link, displayName).then(async (result) => {
-          if (isErr(result)) {
+        void joinFromLink(deps, link, displayName)
+          .then(async (result) => {
+            if (isErr(result)) {
+              setPending(false)
+              setError(result.error)
+              return
+            }
+            await adopt(result.value.engine, result.value.identity)
             setPending(false)
-            setError(result.error)
-            return
-          }
-          await adopt(result.value.engine, result.value.identity)
-          setPending(false)
-          router.replace('/')
-        })
+            router.replace('/')
+          })
+          .catch(() => {
+            setPending(false)
+            setError('rejected')
+          })
       }}
     />
   )

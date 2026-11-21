@@ -38,7 +38,6 @@ describe('useWeekBoard', () => {
       expect(view.result.current.hasData).toBe(true)
     })
     expect(view.result.current.isLoading).toBe(false)
-    expect(view.result.current.isError).toBe(false)
     expect(view.result.current.weekStart).toBe(TEST_WEEK)
     expect(view.result.current.householdName).toBe('Koti')
     expect(view.result.current.backlog).toEqual([])

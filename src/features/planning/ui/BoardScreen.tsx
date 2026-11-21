@@ -8,6 +8,7 @@ import { useTranslation } from '@/shared/i18n'
 import { useBoardSession, type SlotKey } from '@/features/household'
 import { isOk, type Result } from '@/shared/types/result'
 import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
+import { useView } from '@/features/sync'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
@@ -34,7 +35,7 @@ import { BoardOverlays } from './BoardOverlays'
 import { useBoardDrop } from './useBoardDrop'
 import { useBoardSheets } from './useBoardSheets'
 import { AppNav } from '@/shared/ui/AppNav'
-import { LoadError, Loading } from '@/shared/ui/LoadState'
+import { Loading } from '@/shared/ui/LoadState'
 import { loadState } from '@/shared/query/load-state'
 import type { CookEvent, CookEventId } from '../domain/types'
 
@@ -188,6 +189,7 @@ const Board = ({
   const weekBoard = useWeekBoard(clock)
   const { board, backlog, householdName } = weekBoard
   const boardState = loadState(weekBoard)
+  const syncProblem = useView()?.problem
   const { changedDays } = useRecentlyChangedDays()
   // Nobody is shown as here too: presence needed a live channel, and the relay is a mailbox.
   const present: readonly PresentMember[] = []
@@ -294,8 +296,7 @@ const Board = ({
       unplanFailed={unplanFailed}
       otherFailed={otherFailed}
       orderRefused={orderRefused}
-      stale={boardState === 'stale'}
-      onRetry={weekBoard.refetch}
+      syncProblem={syncProblem}
     />
   )
 
@@ -382,11 +383,7 @@ const Board = ({
   /** Why there is no board yet. Neither a failed nor an unfinished first load
    *  may be drawn as a week of empty Slots: it invites planning into a week
    *  that is not there. */
-  const boardPlaceholder =
-    (boardState === 'failed' && (
-      <LoadError onRetry={weekBoard.refetch} testID="board-load-error" />
-    )) ||
-    (boardState === 'loading' && <Loading testID="board-loading" />)
+  const boardPlaceholder = boardState === 'loading' && <Loading testID="board-loading" />
 
   const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => {
     return (
@@ -424,7 +421,6 @@ const Board = ({
             layout="pane"
             meals={meals}
             loadState={loadState(library)}
-            onRetry={library.refetch}
             onSelect={(mealId) => {
               add(mealId)
             }}

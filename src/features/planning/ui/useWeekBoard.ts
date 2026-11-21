@@ -11,19 +11,12 @@ import { useSelectedWeek } from './SelectedWeek'
 export type WeekBoard = {
   readonly board: readonly BoardDay[]
   readonly backlog: readonly BacklogItem[]
-  /** The week's Monday: there is no separate Week Plan row (ADR 0013). */
-  readonly weekPlanId: string
   readonly weekStart: WeekStart
   readonly householdName: string
   readonly isLoading: boolean
-  /** Kept for the screens' load states: reading the local copy cannot fail. */
-  readonly isError: boolean
   /** The device has looked for its board, so an empty week really is empty. */
   readonly hasData: boolean
-  readonly refetch: () => void
 }
-
-const noop = (): void => undefined
 
 /** The week on screen, read from the synced board. */
 export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
@@ -49,12 +42,9 @@ export const useWeekBoard = (clock: Clock = systemClock): WeekBoard => {
       leftovers: week.leftovers,
     }),
     backlog: week.backlog,
-    weekPlanId: weekStart,
     weekStart,
     householdName: household?.name ?? '',
     isLoading: !checked,
-    isError: false,
     hasData: checked,
-    refetch: noop,
   }
 }

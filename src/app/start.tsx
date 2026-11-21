@@ -23,21 +23,26 @@ export default function Start(): React.JSX.Element {
         setFailed(false)
         // Always the device's own keys, never a joined seat's: the person who made
         // that invite knows those secrets.
-        void loadIdentity(deps.vault, deps.random).then(async (me) => {
-          const result = await startBoard(deps, me, {
-            boardName,
-            displayName,
-            locale: i18n.language === 'fi' ? 'fi' : 'en',
+        void loadIdentity(deps.vault, deps.random)
+          .then(async (me) => {
+            const result = await startBoard(deps, me, {
+              boardName,
+              displayName,
+              locale: i18n.language === 'fi' ? 'fi' : 'en',
+            })
+            if (isErr(result)) {
+              setPending(false)
+              setFailed(true)
+              return
+            }
+            await adopt(result.value, me)
+            setPending(false)
+            router.replace('/')
           })
-          if (isErr(result)) {
+          .catch(() => {
             setPending(false)
             setFailed(true)
-            return
-          }
-          await adopt(result.value, me)
-          setPending(false)
-          router.replace('/')
-        })
+          })
       }}
     />
   )

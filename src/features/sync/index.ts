@@ -7,6 +7,7 @@ export {
   type Deps as SyncDeps,
   type Engine,
   type Invite,
+  type SyncProblem,
   type JoinError,
   type KeyValue,
   type View as SyncView,

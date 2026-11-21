@@ -54,7 +54,9 @@
     "shareCreating": "Making an invite…",
     "shareFailed": "Could not make an invite. Only admins can, and you need to be online.",
     "shareMake": "Make an invite link",
-    "writeFailed": "Could not save that change. Try again."
+    "writeFailed": "Could not save that change. Try again.",
+    "relayFull": "This board is full. Changes stay on this phone but cannot reach the others.",
+    "relayBusy": "The sync service is busy. Changes will be sent shortly."
   },
   "slot": {
     "lunch": "Lunch",
@@ -205,7 +207,8 @@
     "showTicked_other": "Show {{count}} ticked items",
     "hideTicked": "Hide ticked items",
     "allTicked": "Everything is ticked off.",
-    "offline": "Offline — your changes are saved here and sync when you're back."
+    "offline": "Offline — your changes are saved here and sync when you're back.",
+    "writeFailed": "Could not save that. Try again."
   },
   "category": {
     "produce": "Produce",

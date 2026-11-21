@@ -54,7 +54,9 @@
     "shareCreating": "Tehdään kutsua…",
     "shareFailed": "Kutsua ei voitu tehdä. Vain ylläpitäjä voi, ja tarvitset yhteyden.",
     "shareMake": "Tee kutsulinkki",
-    "writeFailed": "Muutosta ei voitu tallentaa. Yritä uudelleen."
+    "writeFailed": "Muutosta ei voitu tallentaa. Yritä uudelleen.",
+    "relayFull": "Taulu on täynnä. Muutokset pysyvät tässä puhelimessa, mutta eivät välity muille.",
+    "relayBusy": "Synkronointipalvelu on kiireinen. Muutokset lähetetään pian."
   },
   "slot": {
     "lunch": "Lounas",
@@ -205,7 +207,8 @@
     "showTicked_other": "Näytä {{count}} merkittyä",
     "hideTicked": "Piilota merkityt",
     "allTicked": "Kaikki on merkitty ostetuiksi.",
-    "offline": "Ei verkkoa — muutokset tallentuvat tähän ja siirtyvät kun yhteys palaa."
+    "offline": "Ei verkkoa — muutokset tallentuvat tähän ja siirtyvät kun yhteys palaa.",
+    "writeFailed": "Tallennus ei onnistunut. Yritä uudelleen."
   },
   "category": {
     "produce": "Hedelmät ja vihannekset",

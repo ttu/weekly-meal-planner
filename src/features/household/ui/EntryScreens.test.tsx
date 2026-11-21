@@ -1,3 +1,4 @@
+import { fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
 import { initI18n, setLocale } from '@/shared/i18n'
 import { JoinBoardScreen } from './JoinBoardScreen'
@@ -25,5 +26,26 @@ describe.each(['en', 'fi'] as const)('the way in, in %s', (locale) => {
   it.each(entryScreens)('names the app when %s', async (_, screen) => {
     const view = await renderWithProviders(screen())
     expect(view.getByTestId('wordmark')).toHaveTextContent('Menami')
+  })
+})
+
+describe('starting a board', () => {
+  beforeAll(async () => {
+    initI18n('en')
+    await setLocale('en')
+  })
+
+  it('cannot be sent until both names are given', async () => {
+    const onCreate = jest.fn()
+    const view = await renderWithProviders(
+      <StartBoardScreen isPending={false} onCreate={onCreate} />,
+    )
+    await fireEvent.changeText(view.getByTestId('start-board-name'), 'Home')
+    await fireEvent.changeText(view.getByTestId('start-your-name'), '   ')
+    await fireEvent.press(view.getByTestId('start-create'))
+    expect(onCreate).not.toHaveBeenCalled()
+    await fireEvent.changeText(view.getByTestId('start-your-name'), 'Alice')
+    await fireEvent.press(view.getByTestId('start-create'))
+    expect(onCreate).toHaveBeenCalledWith({ boardName: 'Home', displayName: 'Alice' })
   })
 })
