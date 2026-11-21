@@ -170,6 +170,17 @@ describe('relay', () => {
       await create()
       refused(await rotate(TOKEN, TOKEN), 'same_token')
     })
+
+    it('refuses a rotation built on a membership record that is no longer the last', async () => {
+      await create()
+      await append(TOKEN, 1, 'event', 'not membership')
+      await append(TOKEN, 1, 'membership', 'an invite')
+      const stale = { newToken: NEXT, payload: 'removal', afterMembership: 0 }
+      refused(await call('rotate', TOKEN, stale), 'epoch')
+      expect((await append(TOKEN, 1)).status).toBe(200)
+      const fresh = { ...stale, afterMembership: 2 }
+      expect((await call('rotate', TOKEN, fresh)).status).toBe(200)
+    })
   })
 
   describe('missing arguments', () => {

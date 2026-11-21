@@ -10,6 +10,7 @@ import { tokenFor } from '../domain/relay'
 import { readField } from '../domain/store'
 import {
   createHousehold,
+  identityFromInvite,
   joinHousehold,
   openHousehold,
   type Engine,
@@ -335,6 +336,86 @@ describe('sync engine', () => {
       await alice.write('meal:soup', 'title', 'Secret')
       must(await alice.sync())
       expect(Object.keys(bob.debugKeys())).toEqual(['1'])
+    })
+  })
+
+  describe('staying usable when something goes wrong', () => {
+    const stillWorks = async (...engines: Engine[]) => {
+      for (const e of engines) {
+        tick()
+        await e.write(`meal:${e.view().me}`, 'title', 'Still here')
+        must(await e.sync())
+        expect(e.view().pending).toBe(0)
+      }
+    }
+
+    it('refuses removing someone who is not a Member, and the board carries on', async () => {
+      const { engine: alice } = await start('alice')
+      expect(errorOf(await alice.removeMember('ab'.repeat(32)))).toBe('unknownMember')
+      expect(alice.view().epoch).toBe(1)
+      await stillWorks(alice)
+    })
+
+    it('refuses a removal made while another admin changed membership, and nobody is locked out', async () => {
+      const { engine: alice } = await start('alice')
+      const { engine: bob } = await joinAs('bob', must(await alice.invite('admin')))
+      const { engine: carol } = await joinAs('carol', must(await alice.invite('member')))
+      must(await bob.sync())
+      must(await alice.invite('member'))
+      expect(errorOf(await bob.removeMember(carol.view().me))).toBe('conflict')
+      await stillWorks(alice, bob, carol)
+      must(await bob.removeMember(carol.view().me))
+      await stillWorks(alice, bob)
+    })
+
+    it('gives a late joiner every change, however many arrived before their key', async () => {
+      const { engine: alice } = await start('alice')
+      for (let i = 0; i < 2100; i++)
+        await alice.write(`meal:m${String(i)}`, 'title', `t${String(i)}`)
+      must(await alice.sync())
+      const { engine: late } = await joinAs('late', must(await alice.invite('member')))
+      expect(Object.keys(late.view().store)).toHaveLength(Object.keys(alice.view().store).length)
+    }, 60_000)
+
+    it('picks up where it was when saving the keys failed', async () => {
+      const { engine: alice } = await start('alice')
+      let broken = false
+      const plain = device('bob')
+      const vault: KeyValue = {
+        get: plain.vault.get,
+        set: (k, v) =>
+          broken ? Promise.reject(new Error('secure store failed')) : plain.vault.set(k, v),
+      }
+      const dev = { ...plain, vault }
+      const bob = must(await joinHousehold(dev, must(await alice.invite('member'))))
+      const { engine: carol } = await joinAs('carol', must(await alice.invite('member')))
+      must(await alice.removeMember(carol.view().me))
+      broken = true
+      await bob.sync().catch(() => undefined)
+      broken = false
+      const reopened = await openHousehold(dev, identityFromInvite(seatOf(bob)), bob.household)
+      if (!reopened) throw new Error('could not reopen')
+      must(await reopened.sync())
+      expect(reopened.view().epoch).toBe(2)
+      await stillWorks(reopened)
+    })
+
+    it('keeps a phone’s writes after its clock was wrong for a moment', async () => {
+      const { engine: alice } = await start('alice')
+      const real = wall
+      wall = real + 3 * 24 * 3600_000
+      await alice.write('meal:soup', 'title', 'Wrong clock')
+      wall = real + 1000
+      await alice.write('meal:soup', 'title', 'Soup')
+      must(await alice.sync())
+      expect(title(alice)).toBe('Soup')
+    })
+
+    it('refuses a write the other devices would drop, instead of losing it later', async () => {
+      const { engine: alice } = await start('alice')
+      await expect(alice.write('meal:soup', 'title', 'x'.repeat(9000))).rejects.toThrow()
+      expect(alice.view().pending).toBe(0)
+      expect(title(alice)).toBeUndefined()
     })
   })
 

@@ -38,6 +38,8 @@ export type Relay = {
     token: string,
     newToken: string,
     payload: string,
+    /** The last membership record this change builds on; refused as `epoch` if another landed since. */
+    afterMembership: number,
   ) => Promise<Result<RelayRecord, RelayError>>
   pull: (
     board: string,

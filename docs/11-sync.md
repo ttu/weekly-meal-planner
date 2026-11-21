@@ -41,7 +41,10 @@ decrypt, and merge. The relay never holds a key.
 - **Removal starts a new epoch.** A fresh key is sealed to exactly the remaining
   Members and the relay moves to a new token in one step. The old token can still
   _read_ up to the rotation record, so a Member who stays can fetch their new
-  key; it can read nothing after it, and cannot write at all.
+  key; it can read nothing after it, and cannot write at all. A device checks
+  the removal itself before sending it, and the rotation names the last
+  membership record it builds on: if another admin's change landed since, the
+  relay refuses and the token stays where everyone has its key.
 - **An invite is a seat.** An admin creates a Member's keys, adds them to the
   log, and hands over the secret in a link. Nobody needs to be online to join,
   and a lost phone is replaced the same way. Anyone holding the link is that
@@ -52,6 +55,13 @@ decrypt, and merge. The relay never holds a key.
   the Member, so the link outlives removals of others. The board's first key is
   sealed to its creator in the `create` record for the same reason.
 - **Events that arrive before their key are held** and retried when it arrives.
+  Past 2000 held, the first one not kept is remembered, and the device pulls
+  again from there once a key arrives.
+- **A write the others would drop is refused on the writing device**, and a local
+  clock more than a day ahead starts over from the wall clock, so one wrong
+  reading does not lose every later write.
+- **Keys are saved before the snapshot**, so a snapshot never points past a key
+  the device lacks. Each relay call gives up after 15 seconds, as offline.
 
 ## What the relay sees
 

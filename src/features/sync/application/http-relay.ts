@@ -11,7 +11,7 @@ import {
 /** The part of `fetch` this needs, so tests and the app can each bring their own. */
 export type Fetch = (
   url: string,
-  init: { method: 'POST'; headers: Record<string, string>; body: string },
+  init: { method: 'POST'; headers: Record<string, string>; body: string; signal: AbortSignal },
 ) => Promise<{ status: number; json: () => Promise<unknown> }>
 
 const stamp = z.object({
@@ -24,8 +24,11 @@ const pulled = z.object({
 })
 const refusal = z.object({ error: z.string() })
 
+/** Long enough for a slow network; short enough that one stalled call does not freeze every write behind it. */
+const TIMEOUT_MS = 15_000
+
 /** The relay over HTTP (`relay/api.ts` is the other end). */
-export const httpRelay = (baseUrl: string, fetcher: Fetch): Relay => {
+export const httpRelay = (baseUrl: string, fetcher: Fetch, timeoutMs = TIMEOUT_MS): Relay => {
   const call = async <T>(
     op: string,
     board: string,
@@ -33,11 +36,16 @@ export const httpRelay = (baseUrl: string, fetcher: Fetch): Relay => {
     body: unknown,
     schema: z.ZodType<T>,
   ): Promise<Result<T, RelayError>> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      controller.abort()
+    }, timeoutMs)
     try {
       const reply = await fetcher(`${baseUrl}/v1/boards/${encodeURIComponent(board)}/${op}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
+        signal: controller.signal,
       })
       const json = await reply.json()
       if (reply.status >= 500) return err('offline')
@@ -49,6 +57,8 @@ export const httpRelay = (baseUrl: string, fetcher: Fetch): Relay => {
       return parsed.success ? ok(parsed.data) : err('rejected')
     } catch {
       return err('offline')
+    } finally {
+      clearTimeout(timer)
     }
   }
   const stamped = async (
@@ -66,8 +76,8 @@ export const httpRelay = (baseUrl: string, fetcher: Fetch): Relay => {
     create: (board, token, payload) => stamped('create', board, token, {}, 'membership', payload),
     append: (board, token, epoch, kind, payload) =>
       stamped('append', board, token, { epoch, kind }, kind, payload),
-    rotate: (board, token, newToken, payload) =>
-      stamped('rotate', board, token, { newToken }, 'membership', payload),
+    rotate: (board, token, newToken, payload, afterMembership) =>
+      stamped('rotate', board, token, { newToken, afterMembership }, 'membership', payload),
     pull: async (board, token, after) => {
       const result = await call('pull', board, token, { after }, pulled)
       return result.kind === 'err' ? result : ok(result.value.records)

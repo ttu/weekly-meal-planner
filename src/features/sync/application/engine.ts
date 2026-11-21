@@ -2,7 +2,7 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { err, isErr, isOk, ok, type Result } from '@/shared/types/result'
 import type { Clock } from '@/shared/time/clock'
 import { encrypt, newEpochKey, sealKey, type Random } from '../domain/crypto'
-import { encodeEvent, type EventBody } from '../domain/event-codec'
+import { encodeEvent, eventBody, type EventBody } from '../domain/event-codec'
 import { tickHlc } from '../domain/hlc'
 import { identityFromSecrets, memberKeyOf, newIdentity, type Identity } from '../domain/identity'
 import {
@@ -102,9 +102,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
 
   const commit = async (next: EngineState): Promise<void> => {
     state = next
-    const saved = serialise(next)
-    await deps.storage.set(snapshotKey(next.household), saved.snapshot)
-    await deps.vault.set(keysKey(next.household), saved.keys)
+    await save(deps, next)
     listeners.forEach((l) => {
       l()
     })
@@ -115,7 +113,14 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     for (const record of records) {
       const result = ingest(next, record, me, now())
       result.applied.forEach((id) => applied.add(id))
-      next = { ...result.state, lastSeq: Math.max(next.lastSeq, record.seq) }
+      // A rewind asks for the dropped records again; the rest of this batch comes with them.
+      if (result.rewound) {
+        next = result.state
+        break
+      }
+      const membershipSeq =
+        record.kind === 'membership' ? Math.max(next.membershipSeq, record.seq) : next.membershipSeq
+      next = { ...result.state, lastSeq: Math.max(next.lastSeq, record.seq), membershipSeq }
     }
     await commit(next)
   }
@@ -189,16 +194,23 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     return state.membership?.members[mine]?.role === 'admin' ? undefined : 'notAdmin'
   }
 
-  /** Publish an operation, then pull: it only counts if every replica, us included, applied it. */
+  /**
+   * Publish an operation, then pull: it only counts if every replica, us included,
+   * applied it. Checked here first, as a rotation the others refuse would leave
+   * the relay on a token nobody has the key for.
+   */
   const publish = async (op: SignedOp, rotateTo?: string): Promise<Result<void, AdminError>> => {
     const token = tokenOf(state)
     const epoch = state.membership?.epoch
     if (!token || epoch === undefined) return err('noKey')
+    const valid = applyOp(state.membership, op)
+    if (isErr(valid)) return err(valid.error)
     const payload = toHex(op)
     const sent = rotateTo
-      ? await deps.relay.rotate(state.household, token, rotateTo, payload)
+      ? await deps.relay.rotate(state.household, token, rotateTo, payload, state.membershipSeq)
       : await deps.relay.append(state.household, token, epoch, 'membership', payload)
-    if (isErr(sent)) return err(sent.error)
+    // A rotation refused for its epoch means another membership change got there first.
+    if (isErr(sent)) return err(rotateTo && sent.error === 'epoch' ? 'conflict' : sent.error)
     const synced = await pull()
     if (isErr(synced)) return err(synced.error)
     return applied.has(opId(op)) ? ok(undefined) : err('conflict')
@@ -277,8 +289,11 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
   const write = (entity: string, field: string, value: FieldValue): Promise<void> =>
     serial(async () => {
       const hlc = tickHlc(state.hlc, now())
-      const id = bytesToHex(deps.random(16))
-      await commit({ ...state, hlc, outbox: [...state.outbox, { id, hlc, entity, field, value }] })
+      const event = { id: bytesToHex(deps.random(16)), hlc, entity, field, value }
+      // Every device drops what fails this, the writer included: better refused now than lost later.
+      if (!eventBody.safeParse(event).success)
+        throw new Error(`invalid write to ${entity}.${field}`)
+      await commit({ ...state, hlc, outbox: [...state.outbox, event] })
     })
 
   return {
@@ -327,6 +342,8 @@ const empty = (household: string, me: Identity, now: number): EngineState => ({
   keys: {},
   store: emptyStore,
   lastSeq: -1,
+  membershipSeq: -1,
+  dropped: undefined,
   hlc: { wall: now, counter: 0, node: memberKeyOf(me) },
   outbox: [],
   status: 'ok',
@@ -334,10 +351,11 @@ const empty = (household: string, me: Identity, now: number): EngineState => ({
   bootToken: undefined,
 })
 
+/** Keys first: a snapshot saved past a key the vault lacks could never sync again. */
 const save = async (deps: Deps, state: EngineState): Promise<void> => {
   const saved = serialise(state)
-  await deps.storage.set(snapshotKey(state.household), saved.snapshot)
   await deps.vault.set(keysKey(state.household), saved.keys)
+  await deps.storage.set(snapshotKey(state.household), saved.snapshot)
 }
 
 /** Start a new board: this device becomes its first admin. */
@@ -371,6 +389,7 @@ export const createHousehold = async (
     membership: membership.value,
     keys: { '1': key },
     lastSeq: created.value.seq,
+    membershipSeq: created.value.seq,
   }
   await save(deps, state)
   return ok(make(deps, me, state))

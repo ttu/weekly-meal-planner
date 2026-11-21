@@ -1,4 +1,12 @@
-import { MAX_COUNTER, compareHlc, isValidHlc, receiveHlc, tickHlc, type Hlc } from './hlc'
+import {
+  MAX_COUNTER,
+  MAX_DRIFT_MS,
+  compareHlc,
+  isValidHlc,
+  receiveHlc,
+  tickHlc,
+  type Hlc,
+} from './hlc'
 
 const at = (wall: number, counter: number, node: string): Hlc => ({ wall, counter, node })
 
@@ -13,6 +21,12 @@ describe('tickHlc', () => {
 
   it('counts up when the wall clock went backwards, so time never runs backwards', () => {
     expect(tickHlc(at(100, 5, 'a'), 50)).toEqual(at(100, 6, 'a'))
+  })
+
+  it('starts over from the wall clock when it was further ahead than any device accepts', () => {
+    const ahead = 1000 + MAX_DRIFT_MS + 1
+    expect(tickHlc(at(ahead, 5, 'a'), 1000).wall).toBe(1000)
+    expect(receiveHlc(at(ahead, 5, 'a'), at(900, 0, 'b'), 1000).wall).toBe(1000)
   })
 })
 

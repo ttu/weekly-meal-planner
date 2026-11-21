@@ -9,7 +9,12 @@ import type { RelayRecord } from '../domain/relay'
 import { applyEvents } from '../domain/store'
 import type { EngineState } from './state'
 
-export type Ingested = { readonly state: EngineState; readonly applied: readonly string[] }
+export type Ingested = {
+  readonly state: EngineState
+  readonly applied: readonly string[]
+  /** The state's `lastSeq` went back, to fetch records that were dropped. */
+  readonly rewound?: boolean
+}
 
 const unhex = (hex: string): Uint8Array | undefined => {
   try {
@@ -77,8 +82,10 @@ const MAX_HELD = 2000
 const ingestEvent = (state: EngineState, record: RelayRecord, now: number): Ingested => {
   const key = state.keys[String(record.epoch)]
   if (!key) {
-    const held = state.held.length < MAX_HELD ? [...state.held, record] : state.held
-    return { state: { ...state, held }, applied: [] }
+    if (state.held.some((r) => r.seq === record.seq)) return { state, applied: [] }
+    if (state.held.length < MAX_HELD)
+      return { state: { ...state, held: [...state.held, record] }, applied: [] }
+    return { state: { ...state, dropped: state.dropped ?? record.seq }, applied: [] }
   }
   const bytes = unhex(record.payload)
   const plain = bytes && decrypt(key, { household: state.household, epoch: record.epoch }, bytes)
@@ -126,6 +133,9 @@ export const ingest = (
   const standing = lostSeat ? { ...result.state, status: 'removed' as const } : result.state
   const gotKey = Object.keys(standing.keys).length > Object.keys(state.keys).length
   // The invite token is only for reaching the first key; after that the key's own token is used.
-  const settled = gotKey ? release({ ...standing, bootToken: undefined }, now) : standing
-  return { ...result, state: settled }
+  if (!gotKey) return { ...result, state: standing }
+  const settled = release({ ...standing, bootToken: undefined }, now)
+  if (settled.dropped === undefined) return { ...result, state: settled }
+  const rewind = { ...settled, lastSeq: settled.dropped - 1, dropped: undefined }
+  return { ...result, state: rewind, rewound: true }
 }

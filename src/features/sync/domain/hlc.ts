@@ -45,14 +45,24 @@ export const compareHlc = (a: Hlc, b: Hlc): number =>
   (a.node < b.node ? -1 : 0) ||
   (a.node > b.node ? 1 : 0)
 
-export const tickHlc = (local: Hlc, now: number): Hlc =>
-  now > local.wall
+/**
+ * A local clock further ahead than every device accepts came from a wrong wall
+ * clock. Kept, every later write would be dropped everywhere, so it starts over.
+ */
+const sane = (local: Hlc, now: number): Hlc =>
+  local.wall - now > MAX_DRIFT_MS ? { wall: now, counter: 0, node: local.node } : local
+
+export const tickHlc = (current: Hlc, now: number): Hlc => {
+  const local = sane(current, now)
+  return now > local.wall
     ? { wall: now, counter: 0, node: local.node }
     : stamp(local.wall, local.counter + 1, local.node)
+}
 
-export const receiveHlc = (local: Hlc, remote: Hlc, now: number): Hlc => {
+export const receiveHlc = (current: Hlc, remote: Hlc, now: number): Hlc => {
   if (!isValidHlc(remote)) throw new Error('invalid remote clock')
   if (!isPlausibleHlc(remote, now)) throw new Error('remote clock is too far ahead')
+  const local = sane(current, now)
   const wall = Math.max(local.wall, remote.wall, now)
   // Only clocks sitting at the winning wall time constrain the counter.
   const tied = [local, remote].filter((c) => c.wall === wall).map((c) => c.counter)

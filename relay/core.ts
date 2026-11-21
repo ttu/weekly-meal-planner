@@ -29,7 +29,13 @@ export type Stamp = { readonly seq: number; readonly epoch: number; readonly rec
 export type Row = Stamp & { readonly kind: Kind; readonly payload: string }
 
 type EpochRow = { epoch: number; tokenHash: string; endsAt?: number }
-type Meta = { epoch: number; lastSeq: number; epochs: EpochRow[] }
+type Meta = {
+  epoch: number
+  lastSeq: number
+  epochs: EpochRow[]
+  /** The last membership record. Missing on boards made before it was kept. */
+  membershipSeq?: number
+}
 
 const MAX_PAYLOAD = 65_536
 const MAX_RECORDS = 100_000
@@ -80,7 +86,12 @@ export const createBoard = async (
   if (await kv.get('meta')) return fail('exists')
   const first = record('membership', 1, 0, payload, now)
   await kv.put({
-    meta: { epoch: 1, lastSeq: 0, epochs: [{ epoch: 1, tokenHash: hash(token) }] } satisfies Meta,
+    meta: {
+      epoch: 1,
+      lastSeq: 0,
+      epochs: [{ epoch: 1, tokenHash: hash(token) }],
+      membershipSeq: 0,
+    } satisfies Meta,
     [key(0)]: first,
   })
   return stamp(first)
@@ -104,19 +115,32 @@ export const appendRecord = async (
   if (epoch !== meta.epoch) return fail('epoch')
   if (meta.lastSeq >= MAX_RECORDS) return fail('full')
   const row = record(kind, meta.epoch, meta.lastSeq + 1, payload, now)
-  await kv.put({ meta: { ...meta, lastSeq: row.seq }, [key(row.seq)]: row })
+  const membershipSeq = kind === 'membership' ? row.seq : meta.membershipSeq
+  await kv.put({ meta: { ...meta, lastSeq: row.seq, membershipSeq }, [key(row.seq)]: row })
   return stamp(row)
 }
 
-/** Moves to the next epoch and records the membership change that caused it, in one step. */
+/**
+ * Moves to the next epoch and records the membership change that caused it, in
+ * one step. `afterMembership` is the last membership record the caller built on:
+ * if another landed since, the change would be refused by every device after
+ * the token already moved, so it is refused here instead.
+ */
 export const rotateBoard = async (
   kv: Kv,
   token: unknown,
   newToken: unknown,
   payload: unknown,
   now: number,
+  afterMembership?: unknown,
 ): Promise<Stamp> => {
   const meta = await current(kv, token)
+  if (
+    afterMembership !== undefined &&
+    meta.membershipSeq !== undefined &&
+    afterMembership !== meta.membershipSeq
+  )
+    return fail('epoch')
   if (meta.lastSeq >= MAX_RECORDS_ROTATE || meta.epochs.length >= MAX_EPOCHS) return fail('full')
   if (!isToken(newToken) || !isPayload(payload)) return fail('bad_request')
   // Not the current token, and not any earlier one: taking an old token back would undo a removal.
@@ -126,7 +150,10 @@ export const rotateBoard = async (
     ...meta.epochs.map((e) => (e.epoch === meta.epoch ? { ...e, endsAt: row.seq } : e)),
     { epoch: row.epoch, tokenHash: hash(newToken) },
   ]
-  await kv.put({ meta: { epoch: row.epoch, lastSeq: row.seq, epochs }, [key(row.seq)]: row })
+  await kv.put({
+    meta: { epoch: row.epoch, lastSeq: row.seq, epochs, membershipSeq: row.seq },
+    [key(row.seq)]: row,
+  })
   return stamp(row)
 }
 

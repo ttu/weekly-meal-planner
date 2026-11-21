@@ -19,11 +19,15 @@ export type EngineState = {
   readonly store: Store
   /** The last relay record applied; the next pull asks for everything after it. */
   readonly lastSeq: number
+  /** The last membership record seen; a rotation names it so the relay refuses one built on old state. */
+  readonly membershipSeq: number
   readonly hlc: Hlc
   readonly outbox: readonly EventBody[]
   readonly status: Status
   /** Event records that arrived before the key to read them; retried when a key does. */
   readonly held: readonly RelayRecord[]
+  /** The first record not held for lack of room; pulled again once a key arrives. */
+  readonly dropped: number | undefined
   /** Until the first key arrives, the token from the invite is all a joiner has. */
   readonly bootToken: string | undefined
 }
@@ -45,6 +49,8 @@ const snapshotSchema = z.object({
     z.record(z.string(), z.object({ hlc: hlcSchema, value: fieldValueSchema })),
   ),
   lastSeq: z.number(),
+  membershipSeq: z.number().default(-1),
+  dropped: z.number().optional(),
   hlc: hlcSchema,
   outbox: z.array(eventBody),
   status: z.enum(['ok', 'removed', 'lockedOut']),
@@ -80,6 +86,7 @@ export const deserialise = (snapshot: string, keys: string): EngineState | undef
     return {
       ...parsed.data,
       membership: parsed.data.membership,
+      dropped: parsed.data.dropped,
       bootToken: parsedKeys.data.bootToken,
       keys: Object.fromEntries(
         Object.entries(parsedKeys.data.keys).map(([epoch, key]) => [

@@ -43,7 +43,7 @@ const run = async (kv: Kv, call: Call, now: number): Promise<unknown> => {
     case 'append':
       return appendRecord(kv, call.token, b.epoch, b.kind, b.payload, now)
     case 'rotate':
-      return rotateBoard(kv, call.token, b.newToken, b.payload, now)
+      return rotateBoard(kv, call.token, b.newToken, b.payload, now, b.afterMembership)
     case 'pull':
       return { records: await pullRecords(kv, call.token, b.after) }
     default:
