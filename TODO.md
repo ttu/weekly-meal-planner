@@ -34,10 +34,6 @@ you want to overturn one, change the spec first.
   rotation secret (or a signature the relay checks), distributed in `setRole`
   ops and rotated on demotion, plus a client that reports a rotation record
   that is not a valid removal instead of stalling quietly.
-- The beta key (ADR 0012) is not yet in the staging or production Vault, so
-  both are still open until someone runs `vault.create_secret` there
-  (`docs/06-security.md`). Once email verification exists, delete the secret
-  and then the gate: `p_beta_key`, `app.beta_key_accepted`, the screen field.
 - Two advisories are ignored in `package.json` (`pnpm.auditConfig.ignoreGhsas`)
   because no compatible patched release exists. `zod` (GHSA-mrhx-c7xc-m3w5)
   via `@expo/cli`, which pins `zod@^3` and the fix is only in 4.6.6;
@@ -72,7 +68,9 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
 2. **Rebuild the e2e suite** against `wrangler dev` (`docs/04-testing.md`); the
    Supabase-based one was removed. Until then, look at every screen by hand:
    start, join, share, settings, library, editor, board, shopping, in `fi` and `en`
-   and on a wide screen.
+   and on a wide screen. Wait on observable conditions, never `waitForTimeout`,
+   and drop the `e2e/**` exception for `sonarjs/no-fixed-wait-in-tests` in
+   `eslint.config.mjs` when the suite is back.
 3. **Recovery link follow-ups.** The link (Settings) is built. Not yet: a one-tap
    backup to iCloud Keychain / Android Block Store (both need a native module); a
    reminder to save the link. Boards created before the link existed did not seal
@@ -104,14 +102,6 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
   it. Needs a decision on what leaving means for the last admin and for their
   Backlog Items, then a profile editor and a leave that gives up the seat.
 
-## Tests
-
-- The e2e suite waits out animations, navigation and the auto-scroll dwell with
-  `page.waitForTimeout` in six places, so `sonarjs/no-fixed-wait-in-tests` is
-  off for `e2e/**`. Found when the sonarjs rules were added. Replace each with
-  a wait on an observable condition and delete the exception from
-  `eslint.config.mjs`; doing it as its own pass so a flake is attributable.
-
 ## UI
 
 - `PlanSheet` still closes only by button, backdrop or Android back; it has no
@@ -126,6 +116,11 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
   and stays as is.
 
 ## Client
+
+- Overrides are read and shown on the Shopping List (`shopping-data.ts`,
+  `derive.ts`, the `isOverridden` styling) but nothing writes one: there is no
+  editor, so no device can create an `override` row. Found in the full
+  codebase review. Build the editor (spec: Overrides) or delete the read path.
 
 - `MealPicker` still draws a failed or loading Meal library as "no results":
   it takes `meals` as a prop and is not told the `loadState` that
