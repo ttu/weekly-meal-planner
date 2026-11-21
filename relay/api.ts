@@ -1,6 +1,4 @@
 import {
-  checkCreation,
-  recordCreation,
   appendRecord,
   createBoard,
   pullRecords,
@@ -59,22 +57,4 @@ export const handleBoardCall = async (kv: Kv, call: Call, now: number): Promise<
     if (e instanceof RelayFailure) return { status: STATUS[e.reason], body: { error: e.message } }
     throw e
   }
-}
-
-/** The whole relay over plain storage: what the tests run, and what the Worker splits across objects. */
-export const handleCall = async (
-  directory: { readonly board: (id: string) => Kv; readonly gate: Kv },
-  call: Call,
-  now: number,
-): Promise<Reply> => {
-  if (call.op !== 'create') return handleBoardCall(directory.board(call.board), call, now)
-  try {
-    await checkCreation(directory.gate, now)
-  } catch (e) {
-    if (e instanceof RelayFailure) return { status: STATUS[e.reason], body: { error: e.message } }
-    throw e
-  }
-  const reply = await handleBoardCall(directory.board(call.board), call, now)
-  if (reply.status === 200) await recordCreation(directory.gate, now)
-  return reply
 }

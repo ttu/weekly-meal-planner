@@ -1,4 +1,5 @@
 import type { Kv } from './core'
+import { BoardObject, GateObject, type Env } from './worker'
 
 /** Storage in memory, with the same contract as a Durable Object's. For tests. */
 export const memoryKv = (): Kv => {
@@ -34,5 +35,22 @@ export const memoryDirectory = () => {
     },
     /** Reaches into a board the way an operator with database access could. */
     boards,
+  }
+}
+
+/** The Worker's bindings over memory: the real Worker and objects, only the storage faked. */
+export const memoryEnv = (
+  directory: ReturnType<typeof memoryDirectory>,
+  now: () => number = () => Date.now(),
+  limiter?: Env['LIMITER'],
+): Env => {
+  const namespace = (make: (name: string) => { fetch: (r: Request) => Promise<Response> }) => ({
+    idFromName: (name: string) => name,
+    get: (id: unknown) => make(String(id)),
+  })
+  return {
+    BOARD: namespace((name) => new BoardObject({ storage: directory.board(name) }, {}, now)),
+    GATE: namespace(() => new GateObject({ storage: directory.gate }, {}, now)),
+    ...(limiter ? { LIMITER: limiter } : {}),
   }
 }

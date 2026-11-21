@@ -1,5 +1,6 @@
-import { handleCall, type Reply } from './api'
-import { memoryDirectory } from './memory'
+import type { Reply } from './api'
+import { memoryDirectory, memoryEnv } from './memory'
+import worker from './worker'
 
 const BOARD = 'board-aaaaaaaa'
 const TOKEN = 'a'.repeat(64)
@@ -17,8 +18,23 @@ describe('relay', () => {
     now = 1_000_000
   })
 
-  const call = (op: string, token: string | undefined, body: unknown, board = BOARD) =>
-    handleCall(dir, { op, board, token, body }, now)
+  /** Through the real Worker, with only its storage and clock faked. */
+  const call = async (
+    op: string,
+    token: string | undefined,
+    body: unknown,
+    board = BOARD,
+  ): Promise<Reply> => {
+    const reply = await worker.fetch(
+      new Request(`https://relay.test/v1/boards/${encodeURIComponent(board)}/${op}`, {
+        method: 'POST',
+        headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      }),
+      memoryEnv(dir, () => now),
+    )
+    return { status: reply.status, body: await reply.json() }
+  }
   const create = (board = BOARD, token = TOKEN) =>
     call('create', token, { payload: 'genesis' }, board)
   const append = (token = TOKEN, epoch = 1, kind = 'event', payload = 'p', board = BOARD) =>
@@ -104,7 +120,7 @@ describe('relay', () => {
     refused(await create('board-cccccccc', 'not-a-token'), 'bad_request')
     refused(await call('append', TOKEN, { epoch: 1.5, kind: 'event', payload: 'p' }), 'bad_request')
     refused(await call('append', TOKEN, undefined), 'bad_request')
-    refused(await call('nonsense', TOKEN, {}), 'bad_request')
+    expect((await call('nonsense', TOKEN, {})).status).toBe(404)
     expect(await pull()).toHaveLength(1)
   })
 

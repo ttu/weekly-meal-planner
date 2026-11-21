@@ -20,11 +20,13 @@ you want to overturn one, change the spec first.
 
 ## Security
 
-- Relay (ADR 0013, `relay/`): board creation is capped for everyone together
-  (1000 an hour, one `GateObject`) because nothing identifies the caller, so
-  anyone can fill the quota and block new boards for an hour. A per-caller gate
-  needs an identity: Cloudflare's rate-limit binding per IP, or proof-of-work on
-  creation.
+- Relay (ADR 0013, `relay/`): board creation is still also capped for everyone
+  together (1000 an hour, one `GateObject`). Every call is now limited per IP
+  (300 a minute, the `LIMITER` binding), so filling the quota takes many
+  addresses; proof-of-work on creation would close it.
+- Relay: membership records are capped at 20 a minute per board, so a hostile
+  Member cannot keep an admin's removal of them from landing. The same Member
+  can make an admin's invite wait a minute; removing them ends it.
 - Relay: `rotate` is authorised by the current epoch token alone, so any
   current Member could move the board to a token only they know and lock the
   others out, and nothing recovers it. It is a denial of service by someone

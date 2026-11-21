@@ -44,7 +44,9 @@ decrypt, and merge. The relay never holds a key.
   key; it can read nothing after it, and cannot write at all. A device checks
   the removal itself before sending it, and the rotation names the last
   membership record it builds on: if another admin's change landed since, the
-  relay refuses and the token stays where everyone has its key.
+  relay refuses and the token stays where everyone has its key. The removal is
+  then built again on a fresh pull, up to five times. Membership records are
+  capped at 20 a minute per board, so a Member cannot outrun that.
 - **An invite is a seat.** An admin creates a Member's keys, adds them to the
   log, and hands over the secret in a link. Nobody needs to be online to join,
   and a lost phone is replaced the same way. Anyone holding the link is that
@@ -69,6 +71,12 @@ Record kind, epoch, size, order and time, and the signed membership operations
 (public keys and roles). Never an event's content, a key, or a Household name.
 Its functions raise `relay_<reason>`; every comparison fails closed on NULL.
 
+The Worker turns away, before any board's object wakes: a board name it cannot
+decode, a body over 200 KB, and a caller IP past 300 calls a minute. Board
+creation is checked and counted against the hourly cap in one call to the gate,
+and given back if the board is not made. Tests run the real Worker with only
+its storage faked (`relay/memory.ts`).
+
 ## What a removed Member keeps
 
 Everything they had synced. Rotation protects only what is written afterwards.
@@ -77,5 +85,5 @@ The product says so where it removes someone.
 ## Known gaps
 
 See `TODO.md`: relay rotation is authorised by the current token alone, board
-creation is capped for everyone together, events are not signed per author, and
+creation is also capped for everyone together, events are not signed per author, and
 the relay is a Cloudflare Worker and the app does not use Supabase at all.

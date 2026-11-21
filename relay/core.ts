@@ -61,14 +61,16 @@ const fail = (reason: Reason): never => {
 }
 
 const isToken = (value: unknown): value is string => typeof value === 'string' && TOKEN.test(value)
+export const isBoard = (value: unknown): value is string =>
+  typeof value === 'string' && BOARD.test(value)
 const isPayload = (value: unknown): value is string =>
   typeof value === 'string' && value.length <= MAX_PAYLOAD
 
 /** One answer for "no such board" and "wrong token", so a board cannot be probed. */
 const current = async (kv: Kv, token: unknown): Promise<Meta> => {
+  if (!isToken(token)) return fail('forbidden')
   const meta = await kv.get<Meta>('meta')
-  const known = typeof token === 'string' && meta?.epochs.at(-1)?.tokenHash === hash(token)
-  return meta && known ? meta : fail('forbidden')
+  return meta?.epochs.at(-1)?.tokenHash === hash(token) ? meta : fail('forbidden')
 }
 
 const record = (
@@ -88,8 +90,7 @@ export const createBoard = async (
   payload: unknown,
   now: number,
 ): Promise<Stamp> => {
-  if (typeof board !== 'string' || !BOARD.test(board) || !isToken(token) || !isPayload(payload))
-    return fail('bad_request')
+  if (!isBoard(board) || !isToken(token) || !isPayload(payload)) return fail('bad_request')
   if (await kv.get('meta')) return fail('exists')
   const first = record('membership', 1, 0, payload, now)
   await kv.put({
@@ -159,11 +160,12 @@ export const rotateBoard = async (
   if (meta.lastSeq >= MAX_RECORDS_ROTATE || meta.epochs.length >= MAX_EPOCHS) return fail('full')
   if (!isToken(newToken) || !isPayload(payload)) return fail('bad_request')
   // Not the current token, and not any earlier one: taking an old token back would undo a removal.
-  if (meta.epochs.some((e) => e.tokenHash === hash(newToken))) return fail('same_token')
+  const newHash = hash(newToken)
+  if (meta.epochs.some((e) => e.tokenHash === newHash)) return fail('same_token')
   const row = record('membership', meta.epoch + 1, meta.lastSeq + 1, payload, now)
   const epochs = [
     ...meta.epochs.map((e) => (e.epoch === meta.epoch ? { ...e, endsAt: row.seq } : e)),
-    { epoch: row.epoch, tokenHash: hash(newToken) },
+    { epoch: row.epoch, tokenHash: newHash },
   ]
   await kv.put({
     meta: { epoch: row.epoch, lastSeq: row.seq, epochs, membershipSeq: row.seq },
@@ -182,9 +184,10 @@ export const pullRecords = async (
   token: unknown,
   after: unknown,
 ): Promise<readonly Row[]> => {
-  const meta = await kv.get<Meta>('meta')
-  const mine =
-    typeof token === 'string' ? meta?.epochs.find((e) => e.tokenHash === hash(token)) : undefined
+  // Checked and hashed once, whatever the token or the number of epochs.
+  const tokenHash = isToken(token) ? hash(token) : undefined
+  const meta = tokenHash === undefined ? undefined : await kv.get<Meta>('meta')
+  const mine = meta?.epochs.find((e) => e.tokenHash === tokenHash)
   if (!mine || !Number.isInteger(after)) return fail('forbidden')
   const found = await kv.list<Row>({
     prefix: 'r:',
@@ -198,12 +201,21 @@ const HOUR = 3_600_000
 const recentCreations = async (kv: Kv, now: number): Promise<number[]> =>
   ((await kv.get<number[]>('created')) ?? []).filter((t) => t > now - HOUR)
 
-/** Creation is capped for everyone, as nothing authenticates a caller. Kept by one registry. */
-export const checkCreation = async (kv: Kv, now: number): Promise<void> => {
-  if ((await recentCreations(kv, now)).length >= 1000) return fail('busy')
+/**
+ * Creation is capped for everyone, as nothing authenticates a caller. Kept by one
+ * registry. Checked and counted in one call, so creations at once cannot pass
+ * the cap together; returns the time counted, to release if the board is not made.
+ */
+export const reserveCreation = async (kv: Kv, now: number): Promise<number> => {
+  const recent = await recentCreations(kv, now)
+  if (recent.length >= 1000) return fail('busy')
+  await kv.put({ created: [...recent, now] })
+  return now
 }
 
-/** Counted only once a board was really made, so refused attempts cost the quota nothing. */
-export const recordCreation = async (kv: Kv, now: number): Promise<void> => {
-  await kv.put({ created: [...(await recentCreations(kv, now)), now] })
+/** A refused creation costs the quota nothing. */
+export const releaseCreation = async (kv: Kv, at: unknown): Promise<void> => {
+  const created = (await kv.get<number[]>('created')) ?? []
+  const index = created.indexOf(Number(at))
+  if (index >= 0) await kv.put({ created: created.filter((_, i) => i !== index) })
 }
