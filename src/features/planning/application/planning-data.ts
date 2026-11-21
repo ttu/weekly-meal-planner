@@ -254,26 +254,41 @@ const removeLeftoversOf = async (data: Data, cookEventId: string): Promise<void>
   }
 }
 
+/**
+ * A change to a row someone else removed is a success with nothing to do: a put
+ * would bring the row back, a Cook Event on the board and its Backlog Item at once.
+ */
+const changeIfThere = async <Id extends string>(
+  data: Data,
+  kind: string,
+  id: Id,
+  write: () => Promise<void>,
+): Promise<Result<Id, PlanningError>> => {
+  if (data.get(kind, id) === undefined) return ok(id)
+  return attempt(async () => {
+    await write()
+    return id
+  })
+}
+
 /** Leftovers keep their own date and Slot: moving the Meal does not drag them along. */
 export const moveCookEvent = (
   data: Data,
   input: { cookEventId: CookEventId; date: string; slotKey: SlotKey },
 ): Promise<Result<CookEventId, PlanningError>> =>
-  attempt(async () => {
+  changeIfThere(data, 'cook', input.cookEventId, () =>
     // Moving to another week re-files it under that week's Monday.
-    await data.put('cook', input.cookEventId, placeOf(input.date, input.slotKey))
-    return input.cookEventId
-  })
+    data.put('cook', input.cookEventId, placeOf(input.date, input.slotKey)),
+  )
 
 export const setServingsCooked = (
   data: Data,
   cookEventId: CookEventId,
   servingsCooked: Servings,
 ): Promise<Result<CookEventId, PlanningError>> =>
-  attempt(async () => {
-    await data.put('cook', cookEventId, { servings: Number(servingsCooked) })
-    return cookEventId
-  })
+  changeIfThere(data, 'cook', cookEventId, () =>
+    data.put('cook', cookEventId, { servings: Number(servingsCooked) }),
+  )
 
 export const addLeftover = async (
   data: Data,
@@ -298,10 +313,9 @@ export const moveLeftover = (
   data: Data,
   input: { leftoverId: LeftoverId; date: string; slotKey: SlotKey },
 ): Promise<Result<LeftoverId, PlanningError>> =>
-  attempt(async () => {
-    await data.put('leftover', input.leftoverId, { date: input.date, slot: input.slotKey })
-    return input.leftoverId
-  })
+  changeIfThere(data, 'leftover', input.leftoverId, () =>
+    data.put('leftover', input.leftoverId, { date: input.date, slot: input.slotKey }),
+  )
 
 /** One Leftover card and nothing else; its Cook Event stays. */
 export const removeLeftover = (data: Data, id: LeftoverId): Promise<Result<void, PlanningError>> =>

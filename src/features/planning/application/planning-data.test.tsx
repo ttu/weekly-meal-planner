@@ -106,6 +106,35 @@ describe('planning on the synced board', () => {
     expect([...week(b).cookEvents, ...week(b, NEXT_WEEK).cookEvents]).toEqual(shown)
   })
 
+  it('does not bring back a Cook Event another Member unplanned while this one changed it', async () => {
+    const { a, b, sync } = await twoMembers()
+    const cook = must(await direct(a))!
+    await sync()
+    must(await unplanMeal(b, NOW, cook, 'me'))
+    await sync()
+    must(await setServingsCooked(a, cook, brand(2)))
+    must(await moveCookEvent(a, { cookEventId: cook, date: '2026-03-12', slotKey: lunch }))
+    await sync()
+    expect(week(a).backlog).toHaveLength(1)
+    expect(week(a).cookEvents).toEqual([])
+    expect(week(b).cookEvents).toEqual([])
+  })
+
+  it('does not bring back a Leftover another Member removed while this one moved it', async () => {
+    const { a, b, sync } = await twoMembers()
+    const cook = must(await direct(a))!
+    const left = must(
+      await addLeftover(a, randomBytes, { cookEventId: cook, date: '2026-03-12', slotKey: lunch }),
+    )
+    await sync()
+    must(await removeLeftover(b, left))
+    await sync()
+    must(await moveLeftover(a, { leftoverId: left, date: '2026-03-13', slotKey: lunch }))
+    await sync()
+    expect(week(a).leftovers).toEqual([])
+    expect(week(b).leftovers).toEqual([])
+  })
+
   it('puts a Meal on the Backlog with who wanted it', async () => {
     const { data } = await testBoard()
     must(
