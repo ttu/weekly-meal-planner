@@ -8,6 +8,7 @@ import { dataOf, joinHousehold, type Data } from '@/features/sync'
 import {
   addLeftover,
   addToBacklog,
+  countCookEventsOf,
   moveCookEvent,
   moveLeftover,
   planMeal,
@@ -133,6 +134,16 @@ describe('planning on the synced board', () => {
     await sync()
     expect(week(a).leftovers).toEqual([])
     expect(week(b).leftovers).toEqual([])
+  })
+
+  it('counts the Cook Events of a Meal in every week, not the ones unplanned', async () => {
+    const { data } = await testBoard()
+    must(await direct(data, '2026-03-11'))
+    const gone = must(await direct(data, '2026-03-18'))!
+    must(await direct(data, '2026-03-25'))
+    must(await unplanMeal(data, NOW, gone, 'me'))
+    expect(countCookEventsOf(data, tacos)).toBe(2)
+    expect(countCookEventsOf(data, brand('soup'))).toBe(0)
   })
 
   it('puts a Meal on the Backlog with who wanted it', async () => {

@@ -230,8 +230,9 @@ they change different fields of one row, both survive.
 Slots are **not exclusive** — a day-slot holds more than one entry. When two
 people drop different meals on Tuesday dinner at once, both land and the family
 sorts it out visually. Refusing a household member's edit is worse than showing
-two cards on Tuesday. Deleting an entry someone is mid-drag on resolves
-last-write-wins, with the dragged card snapping back.
+two cards on Tuesday. Deleting an entry someone is mid-drag on, or is
+changing the Servings of, wins: the drop or the save changes nothing, and the
+removed card stays removed rather than coming back.
 
 ### Offline
 
@@ -245,7 +246,8 @@ The board opens on this week and the arrows either side of the heading move it
 a week at a time; the heading says which week is on screen and offers the way
 back. A household plans the week ahead at least as often as the one underway —
 on a Sunday evening "this week" is nearly over — and the board could previously
-only ever show the current seven days.
+only ever show the current seven days. "This week" follows the clock: a board
+opened on Sunday and picked up again on Monday shows the new week.
 
 The Shopping List follows the same week. They are two views of one Week Plan,
 and shopping for a week other than the one being looked at is not a thing

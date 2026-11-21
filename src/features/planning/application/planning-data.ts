@@ -148,6 +148,10 @@ export const readWeek = (
   return { cookEvents, leftovers, backlog }
 }
 
+/** How many times a Meal is on the board, in any week: what deleting it takes with it. */
+export const countCookEventsOf = (data: Data, mealId: MealId): number =>
+  data.list('cook').filter(({ doc }) => cookRow(doc)?.mealId === mealId).length
+
 const countIn = (data: Data, kind: string, field: string, value: string): number =>
   data.list(kind).filter(({ doc }) => doc[field] === value).length
 
