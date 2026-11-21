@@ -5,8 +5,8 @@ import { slotName, type SlotKey } from '@/features/household'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { formatColumnHeading } from '../domain/format-day'
 import { LeftoverCard } from '@/features/meals'
-import type { BoardCard, CookEvent, CookEventId, Leftover, LeftoverId } from '../domain/types'
-import type { BoardDay } from '../domain/board'
+import type { CookEvent, CookEventId, Leftover, LeftoverId } from '../domain/types'
+import { cardKey, type BoardDay } from '../domain/board'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
 import type { DragPayload, DropTarget } from './DragContext'
@@ -135,9 +135,6 @@ const sheets = themed((tokens) =>
     },
   }),
 )
-
-const cardKey = (card: BoardCard): string =>
-  card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id
 
 /** A Leftover in a 100px column: the card, and the × that takes it off the
  *  week. Tapping the card itself opens nothing — a Leftover has nothing to

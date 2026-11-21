@@ -1,6 +1,6 @@
 import type { Slot, SlotKey } from '@/features/household'
 import { weekDates } from './week'
-import type { BoardCard, CookEvent, Leftover, WeekStart } from './types'
+import type { BoardCard, CookEvent, CookEventId, Leftover, WeekStart } from './types'
 
 export type BoardSlot = {
   readonly slotKey: SlotKey
@@ -49,3 +49,31 @@ export const buildBoard = (input: BuildBoardInput): readonly BoardDay[] => {
     })),
   }))
 }
+
+/** Every card on the board, day by day and Slot by Slot. */
+export const boardCards = (board: readonly BoardDay[]): readonly BoardCard[] =>
+  board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
+
+export const cookEventIn = (board: readonly BoardDay[], id: CookEventId): CookEvent | undefined =>
+  boardCards(board)
+    .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
+    .find((cookEvent) => cookEvent.id === id)
+
+export const leftoverCountIn = (board: readonly BoardDay[], id: CookEventId): number =>
+  boardCards(board).filter((card) => card.kind === 'leftover' && card.leftover.cookEventId === id)
+    .length
+
+/** The Household's own order of Slots, which is what "before" means within a day. */
+export const slotOrderOf = (board: readonly BoardDay[]): readonly SlotKey[] =>
+  (board[0]?.slots ?? []).map((slot) => slot.slotKey)
+
+export const plannedDatesOf = (board: readonly BoardDay[]): ReadonlySet<string> =>
+  new Set(
+    board.filter((day) => day.slots.some((slot) => slot.cards.length > 0)).map((day) => day.date),
+  )
+
+export const isBoardEmpty = (board: readonly BoardDay[]): boolean => boardCards(board).length === 0
+
+/** A React key for a card: its own id, unique across Cook Events and Leftovers. */
+export const cardKey = (card: BoardCard): string =>
+  card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id

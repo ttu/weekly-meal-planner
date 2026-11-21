@@ -19,6 +19,7 @@ import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
 import { localToday } from '../domain/week'
+import { cookEventIn, isBoardEmpty, leftoverCountIn, plannedDatesOf } from '../domain/board'
 import { useWeekBoard } from './useWeekBoard'
 import { useSelectedWeek } from './SelectedWeek'
 import { useAddToBacklog } from './useAddToBacklog'
@@ -248,14 +249,8 @@ const Board = ({
     })
   }
 
-  const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
-  const leftoverCountFor = (id: CookEventId): number =>
-    allCards.filter((card) => card.kind === 'leftover' && card.leftover.cookEventId === id).length
-
-  const cookEventById = (id: CookEventId): CookEvent | undefined =>
-    allCards
-      .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
-      .find((cookEvent) => cookEvent.id === id)
+  const leftoverCountFor = (id: CookEventId): number => leftoverCountIn(board, id)
+  const cookEventById = (id: CookEventId): CookEvent | undefined => cookEventIn(board, id)
 
   const today = localToday(clock)
 
@@ -276,9 +271,7 @@ const Board = ({
     board.map((day) => day.date),
     locale,
   )
-  const plannedDates = new Set(
-    board.filter((day) => day.slots.some((slot) => slot.cards.length > 0)).map((day) => day.date),
-  )
+  const plannedDates = plannedDatesOf(board)
 
   /** Tapping an empty Slot opens the picker already aimed at that Slot, so the
    *  Meal is planned in one step rather than parked in the Backlog first. */
@@ -352,10 +345,7 @@ const Board = ({
   /** Day one: nothing wanted, nothing planned. Not the same as an empty
    *  Backlog, which is the ordinary state of a week that is already planned. */
   const isLoaded = boardState === 'ready' || boardState === 'stale'
-  const isDayOne =
-    isLoaded &&
-    backlog.length === 0 &&
-    board.every((day) => day.slots.every((slot) => slot.cards.length === 0))
+  const isDayOne = isLoaded && backlog.length === 0 && isBoardEmpty(board)
 
   const dayOne = (
     <DayOne

@@ -9,7 +9,7 @@ import type { BoardCard, CookEvent, CookEventId, LeftoverId } from '../domain/ty
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
 import type { DragPayload, DropTarget } from './DragContext'
-import type { BoardDay } from '../domain/board'
+import { cardKey, type BoardDay } from '../domain/board'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -165,9 +165,6 @@ const Card = ({
     </DraggableCard>
   )
 }
-
-const cardKey = (card: BoardCard): string =>
-  card.kind === 'cook-event' ? card.cookEvent.id : card.leftover.id
 
 type Props = {
   readonly day: BoardDay
