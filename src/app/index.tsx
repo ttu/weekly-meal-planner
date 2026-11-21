@@ -6,7 +6,7 @@ import { themed, useThemed } from '@/shared/theme/theme'
 import { NoHouseholdScreen, createInviteLink, useBoardSession } from '@/features/household'
 import { useSync } from '@/features/sync'
 import { BoardScreen } from '@/features/planning'
-import { useShoppingList } from '@/features/shopping'
+import { stillToBuy, useShoppingList } from '@/features/shopping'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({ loading: { flex: 1, backgroundColor: tokens.color.surface } }),
@@ -74,7 +74,7 @@ export default function Index(): React.JSX.Element {
       onOpenSettings={() => {
         router.push('/settings')
       }}
-      shoppingCount={list.buy.filter((line) => !line.checked).length}
+      shoppingCount={stillToBuy(list)}
       onWriteOwnMeal={(name) => {
         router.push(
           name === undefined ? '/meals/new' : { pathname: '/meals/new', params: { name } },

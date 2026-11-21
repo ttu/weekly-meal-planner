@@ -271,19 +271,28 @@ does not, and is listed as separate lines on one ingredient ("flour: 500 g +
 2 tbsp"). Guessing that a tablespoon of flour is 8 g is how a shopping list
 quietly becomes wrong; a family reading the list resolves it in a second.
 
+Sums are kept in the Ingredient's base unit, so 1 kg + 200 g and 200 g + 1 kg
+both read "1200 g". A Buy Line's amount is rounded to something a shop sells:
+count units up to a whole one (¾ tin is one tin), grams and millilitres to a
+whole number, other units to one decimal. Each Contribution keeps its exact
+share. Numbers are written in the Household's Locale ("1,5 kg" in Finnish).
+
 ### Output sections
 
 1. **Buy** — non-staple ingredients, plus staples marked running low. Grouped by
    ingredient category, so the list follows the shop rather than the recipes.
 2. **Check the cupboard** — the week's staples not marked low, each with a
    "we're out" tap that moves it into Buy. This is what stops the cumin problem
-   without demanding inventory bookkeeping.
+   without demanding inventory bookkeeping. Ticking it on Buy means it has been
+   bought: it goes back to the cupboard, no longer running low.
 3. **Extras** — manually added items belonging to no meal.
 
 A planned meal with no ingredients yet gets its own line in Buy — "Tacos — no
 ingredients yet" — linking straight to the meal editor. It is the only honest
 way to have a zero-friction day one without silently handing a family an
-incomplete list.
+incomplete list. A meal naming an ingredient this build does not know — added
+on another Member's newer version — gets the same kind of line rather than
+quietly shopping short.
 
 ### Persistence
 

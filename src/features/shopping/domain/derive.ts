@@ -1,6 +1,8 @@
 import { isOk } from '@/shared/types/result'
 import { brand } from '@/shared/types/brand'
 import type { IngredientId, Quantity } from '@/shared/types/ids'
+import type { Locale } from '@/shared/i18n'
+import { dimensionOf } from '@/shared/units'
 import { convert, canConvert } from './convert'
 import type {
   Amount,
@@ -27,6 +29,8 @@ export type DeriveInput = {
   readonly overrides: readonly Override[]
   readonly extras: readonly Extra[]
   readonly checkedIngredientIds: readonly IngredientId[]
+  /** The Household's, for sorting names as its language does. */
+  readonly locale: Locale
 }
 
 type Accumulated = {
@@ -60,6 +64,18 @@ const addAmount = (amounts: Amount[], quantity: Quantity, unit: string): void =>
 
 const round = (value: number): number => Math.round(value * 100) / 100
 
+/**
+ * What a person can buy: whole tins rounded up, whole grams and millilitres,
+ * kilograms and litres to a tenth — never down to nothing. The exact figures
+ * stay on each Contribution, where "why?" is asked.
+ */
+const forBuying = (quantity: number, unit: string): number => {
+  const exact = round(quantity)
+  if (dimensionOf(unit) === 'count') return Math.ceil(exact)
+  if (unit === 'g' || unit === 'ml') return Math.max(1, Math.round(exact))
+  return Math.max(0.1, Math.round(exact * 10) / 10)
+}
+
 type Totals = {
   readonly byIngredient: ReadonlyMap<IngredientId, Accumulated>
   readonly incomplete: readonly IncompleteMealLine[]
@@ -72,6 +88,7 @@ type Totals = {
 const accumulate = (
   plannedMeals: readonly PlannedMeal[],
   mealIngredients: readonly MealIngredient[],
+  infoById: ReadonlyMap<IngredientId, IngredientInfo>,
 ): Totals => {
   const byIngredient = new Map<IngredientId, Accumulated>()
   const incomplete: IncompleteMealLine[] = []
@@ -79,10 +96,14 @@ const accumulate = (
   for (const planned of plannedMeals) {
     const rows = mealIngredients.filter((mi) => mi.mealId === planned.mealId)
 
-    if (rows.length === 0) {
+    const flag = (reason: IncompleteMealLine['reason']): void => {
       if (!incomplete.some((i) => i.mealId === planned.mealId)) {
-        incomplete.push({ mealId: planned.mealId, mealName: planned.mealName })
+        incomplete.push({ mealId: planned.mealId, mealName: planned.mealName, reason })
       }
+    }
+
+    if (rows.length === 0) {
+      flag('no-ingredients')
       continue
     }
 
@@ -91,13 +112,22 @@ const accumulate = (
     const scale = planned.mealServings === 0 ? 1 : planned.servingsCooked / planned.mealServings
 
     for (const row of rows) {
+      const info = infoById.get(row.ingredientId)
+      // A slug from another Member's newer build: say so rather than shop short.
+      if (info === undefined) {
+        flag('unknown-ingredient')
+        continue
+      }
       const scaled = brand<number, 'Quantity'>(round(row.quantity * scale))
       const entry = byIngredient.get(row.ingredientId) ?? {
         ingredientId: row.ingredientId,
         amounts: [],
         contributions: [],
       }
-      addAmount(entry.amounts, scaled, row.unit)
+      // Summed in the base unit, so the order Meals arrive in cannot decide it.
+      const inBase = convert(scaled, row.unit, info.baseUnit)
+      if (isOk(inBase)) addAmount(entry.amounts, inBase.value, info.baseUnit)
+      else addAmount(entry.amounts, scaled, row.unit)
       entry.contributions.push({
         mealName: planned.mealName,
         quantity: scaled,
@@ -114,13 +144,19 @@ const accumulate = (
  *  to buy, and the arithmetic does not get a second opinion. */
 const buyAmounts = (entry: Accumulated, override: Override | undefined): readonly Amount[] =>
   override === undefined
-    ? entry.amounts.map((a) => ({ ...a, quantity: brand<number, 'Quantity'>(round(a.quantity)) }))
+    ? entry.amounts.map((a) => ({
+        ...a,
+        quantity: brand<number, 'Quantity'>(forBuying(a.quantity, a.unit)),
+      }))
     : [{ quantity: override.quantity, unit: override.unit }]
 
-const byCategoryThenName = (
-  a: { readonly category: string; readonly name: string },
-  b: { readonly category: string; readonly name: string },
-): number => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
+const byCategoryThenName =
+  (locale: Locale) =>
+  (
+    a: { readonly category: string; readonly name: string },
+    b: { readonly category: string; readonly name: string },
+  ): number =>
+    a.category.localeCompare(b.category) || a.name.localeCompare(b.name, locale)
 
 export const deriveShoppingList = ({
   plannedMeals,
@@ -130,13 +166,14 @@ export const deriveShoppingList = ({
   overrides,
   extras,
   checkedIngredientIds,
+  locale,
 }: DeriveInput): ShoppingList => {
   const infoById = new Map(ingredients.map((i) => [i.id, i]))
   const stapleById = new Map(staples.map((s) => [s.ingredientId, s]))
   const overrideById = new Map(overrides.map((o) => [o.ingredientId, o]))
   const checked = new Set(checkedIngredientIds)
 
-  const { byIngredient, incomplete } = accumulate(plannedMeals, mealIngredients)
+  const { byIngredient, incomplete } = accumulate(plannedMeals, mealIngredients, infoById)
 
   const buy: BuyLine[] = []
   const cupboard: CupboardLine[] = []
@@ -171,8 +208,8 @@ export const deriveShoppingList = ({
   }
 
   // Grouped by category so the list follows the shop, not the recipes.
-  buy.sort(byCategoryThenName)
-  cupboard.sort(byCategoryThenName)
+  buy.sort(byCategoryThenName(locale))
+  cupboard.sort(byCategoryThenName(locale))
 
   return { sittings: plannedMeals.length, buy, cupboard, extras, incomplete }
 }

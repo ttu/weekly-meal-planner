@@ -195,6 +195,7 @@
     "extraPlaceholder": "Jotain muuta",
     "empty": "Ei vielä ostettavaa — suunnittele ensin aterioita.",
     "incomplete": "{{meal}} — ei vielä raaka-aineita",
+    "unknownIngredient": "{{meal}} — sisältää raaka-aineen, jota tämä Menamin versio ei tunne",
     "summary_one": "{{count}} vielä ostettavaa",
     "summary_other": "{{count}} vielä ostettavaa",
     "why": "Miksi?",

@@ -1,9 +1,6 @@
+import type { Locale } from '@/shared/i18n'
+import { formatAmounts } from './summary'
 import type { ShoppingList } from './types'
-
-const formatAmounts = (
-  line: ShoppingList['buy'][number],
-  unitLabel: (unit: string) => string,
-): string => line.amounts.map((a) => `${String(a.quantity)} ${unitLabel(a.unit)}`).join(' + ')
 
 /**
  * Text for pasting into a browser AI agent. It carries no Member names, no
@@ -23,10 +20,11 @@ export const buildAgentPrompt = (
   list: ShoppingList,
   intro: string,
   unitLabel: (unit: string) => string,
+  locale: Locale,
 ): string => {
   const items = list.buy
     .filter((line) => !line.checked)
-    .map((line) => `- ${formatAmounts(line, unitLabel)} ${line.name}`)
+    .map((line) => `- ${formatAmounts(line.amounts, unitLabel, locale)} ${line.name}`)
   const extras = list.extras.filter((e) => !e.checked).map((e) => `- ${e.label}`)
 
   return [intro, ...items, ...extras].join('\n')

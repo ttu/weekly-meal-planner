@@ -145,6 +145,48 @@ describe('useShoppingList', () => {
     })
   })
 
+  // Running Low used to be forever: once bought, the Staple stayed on Buy every
+  // week after. Ticking it means it is back in the cupboard.
+  it('puts a Running Low Staple back in the cupboard once it is ticked, unticked if it runs out again', async () => {
+    const view = await setup()
+    const step = async (action: () => void): Promise<void> => {
+      await act(async () => {
+        action()
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0)
+        })
+      })
+    }
+    const buyLine = () => view.result.current.list.buy.find((l) => l.ingredientId === onion)
+
+    await step(() => {
+      view.result.current.keepInCupboard(onion)
+    })
+    await step(() => {
+      view.result.current.outOf(onion)
+    })
+    await waitFor(() => {
+      expect(buyLine()?.promotedFromCupboard).toBe(true)
+    })
+
+    await step(() => {
+      view.result.current.toggle(onion, true)
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.cupboard.some((l) => l.ingredientId === onion)).toBe(true)
+    })
+    expect(buyLine()).toBeUndefined()
+
+    // Run out again the same week: it must not come back already ticked, or
+    // the Agent Prompt would leave it out.
+    await step(() => {
+      view.result.current.outOf(onion)
+    })
+    await waitFor(() => {
+      expect(buyLine()?.checked).toBe(false)
+    })
+  })
+
   it('adds an Extra, ticks it, and ignores an empty one', async () => {
     const view = await setup()
     await act(async () => {

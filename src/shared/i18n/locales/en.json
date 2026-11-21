@@ -195,6 +195,7 @@
     "extraPlaceholder": "Something else",
     "empty": "Nothing to buy yet — plan some Meals first.",
     "incomplete": "{{meal}} — no Ingredients yet",
+    "unknownIngredient": "{{meal}} — has an Ingredient this version of Menami does not know",
     "summary_one": "{{count}} still to buy",
     "summary_other": "{{count}} still to buy",
     "why": "Why?",

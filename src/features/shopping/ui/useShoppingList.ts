@@ -78,7 +78,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
       run((d) => setChecked(d, weekStart, id, isChecked))
     },
     outOf: (id) => {
-      run((d) => markRunningLow(d, id))
+      run((d) => markRunningLow(d, weekStart, id))
     },
     keepInCupboard: (id) => {
       run((d) => makeStaple(d, id))

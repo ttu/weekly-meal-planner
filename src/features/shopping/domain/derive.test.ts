@@ -51,6 +51,7 @@ const base: DeriveInput = {
   overrides: [],
   extras: [],
   checkedIngredientIds: [],
+  locale: 'en',
 }
 
 describe('deriveShoppingList', () => {
@@ -65,6 +66,7 @@ describe('deriveShoppingList', () => {
       overrides: [],
       checkedIngredientIds: [],
       extras: [],
+      locale: 'en',
     })
 
     expect(list.sittings).toBe(2)
@@ -82,6 +84,7 @@ describe('deriveShoppingList', () => {
       overrides: [],
       checkedIngredientIds: [],
       extras: [],
+      locale: 'en',
     })
 
     expect(list.buy).toHaveLength(1)
@@ -227,7 +230,9 @@ describe('deriveShoppingList', () => {
       ],
     })
     expect(list.buy).toHaveLength(0)
-    expect(list.incomplete).toEqual([{ mealId: 'tacos', mealName: 'Tacos' }])
+    expect(list.incomplete).toEqual([
+      { mealId: 'tacos', mealName: 'Tacos', reason: 'no-ingredients' },
+    ])
   })
 
   it('records which Meals contributed, for the "why four onions?" question', () => {
@@ -277,5 +282,95 @@ describe('deriveShoppingList', () => {
       mealIngredients: [mi('chili', 'beef', 400, 'g')],
     })
     expect(list.buy[0]!.amounts[0]!.quantity).toBe(300)
+  })
+
+  // 533.33 g is not something a shop sells; 533 g is close enough.
+  it('rounds grams to whole numbers, keeping each Meal its exact share', () => {
+    const list = deriveShoppingList({
+      ...base,
+      plannedMeals: [chili(4 / 3)],
+      mealIngredients: [mi('chili', 'beef', 400, 'g')],
+    })
+    expect(list.buy[0]!.amounts[0]!.quantity).toBe(133)
+    expect(list.buy[0]!.contributions[0]!.quantity).toBeCloseTo(133.33, 2)
+
+    const more = deriveShoppingList({
+      ...base,
+      plannedMeals: [{ ...chili(4), mealServings: 3 as Servings }],
+      mealIngredients: [mi('chili', 'beef', 400, 'g')],
+    })
+    expect(more.buy[0]!.amounts[0]!.quantity).toBe(533)
+  })
+
+  // Nobody buys three quarters of a tin.
+  it('rounds count units up', () => {
+    const list = deriveShoppingList({
+      ...base,
+      ingredients: [{ ...onion, id: 'tomatoes' as IngredientId, baseUnit: 'tin' }],
+      plannedMeals: [chili(3)],
+      mealIngredients: [mi('chili', 'tomatoes', 1, 'tin')],
+    })
+    expect(list.buy[0]!.amounts[0]).toEqual({ quantity: 1, unit: 'tin' })
+    expect(list.buy[0]!.contributions[0]!.quantity).toBe(0.75)
+  })
+
+  it('rounds kilograms and litres to one decimal', () => {
+    const list = deriveShoppingList({
+      ...base,
+      ingredients: [{ ...beef, baseUnit: 'kg' }],
+      plannedMeals: [chili(3)],
+      mealIngredients: [mi('chili', 'beef', 1.1, 'kg')],
+    })
+    expect(list.buy[0]!.amounts[0]).toEqual({ quantity: 0.8, unit: 'kg' })
+  })
+
+  // The order Meals arrive in must not decide the unit: 200 g + 1 kg and
+  // 1 kg + 200 g are the same shop.
+  it('sums in the Ingredient base unit, whatever unit came first', () => {
+    const list = deriveShoppingList({
+      ...base,
+      plannedMeals: [
+        chili(4),
+        {
+          mealId: 'stew' as MealId,
+          mealName: 'Pata',
+          mealServings: 4 as Servings,
+          servingsCooked: 4 as Servings,
+        },
+      ],
+      mealIngredients: [mi('chili', 'beef', 1, 'kg'), mi('stew', 'beef', 200, 'g')],
+    })
+    expect(list.buy[0]!.amounts).toEqual([{ quantity: 1200, unit: 'g' }])
+  })
+
+  // Another Member's newer build can name an Ingredient this one does not
+  // know. Dropping it silently would hand the family a short list.
+  it('flags a Meal that names an Ingredient this build does not know', () => {
+    const list = deriveShoppingList({
+      ...base,
+      plannedMeals: [chili(4)],
+      mealIngredients: [mi('chili', 'onion', 2, 'pcs'), mi('chili', 'saffron', 1, 'g')],
+    })
+    expect(list.buy.map((l) => l.ingredientId)).toEqual(['onion'])
+    expect(list.incomplete).toEqual([
+      { mealId: 'chili', mealName: 'Chili con carne', reason: 'unknown-ingredient' },
+    ])
+  })
+
+  // In Finnish ä sorts after z; a default sort files "äyriäiset" under a.
+  it('sorts names in the Household Locale', () => {
+    const named = (id: string, name: string): IngredientInfo => ({
+      ...onion,
+      id: id as IngredientId,
+      name,
+    })
+    const list = deriveShoppingList({
+      ...base,
+      locale: 'fi',
+      ingredients: [named('a', 'äyriäiset'), named('z', 'zucchini')],
+      plannedMeals: [chili(4)],
+      mealIngredients: [mi('chili', 'a', 1, 'pcs'), mi('chili', 'z', 1, 'pcs')],
+    })
+    expect(list.buy.map((l) => l.name)).toEqual(['zucchini', 'äyriäiset'])
   })
 })

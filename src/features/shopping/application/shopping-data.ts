@@ -54,6 +54,7 @@ export const readShoppingInput = (
   const distinct = new Map(known.map(({ meal }) => [String(meal.id), meal]))
 
   return {
+    locale,
     plannedMeals: known.map(({ event, meal }) => ({
       mealId: meal.id,
       mealName: meal.name,
@@ -128,7 +129,7 @@ const attempt = async (write: () => Promise<void>): Promise<Result<void, Shoppin
   }
 }
 
-export const setChecked = (
+const putCheck = (
   data: Data,
   week: string,
   ingredientId: IngredientId,
@@ -136,12 +137,43 @@ export const setChecked = (
 ): Promise<Result<void, ShoppingWriteError>> =>
   attempt(() => data.put('check', `${week}:${ingredientId}`, { week, ingredientId, checked }))
 
-/** Marks a Staple as running low, which promotes it onto the Buy list. */
-export const markRunningLow = (
+const isRunningLow = (data: Data, ingredientId: IngredientId): boolean => {
+  const row = stapleRow.safeParse(data.get('staple', ingredientId))
+  return row.success && row.data.runningLow
+}
+
+/**
+ * Ticking a Running Low Staple means it has been bought: it goes back to the
+ * Cupboard Check, or Running Low would never reset.
+ */
+export const setChecked = async (
   data: Data,
+  week: string,
   ingredientId: IngredientId,
-): Promise<Result<void, ShoppingWriteError>> =>
-  attempt(() => data.put('staple', ingredientId, { ingredientId, runningLow: true }))
+  checked: boolean,
+): Promise<Result<void, ShoppingWriteError>> => {
+  const restock = checked && isRunningLow(data, ingredientId)
+  const written = await putCheck(data, week, ingredientId, checked)
+  return restock && written.kind === 'ok' ? makeStaple(data, ingredientId) : written
+}
+
+/**
+ * Marks a Staple as running low, which promotes it onto the Buy list. Unticked,
+ * even if this week's earlier one was ticked, or the Agent Prompt would skip it.
+ */
+export const markRunningLow = async (
+  data: Data,
+  week: string,
+  ingredientId: IngredientId,
+): Promise<Result<void, ShoppingWriteError>> => {
+  const written = await attempt(() =>
+    data.put('staple', ingredientId, { ingredientId, runningLow: true }),
+  )
+  const check = checkRow.safeParse(data.get('check', `${week}:${ingredientId}`))
+  return written.kind === 'ok' && check.success && check.data.checked
+    ? putCheck(data, week, ingredientId, false)
+    : written
+}
 
 /**
  * "We always have this in." The Ingredient leaves the Buy list and joins the
