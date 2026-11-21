@@ -82,6 +82,8 @@ export type Engine = {
 const snapshotKey = (household: string) => `sync/${household}`
 const keysKey = (household: string) => `sync/${household}/keys`
 const PULL_ROUNDS = 50
+/** A whole board is at most ~200 pages; the cap only stops a relay that never runs dry. */
+const JOIN_ROUNDS = 1000
 const toHex = (value: unknown): string =>
   bytesToHex(new TextEncoder().encode(JSON.stringify(value)))
 
@@ -353,7 +355,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     write,
     sync: (options) =>
       serial(async () => {
-        const result = await syncNow(options?.all ? Infinity : PULL_ROUNDS)
+        const result = await syncNow(options?.all ? JOIN_ROUNDS : PULL_ROUNDS)
         const next = problemAfter(result, problem)
         if (next !== problem) {
           problem = next
