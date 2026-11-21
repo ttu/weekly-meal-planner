@@ -70,6 +70,17 @@ describe('the Worker entry', () => {
     expect(await directory.gate.get<number[]>('created')).toHaveLength(1)
   })
 
+  it('gives back the creation quota when the board fails outright', async () => {
+    const directory = memoryDirectory()
+    const env = memoryEnv(directory)
+    env.BOARD = {
+      ...env.BOARD,
+      get: () => ({ fetch: () => Promise.reject(new Error('board down')) }),
+    }
+    await expect(create(env)).rejects.toThrow('board down')
+    expect(await directory.gate.get<number[]>('created')).toEqual([])
+  })
+
   it('reports a broken registry as its own failure, not as busy', async () => {
     const directory = memoryDirectory()
     directory.gate.get = () => Promise.reject(new Error('storage down'))

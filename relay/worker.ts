@@ -116,12 +116,18 @@ const create = async (env: Env, board: Stub, call: Request): Promise<Response> =
   const gate = env.GATE.get(env.GATE.idFromName('gate'))
   const reserved = await gate.fetch(new Request('https://gate/reserve', { method: 'POST' }))
   if (reserved.status !== 200) return reserved
-  const reply = await board.fetch(call)
-  if (reply.status !== 200) {
-    const at = await reserved.text()
-    await gate.fetch(new Request('https://gate/release', { method: 'POST', body: at }))
+  let made = false
+  try {
+    const reply = await board.fetch(call)
+    made = reply.status === 200
+    return reply
+  } finally {
+    // Also when the board fails outright: a slot is only spent on a board that exists.
+    if (!made) {
+      const at = await reserved.text()
+      await gate.fetch(new Request('https://gate/release', { method: 'POST', body: at }))
+    }
   }
-  return reply
 }
 
 export default {

@@ -37,15 +37,23 @@ type Meta = {
   membershipSeq?: number
   /** When recent membership records were appended, to cap them. */
   membershipAt?: number[]
+  /** Payload characters held. Missing on boards made before it was kept, which count from zero. */
+  bytes?: number
 }
 
+/** In hex characters. The app checks its writes against the same number (MAX_SEALED_HEX in src/features/sync/application/engine.ts). */
 const MAX_PAYLOAD = 65_536
+const MAX_BYTES = 50_000_000
+// The same headroom as for records, so a full board can still cut a Member off.
+const MAX_BYTES_ROTATE = MAX_BYTES + 1_000_000
 const MAX_RECORDS = 100_000
 // A little headroom, so a full board can still cut a Member off.
 const MAX_RECORDS_ROTATE = 100_100
 // The epoch list is one stored value, so it is kept small.
 const MAX_EPOCHS = 500
 const PAGE = 500
+/** A page also ends at this much payload, so one pull stays a reasonable download. */
+const PAGE_BYTES = 1_000_000
 /**
  * Any Member can append a membership record, and each one makes a pending
  * rotation retry. Capped so a Member cannot keep an admin from removing them.
@@ -99,6 +107,7 @@ export const createBoard = async (
       lastSeq: 0,
       epochs: [{ epoch: 1, tokenHash: hash(token) }],
       membershipSeq: 0,
+      bytes: payload.length,
     } satisfies Meta,
     [key(0)]: first,
   })
@@ -121,16 +130,23 @@ export const appendRecord = async (
   )
     return fail('bad_request')
   if (epoch !== meta.epoch) return fail('epoch')
-  if (meta.lastSeq >= MAX_RECORDS) return fail('full')
+  const bytes = (meta.bytes ?? 0) + payload.length
+  if (meta.lastSeq >= MAX_RECORDS || bytes > MAX_BYTES) return fail('full')
   const row = record(kind, meta.epoch, meta.lastSeq + 1, payload, now)
   if (kind !== 'membership') {
-    await kv.put({ meta: { ...meta, lastSeq: row.seq }, [key(row.seq)]: row })
+    await kv.put({ meta: { ...meta, lastSeq: row.seq, bytes }, [key(row.seq)]: row })
     return stamp(row)
   }
   const recent = (meta.membershipAt ?? []).filter((t) => t > now - 60_000)
   if (recent.length >= MAX_MEMBERSHIP_PER_MINUTE) return fail('busy')
   await kv.put({
-    meta: { ...meta, lastSeq: row.seq, membershipSeq: row.seq, membershipAt: [...recent, now] },
+    meta: {
+      ...meta,
+      lastSeq: row.seq,
+      membershipSeq: row.seq,
+      membershipAt: [...recent, now],
+      bytes,
+    },
     [key(row.seq)]: row,
   })
   return stamp(row)
@@ -159,6 +175,8 @@ export const rotateBoard = async (
     return fail('epoch')
   if (meta.lastSeq >= MAX_RECORDS_ROTATE || meta.epochs.length >= MAX_EPOCHS) return fail('full')
   if (!isToken(newToken) || !isPayload(payload)) return fail('bad_request')
+  const bytes = (meta.bytes ?? 0) + payload.length
+  if (bytes > MAX_BYTES_ROTATE) return fail('full')
   // Not the current token, and not any earlier one: taking an old token back would undo a removal.
   const newHash = hash(newToken)
   if (meta.epochs.some((e) => e.tokenHash === newHash)) return fail('same_token')
@@ -168,7 +186,7 @@ export const rotateBoard = async (
     { epoch: row.epoch, tokenHash: newHash },
   ]
   await kv.put({
-    meta: { epoch: row.epoch, lastSeq: row.seq, epochs, membershipSeq: row.seq },
+    meta: { epoch: row.epoch, lastSeq: row.seq, epochs, membershipSeq: row.seq, bytes },
     [key(row.seq)]: row,
   })
   return stamp(row)
@@ -194,7 +212,16 @@ export const pullRecords = async (
     start: key(Math.max(Number(after) + 1, 0)),
     limit: PAGE,
   })
-  return [...found.values()].filter((r) => r.seq <= (mine.endsAt ?? Infinity))
+  const page: Row[] = []
+  let size = 0
+  for (const row of found.values()) {
+    if (row.seq > (mine.endsAt ?? Infinity)) break
+    size += row.payload.length
+    // Always at least one, or a pull could never get past a big record.
+    if (page.length > 0 && size > PAGE_BYTES) break
+    page.push(row)
+  }
+  return page
 }
 
 const HOUR = 3_600_000

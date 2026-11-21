@@ -250,6 +250,29 @@ describe('relay', () => {
       refused(await append(), 'full')
     })
 
+    it('stops a board holding more than its byte budget, counting what it already holds', async () => {
+      await create()
+      const big = 'f'.repeat(60_000)
+      expect((await append(TOKEN, 1, 'event', big)).status).toBe(200)
+      const kv = dir.board(BOARD)
+      const meta = await kv.get<{ bytes: number }>('meta')
+      expect(meta?.bytes).toBe('genesis'.length + big.length)
+      await kv.put({ meta: { ...meta, bytes: 50_000_000 - 100 } })
+      refused(await append(TOKEN, 1, 'event', big), 'full')
+      expect((await append(TOKEN, 1, 'event', 'p')).status).toBe(200)
+    })
+
+    it('ends a pull page at about a megabyte of payload, and the rest follow', async () => {
+      await create()
+      const big = 'f'.repeat(60_000)
+      for (let i = 0; i < 20; i++) await append(TOKEN, 1, 'event', big)
+      const first = await pull()
+      expect(first.reduce((n, r) => n + r.payload.length, 0)).toBeLessThanOrEqual(1_000_000)
+      expect(first.length).toBeGreaterThan(1)
+      const rest = await pull(TOKEN, first.at(-1)?.seq ?? 0)
+      expect(first.length + rest.length).toBe(21)
+    })
+
     it('keeps a little headroom so a full board can still cut a Member off, but not forever', async () => {
       await create()
       await setLast(100_050)
