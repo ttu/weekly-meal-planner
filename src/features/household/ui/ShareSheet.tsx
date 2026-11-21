@@ -8,16 +8,18 @@ import { Sheet } from '@/shared/ui/Sheet'
 /**
  * The link, and the thing the link is not.
  *
- * Sharing used to put the URL on the clipboard and say nothing, so a recipient
- * was sent half of what they needed and the sharer was never told. The panel
- * shows the link to copy and, beside it, that the password travels separately.
- *
- * It cannot show the password. Only the bcrypt hash is kept (ADR 0010) — the
- * plaintext lives in the head of whoever chose it, which is the point.
+ * The link is a seat on the board: whoever opens it is a Member until an admin
+ * removes them. The panel says so, because a link in a group chat is easy to
+ * forward (ADR 0013).
  */
 type Props = {
   readonly visible: boolean
+  /** Empty while the invite is being made. */
   readonly url: string
+  readonly failed?: boolean | undefined
+  readonly busy?: boolean | undefined
+  /** A link is a seat, so it is made on request, never by opening this sheet. */
+  readonly onCreate: () => void
   readonly justCopied: boolean
   readonly onCopy: () => void
   readonly onClose: () => void
@@ -56,6 +58,9 @@ const sheets = themed((tokens) =>
 export const ShareSheet = ({
   visible,
   url,
+  failed = false,
+  busy = false,
+  onCreate,
   justCopied,
   onCopy,
   onClose,
@@ -74,26 +79,46 @@ export const ShareSheet = ({
     >
       <Text style={styles.title}>{t('board.share')}</Text>
 
-      <View style={styles.linkBox}>
-        <Text style={styles.link} selectable testID="share-link">
-          {url}
+      {url === '' ? (
+        <Pressable
+          style={({ pressed }) => [styles.copy, pressed && styles.copyPressed]}
+          disabled={busy}
+          onPress={onCreate}
+          accessibilityRole="button"
+          accessibilityLabel={t('board.shareMake')}
+          testID="share-create"
+        >
+          <Text style={styles.copyText}>
+            {busy ? t('board.shareCreating') : t('board.shareMake')}
+          </Text>
+        </Pressable>
+      ) : (
+        <>
+          <View style={styles.linkBox}>
+            <Text style={styles.link} selectable testID="share-link">
+              {url}
+            </Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.copy, pressed && styles.copyPressed]}
+            onPress={onCopy}
+            accessibilityRole="button"
+            accessibilityLabel={t('board.shareCopy')}
+            testID="share-copy"
+          >
+            <Text style={styles.copyText}>
+              {justCopied ? t('board.shareCopied') : t('board.shareCopy')}
+            </Text>
+          </Pressable>
+        </>
+      )}
+      {failed && (
+        <Text style={styles.note} testID="share-error">
+          {t('board.shareFailed')}
         </Text>
-      </View>
-
-      <Pressable
-        style={({ pressed }) => [styles.copy, pressed && styles.copyPressed]}
-        onPress={onCopy}
-        accessibilityRole="button"
-        accessibilityLabel={t('board.shareCopy')}
-        testID="share-copy"
-      >
-        <Text style={styles.copyText}>
-          {justCopied ? t('board.shareCopied') : t('board.shareCopy')}
-        </Text>
-      </Pressable>
+      )}
 
       <Text style={styles.note}>{t('board.shareBody')}</Text>
-      <Text style={[styles.note, tokens.type.meta]}>{t('board.sharePasswordNote')}</Text>
 
       <Pressable
         style={styles.close}

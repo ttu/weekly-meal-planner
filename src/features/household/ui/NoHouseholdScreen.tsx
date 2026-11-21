@@ -3,8 +3,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useTranslation } from '@/shared/i18n'
-import { signOut } from '../application/sign-in'
-import type { AppSupabaseClient } from '../infrastructure/supabase-client'
 
 const sheets = themed((tokens) =>
   StyleSheet.create({
@@ -16,19 +14,21 @@ const sheets = themed((tokens) =>
     },
     title: { ...tokens.type.display, color: tokens.color.textPrimary },
     body: { ...tokens.type.body, color: tokens.color.textMuted },
-    signOut: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
+    link: { ...tokens.type.label, color: tokens.color.action, textTransform: 'uppercase' },
   }),
 )
 
 /**
- * A signed-in Member whose Household cannot be loaded — a stale session after a
- * database reset, or an account nobody has invited yet. Without this they get a
- * silent, empty board and no way to understand why.
+ * A device whose seat on the board is gone: an admin removed this Member. The
+ * board is no longer shown, and the way forward is a board of one's own or a
+ * new invite.
  */
 export const NoHouseholdScreen = ({
-  client,
+  onStart,
+  onJoin,
 }: {
-  readonly client: AppSupabaseClient
+  readonly onStart: () => void
+  readonly onJoin: () => void
 }): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
@@ -42,14 +42,20 @@ export const NoHouseholdScreen = ({
       <Text style={styles.title}>{t('noHousehold.title')}</Text>
       <Text style={styles.body}>{t('noHousehold.body')}</Text>
       <Pressable
-        onPress={() => {
-          void signOut(client)
-        }}
+        onPress={onStart}
         accessibilityRole="button"
-        accessibilityLabel={t('auth.signOut')}
-        testID="no-household-sign-out"
+        accessibilityLabel={t('board.startYourOwn')}
+        testID="no-household-start"
       >
-        <Text style={styles.signOut}>{t('auth.signOut')}</Text>
+        <Text style={styles.link}>{t('board.startYourOwn')}</Text>
+      </Pressable>
+      <Pressable
+        onPress={onJoin}
+        accessibilityRole="button"
+        accessibilityLabel={t('board.joinABoard')}
+        testID="no-household-join"
+      >
+        <Text style={styles.link}>{t('board.joinABoard')}</Text>
       </Pressable>
     </View>
   )

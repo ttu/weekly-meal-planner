@@ -145,6 +145,7 @@ export default defineConfig([
       '.storybook/**/*.ts',
       '.storybook/**/*.tsx',
       'scripts/**/*.ts',
+      'relay/**/*.ts',
       'e2e/**/*.ts',
       'playwright.config.ts',
     ],
@@ -172,6 +173,8 @@ export default defineConfig([
       'src/**/fixtures/**',
       '.storybook/**',
       'scripts/**',
+      'relay/memory.ts',
+      'relay/**/*.test.ts',
       'e2e/**',
     ],
     rules: {
@@ -191,9 +194,10 @@ export default defineConfig([
         { type: 'feature', pattern: 'src/features/*', capture: ['feature'], partialMatch: true },
         { type: 'shared', pattern: 'src/shared', partialMatch: true },
         { type: 'test', pattern: 'src/test', partialMatch: true },
+        { type: 'relay', pattern: 'relay', partialMatch: true },
       ],
       // Font and image files are assets, not architectural elements.
-      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg'],
+      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg', '**/*.json'],
       'boundaries/files': [{ category: 'feature-public', pattern: 'src/features/*/index.ts' }],
     },
     rules: {
@@ -242,7 +246,7 @@ export default defineConfig([
     },
   },
   {
-    // The e2e suite runs against a local Supabase container and dumps
+    // The e2e suite runs against a local relay and dumps
     // screenshots under /tmp: `docker` comes off the developer's PATH and the
     // screenshot paths are throwaway. Neither is a production concern.
     files: ['e2e/**'],

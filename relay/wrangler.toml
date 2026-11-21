@@ -1,0 +1,23 @@
+# The relay (ADR 0013). Deploy with: pnpm dlx wrangler deploy --config relay/wrangler.toml
+name = "menami-relay"
+main = "worker.ts"
+compatibility_date = "2026-11-01"
+
+[[durable_objects.bindings]]
+name = "BOARD"
+class_name = "BoardObject"
+
+[[durable_objects.bindings]]
+name = "GATE"
+class_name = "GateObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BoardObject", "GateObject"]
+
+# Every call, per caller IP. A Household's phones poll every 15 s and send each
+# write as one call, so 300 a minute leaves a busy evening of planning room.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+simple = { limit = 300, period = 60 }

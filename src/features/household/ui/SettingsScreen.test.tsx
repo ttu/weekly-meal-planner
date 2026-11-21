@@ -20,12 +20,28 @@ const preset = (name: string): Slot => {
 
 const DEFAULTS = [preset('lunch'), preset('dinner')]
 
-const ANONYMOUS = { isPending: false, onAddEmail: jest.fn() }
+const alice = {
+  id: brand<string, 'MemberId'>('a'),
+  householdId: brand<string, 'HouseholdId'>('h'),
+  displayName: 'Alice',
+  colour: '#5F7355',
+  role: 'admin' as const,
+}
+const bob = {
+  ...alice,
+  id: brand<string, 'MemberId'>('b'),
+  displayName: 'Bob',
+  role: 'member' as const,
+}
 
 const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
   renderWithProviders(
     <SettingsScreen
-      account={ANONYMOUS}
+      members={[alice, bob]}
+      me="a"
+      isAdmin
+      onSetRole={jest.fn()}
+      onRemoveMember={jest.fn()}
       locale="en"
       onChangeLocale={jest.fn()}
       size={brand<number, 'HouseholdSize'>(4)}
@@ -37,11 +53,22 @@ const show = async (over: Partial<Parameters<typeof SettingsScreen>[0]> = {}) =>
       onRemove={jest.fn()}
       onMove={jest.fn()}
       onBack={jest.fn()}
+      onSaveRecoveryLink={jest.fn()}
       {...over}
     />,
   )
 
 describe('SettingsScreen', () => {
+  it('hands over your recovery link when asked, and says it was copied', async () => {
+    const onSaveRecoveryLink = jest.fn()
+    const view = await show({ onSaveRecoveryLink })
+    await fireEvent.press(view.getByTestId('settings-recovery'))
+    expect(onSaveRecoveryLink).toHaveBeenCalled()
+
+    const copied = await show({ recoveryCopied: true })
+    expect(copied.getByText('Recovery link copied')).toBeTruthy()
+  })
+
   it('shows how many the household cooks for', async () => {
     const view = await show({ size: brand<number, 'HouseholdSize'>(3) })
     expect(view.getByTestId('settings-size-value').props.children).toBe('3')
@@ -134,34 +161,34 @@ describe('SettingsScreen', () => {
     expect(view.queryByTestId('settings-own-name')).toBeNull()
   })
 
-  it('offers an email to someone who has none, and says what it is for', async () => {
-    const onAddEmail = jest.fn()
-    const view = await show({ account: { isPending: false, onAddEmail } })
-
-    await fireEvent.changeText(view.getByTestId('settings-email-field'), 'aino@example.test')
-    await fireEvent.press(view.getByTestId('settings-send-link'))
-
-    expect(onAddEmail).toHaveBeenCalledWith('aino@example.test')
+  it('lists the Members, marking which one is this device', async () => {
+    const view = await show()
+    expect(view.getByTestId('member-a')).toHaveTextContent(/Alice/)
+    expect(view.getByTestId('member-a')).toHaveTextContent(/You/)
+    expect(view.getByTestId('member-b')).toHaveTextContent(/Bob/)
   })
 
-  it('shows the address once it is confirmed, and stops asking', async () => {
-    const view = await show({
-      account: { email: 'aino@example.test', isPending: false, onAddEmail: jest.fn() },
-    })
-
-    expect(view.getByTestId('settings-email')).toBeTruthy()
-    expect(view.queryByTestId('settings-email-field')).toBeNull()
+  it('lets an admin promote a Member, but not act on themselves', async () => {
+    const onSetRole = jest.fn()
+    const view = await show({ onSetRole })
+    expect(view.queryByTestId('member-role-a')).toBeNull()
+    await fireEvent.press(view.getByTestId('member-role-b'))
+    expect(onSetRole).toHaveBeenCalledWith('b', 'admin')
   })
 
-  // Given but not clicked: the account is still anonymous, and the screen
-  // must not imply otherwise.
-  it('keeps asking while an address is only pending', async () => {
-    const view = await show({
-      account: { pendingEmail: 'aino@example.test', isPending: false, onAddEmail: jest.fn() },
-    })
+  it('asks before removing a Member, and removes only once confirmed', async () => {
+    const onRemoveMember = jest.fn()
+    const view = await show({ onRemoveMember })
+    await fireEvent.press(view.getByTestId('member-remove-b'))
+    expect(onRemoveMember).not.toHaveBeenCalled()
+    await fireEvent.press(view.getAllByText('Remove').at(-1) as never)
+    expect(onRemoveMember).toHaveBeenCalledWith('b')
+  })
 
-    expect(view.getByTestId('settings-email-pending')).toBeTruthy()
-    expect(view.getByTestId('settings-email-field')).toBeTruthy()
+  it('offers a plain Member no controls over anyone', async () => {
+    const view = await show({ isAdmin: false, me: 'b' })
+    expect(view.queryByTestId('member-remove-a')).toBeNull()
+    expect(view.queryByTestId('member-role-a')).toBeNull()
   })
 
   it('offers the board a language, and shows which one it speaks', async () => {

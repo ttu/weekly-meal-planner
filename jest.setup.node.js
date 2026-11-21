@@ -1,3 +1,3 @@
-// A cold pglite boot (Task 5 onward) exceeds Jest's 5s default; without this
-// the failure reads as a timeout rather than as whatever actually broke.
+// Slice tests start a real board and sync it over an in-memory relay, which can
+// take longer than the 5s default on a cold machine.
 jest.setTimeout(20000)

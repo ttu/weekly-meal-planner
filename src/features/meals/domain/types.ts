@@ -3,6 +3,7 @@ import type {
   IngredientId,
   IngredientSlug,
   MealId,
+  Quantity,
   Servings,
 } from '@/shared/types/ids'
 import type { Dimension } from '@/shared/units'
@@ -39,6 +40,15 @@ export type Ingredient = {
   readonly category: string
   readonly dimension: Dimension
   readonly baseUnit: string
+}
+
+export type MealDetail = Meal & {
+  readonly ingredients: readonly {
+    readonly ingredientId: IngredientId
+    readonly quantity: Quantity
+    readonly unit: string
+    readonly optional: boolean
+  }[]
 }
 
 export const isCatalogueMeal = (meal: Meal): boolean => meal.householdId === undefined

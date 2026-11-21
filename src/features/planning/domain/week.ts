@@ -41,3 +41,10 @@ export const weekDates = (weekStart: WeekStart): readonly string[] => {
   const start = Date.parse(`${weekStart}T00:00:00.000Z`)
   return Array.from({ length: 7 }, (_, i) => toIsoDate(new Date(start + i * DAY_MS)))
 }
+
+/** The Monday of the ISO week a date (YYYY-MM-DD) falls in. */
+export const weekStartOfDate = (date: string): WeekStart => {
+  const day = Date.parse(`${date}T00:00:00.000Z`)
+  const daysSinceMonday = (new Date(day).getUTCDay() + 6) % 7
+  return brand(toIsoDate(new Date(day - daysSinceMonday * DAY_MS)))
+}

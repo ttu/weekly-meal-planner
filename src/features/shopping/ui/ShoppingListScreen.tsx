@@ -229,6 +229,8 @@ type Props = {
    *  buy"; a failed one must not look like an empty one. */
   readonly loadState?: LoadState | undefined
   readonly onRetry?: (() => void) | undefined
+  /** The last tick or Extra could not be saved. */
+  readonly writeFailed?: boolean | undefined
 }
 
 /** An Extra is a Buy Line nobody derived: milk, bin bags, the thing someone
@@ -316,6 +318,7 @@ export const ShoppingListScreen = ({
   onBack,
   loadState = 'ready',
   onRetry,
+  writeFailed = false,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const { t } = useTranslation()
@@ -616,6 +619,7 @@ export const ShoppingListScreen = ({
         </View>
       </View>
 
+      {writeFailed && <Notice message={t('shopping.writeFailed')} testID="shopping-write-error" />}
       {loadState === 'stale' && (
         <Notice
           message={t('load.stale')}

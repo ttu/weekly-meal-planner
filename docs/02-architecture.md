@@ -1,18 +1,55 @@
 # 02 — Architecture
 
+## Overview
+
+```
+ Member's device (Expo: iOS / Android / web)            Cloudflare
+┌──────────────────────────────────────────────┐       ┌──────────────┐
+│ app/ routes ─► feature ui ─► application     │       │ relay/       │
+│                    │             │           │       │ Worker       │
+│                    ▼             ▼           │       │              │
+│              useData/useView   domain (pure) │       │ ordered,     │
+│                    │                         │       │ encrypted    │
+│                    ▼                         │ HTTPS │ records per  │
+│   SyncProvider ─► sync engine ─► rows on     │◄─────►│ board; no    │
+│                   (encrypt, merge, verify    │       │ keys, no     │
+│                    membership log)  device   │       │ plaintext    │
+└──────────────────────────────────────────────┘       └──────────────┘
+        ▲ other Members' devices pull the same records and merge ▲
+```
+
+- **The device is the system.** Every Member's device holds the Household's
+  full data as rows and works offline. Screens read rows and derive everything
+  else (the week board, the Shopping List) on the fly; nothing derived is stored.
+- **The relay is a mailbox.** It stores opaque, encrypted records in arrival
+  order and stamps when it got them. It cannot read, merge or authorise
+  content — see `11-sync.md`.
+- **Writes are local first.** A write lands in the device's rows at once; the
+  sync loop encrypts it as an event and appends it to the relay, then pulls
+  others' events and merges them per field (last writer wins by hybrid
+  logical clock).
+- **Trust is the signed membership log**, checked by every client, not the
+  relay or application code (ADR 0013, `06-security.md`).
+- **Reference data ships in the app.** The Catalogue and the ingredient
+  taxonomy are files in `data/catalogue/`, not synced rows.
+- **Leaving the app.** The Shopping List exits through the device (an Agent
+  Prompt, a share; Apple Reminders is specified but not built). No backend of
+  ours is involved.
+
 ## Shape
 
-Domain-driven, vertical slices, impurity at the edges. One Expo app, one
-Supabase project, no server of our own.
+Domain-driven, vertical slices, impurity at the edges. One Expo app, local-first
+and end-to-end encrypted (ADR 0013); a small relay (`relay/`, a Cloudflare
+Worker) only holds encrypted records between visits.
 
 ```
 src/
   features/
-    household/      Members, slots, invites, auth session
+    household/      Members, slots, invites, settings
     meals/          Household library, catalogue copy-on-add, meal editor
     planning/       Week plan, backlog, cook events, leftovers, the board
-    pantry/         Staples, running-low
-    shopping/       List derivation, cupboard check, extras, overrides, exits
+    shopping/       List derivation, staples, cupboard check, extras, overrides, exits
+    sync/           Engine, encryption, membership log, relay client, SyncProvider
   shared/           Generic only: ui kit, i18n, result, branded types, clock
   app/              Expo Router routes; thin, delegates into feature `ui`
 ```
@@ -22,9 +59,9 @@ Each feature owns:
 ```
 features/<feature>/
   domain/           Pure. Types, invariants, transformations. No imports from
-                    infrastructure, react, expo, or supabase-js.
+                    infrastructure, react or expo.
   application/      Use cases. Orchestrates domain + ports. Dependencies injected.
-  infrastructure/   Supabase queries, storage, device APIs. Implements ports.
+  infrastructure/   Device APIs (secure store, storage). Implements ports.
   ui/               Components and hooks for this feature.
   index.ts          The only public surface. Cross-feature imports go here.
 ```
@@ -59,31 +96,29 @@ extract a package — not before.
 
 Network, storage, clock and randomness are ports defined in `domain` or
 `application`, implemented in `infrastructure`, and injected. No module-level
-singletons — including the Supabase client, which is created by a factory and
-passed down through a provider.
+singletons — the sync engine is created from injected parts (relay, storage,
+vault, randomness, clock) and passed down through `SyncProvider`.
 
 The clock matters more than usual here: "this week", "today", ISO week
 boundaries and the week strip all depend on it, and a test that cannot fix the
 date is a test that fails one Sunday in seven.
 
-## Authorization: one enforcement point
+## Authorization: the signed membership list
 
-**Postgres row-level security, and nothing else.** There is no server of ours to
-enforce anything in, the client talks to PostgREST directly, and a second
-enforcement layer in application code would drift from the policies and give
-false confidence. Every table carries `household_id` and a policy keyed on
-household membership. The client is assumed hostile.
-
-The consequence to accept: RLS is now load-bearing, so its tests are the ones
-that must be adversarial (see `04-testing.md`).
+There is no server of ours to enforce anything in, and the relay is deliberately
+dumb. Who may do what is the signed, hash-chained membership log, validated by
+every client in the relay's order (`sync/domain/membership.ts`); what a record
+means is decided by whoever can decrypt it. Application code does not add its
+own checks on top. The consequence to accept: that log, the encryption and the
+relay's rules are load-bearing, so their tests are adversarial (see
+`04-testing.md`) and the protocol wants an outside review before release.
 
 ## Data as code
 
 The public catalogue — ~120 everyday meals with their ingredients — is
 **reference data in version control**, not rows someone typed into production.
-It lives as schema-validated files under `data/catalogue/`, is validated at load
-against the same schema the domain uses, and is pushed to the database by a sync
-script. Same for the ingredient taxonomy: categories, dimensions and unit
+It lives as schema-validated files under `data/catalogue/` (checked by
+`scripts/catalogue-schema.ts` in the test run) and ships inside the app. Same for the ingredient taxonomy: categories, dimensions and unit
 conversions are code, reviewed in PRs, diffable.
 
 This is what makes the catalogue reproducible across environments and makes "who
@@ -91,22 +126,18 @@ changed the tacos recipe" a git question.
 
 ## State
 
-Server state and client state never mix. Server state is TanStack Query over the
-Supabase client, with realtime subscriptions invalidating it. Client state
-(drag in progress, sheet open, which day is scrolled to) is local component
-state or a small store. A cook event never lives in both.
+The Household's data is a set of rows on the device (`03-datamodel.md`), read
+through `useData()` / `useView()` from `SyncProvider`; a write lands locally at
+once and the sync loop sends it (on start, on returning to the foreground, every
+15 s while visible, and when a write is waiting). Reads cannot fail and writes
+work offline, so screens keep `isLoading` / `isError` / `hasData` only for the
+moment before the device has found its board. Client state (drag in progress,
+sheet open, which day is scrolled to) is local component state or a small store.
+A cook event never lives in both.
 
-Query defaults live in `src/shared/net/queryClient.ts`: a 30 s `staleTime`
-(realtime does the real invalidating), one query retry after a second (so a
-failed first load shows its error in about two seconds), and mutations on
-`networkMode: 'online'` so an optimistic tick made offline waits and flushes on
-reconnect. The queue is in memory only. Mutations do not retry by default: a
-write that commits but loses its response would be inserted twice, and errors
-like RLS refusals never heal. A mutation whose repeat is harmless (set-to-value
-updates, upserts, deletes) opts in with `retry: IDEMPOTENT_WRITE_RETRY`;
-inserts with server-assigned ids (Extras, Cook Events, Backlog Items, Meals,
-Leftovers) never do. On native, `useQueryLifecycle` points
-TanStack Query's `focusManager` at `AppState` and its `onlineManager` at the
-injected `NetworkSource` (expo-network on device, `navigator.onLine` on web), so
-returning from the background or regaining signal refetches what is on screen.
-`useIsOnline` reads the same source.
+Hooks recompute from the rows when the board changes: the engine's view is a
+cached snapshot (`viewStore`), so `useSyncExternalStore` sees a new object
+exactly when something changed. Derived things (the Shopping List, the week
+board) are computed in `useMemo` from the rows, never stored (ADR 0003).
+`useIsOnline` reads the injected `NetworkSource` (expo-network on device,
+`navigator.onLine` on web).

@@ -1,6 +1,6 @@
 # 0012 — A closed-beta key in Supabase Vault
 
-Status: Accepted · 2026-10-15
+Status: Superseded by [0013](0013-local-first-encrypted-sync.md) — the closed beta key went with Supabase
 
 Amends [0010](0010-anonymous-boards-with-link-and-password.md), which stands:
 boards stay anonymous. What changes is who may start or join one while the app

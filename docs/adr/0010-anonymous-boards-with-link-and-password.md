@@ -1,6 +1,6 @@
 # 0010 — Anonymous boards, shared by link and password
 
-Status: Accepted · 2026-09-11
+Status: Superseded by [0013](0013-local-first-encrypted-sync.md)
 
 Amends [0002](0002-rls-as-sole-authorization-point.md), which stands: row-level
 security remains the only enforcement point. What changes is how a person

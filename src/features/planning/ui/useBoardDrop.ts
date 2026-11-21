@@ -13,7 +13,6 @@ const REFUSED_MS = 4000
 type Input = {
   readonly board: readonly BoardDay[]
   /** Undefined on a week nobody has planned into yet; the mutation makes the Week Plan. */
-  readonly weekPlanId: string | undefined
   readonly add: (mealId: MealId) => void
   readonly plan: (request: PlanRequest) => void
   readonly actions: Pick<PlanningActions, 'move' | 'moveLeftoverTo' | 'unplan'>
@@ -39,7 +38,6 @@ const orderedMove = (
  */
 export const useBoardDrop = ({
   board,
-  weekPlanId,
   add,
   plan,
   actions,
@@ -87,7 +85,7 @@ export const useBoardDrop = ({
         add(action.mealId)
         return
       case 'plan':
-        plan({ weekPlanId, ...action })
+        plan(action)
         return
       case 'move':
         actions.move(action)

@@ -1,34 +1,33 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isErr } from '@/shared/types/result'
+import { useMemo } from 'react'
 import { systemClock, type Clock } from '@/shared/time/clock'
-import { useSession } from '@/features/household'
-import { loadWeekPlanId, useSelectedWeek } from '@/features/planning'
+import { readMembers, useBoardSession } from '@/features/household'
+import { mealIndex } from '@/features/meals'
+import { readWeek, useSelectedWeek } from '@/features/planning'
+import { useData, useSync, useView } from '@/features/sync'
+import { useWrite } from '@/shared/query/useWrite'
 import type { IngredientId } from '@/shared/types/ids'
-import { loadShoppingData } from '../infrastructure/shopping-repository'
-import { deriveShoppingList } from '../domain/derive'
+import type { Result } from '@/shared/types/result'
 import {
   addExtra,
   forgetStaple,
   makeStaple,
   markRunningLow,
+  readShoppingInput,
   setChecked,
   setExtraChecked,
-} from '../application/shopping-writes'
-import { brand } from '@/shared/types/brand'
-import type { Extra, ExtraId, ShoppingList } from '../domain/types'
-import { IDEMPOTENT_WRITE_RETRY } from '@/shared/net/queryClient'
+} from '../application/shopping-data'
+import { deriveShoppingList } from '../domain/derive'
+import type { ExtraId, ShoppingList } from '../domain/types'
 
 const EMPTY: ShoppingList = { sittings: 0, buy: [], cupboard: [], extras: [], incomplete: [] }
 
 export type ShoppingListView = {
   readonly list: ShoppingList
   readonly isLoading: boolean
-  /** Either the Week Plan or the list failed to load. With `hasData`, a refresh
-   *  failed over a list still worth showing; without it, there is no list. */
-  readonly isError: boolean
-  /** An answer has arrived, so an empty list really is empty. */
+  /** The device has looked for its board, so an empty list really is empty. */
   readonly hasData: boolean
-  readonly refetch: () => void
+  /** The last change could not be saved. */
+  readonly failed: boolean
   readonly toggle: (ingredientId: IngredientId, checked: boolean) => void
   readonly outOf: (ingredientId: IngredientId) => void
   readonly addItem: (label: string) => void
@@ -39,168 +38,60 @@ export type ShoppingListView = {
   readonly stopKeeping: (id: IngredientId) => void
 }
 
+/**
+ * The Shopping List, derived on every read and never stored (ADR 0003). A tick
+ * lands in the local copy at once, so it shows in a shop with no signal and is
+ * sent when there is some.
+ */
 export const useShoppingList = (clock: Clock = systemClock): ShoppingListView => {
-  const { client, household } = useSession()
-  const queryClient = useQueryClient()
+  const { household, checked } = useBoardSession()
+  const data = useData()
+  const view = useView()
+  const { deps } = useSync()
   const { weekStart } = useSelectedWeek(clock)
 
-  // Its own read, not the board's: a failing board-detail query must not stop
-  // the list. Under the ['week', …] prefix so whatever invalidates the week
-  // (a new Week Plan, realtime) refreshes this too.
-  const plan = useQuery({
-    queryKey: ['week', household?.id, weekStart, 'plan-id'],
-    enabled: household !== undefined,
-    queryFn: async () => {
-      const result = await loadWeekPlanId(client, weekStart)
-      if (isErr(result)) throw new Error(`Could not find the Week Plan: ${result.error}`)
-      return { id: result.value }
-    },
-  })
-  const weekPlanId = plan.data?.id
-  const queryKey = ['shopping', household?.id, weekStart]
+  const list = useMemo(() => {
+    if (!household || !data || !view) return EMPTY
+    const meals = mealIndex(data, household.id, household.locale)
+    const members = new Map(
+      readMembers(view, data).map((m) => [m.id, { name: m.displayName, colour: m.colour }]),
+    )
+    // A Slot that was removed hides its Meals on the board, so they are not bought for either.
+    const slots = new Set(household.slots.map((s) => String(s.key)))
+    const { cookEvents } = readWeek(data, weekStart, meals, members)
+    const shown = cookEvents.filter((c) => slots.has(String(c.slotKey)))
+    return deriveShoppingList(readShoppingInput(data, weekStart, household.locale, shown, meals))
+    // `view` changes whenever the board does, which is when the rows may have.
+  }, [household, data, view, weekStart])
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey,
-    enabled: weekPlanId !== undefined && household !== undefined,
-    queryFn: async () => {
-      if (weekPlanId === undefined || household === undefined) return EMPTY
-      const result = await loadShoppingData(client, weekPlanId, household.locale)
-      // Derived on every render, never stored: a stored list goes stale exactly
-      // when someone changes Thursday's dinner (ADR 0003).
-      // Thrown, not emptied: an empty list written over the cache replaced the
-      // last good one, in a shop with one bar of signal.
-      if (isErr(result)) throw new Error(`Could not load the Shopping List: ${result.error}`)
-      return deriveShoppingList(result.value)
-    },
-  })
-
-  const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey })
+  const write = useWrite()
+  const run = (task: (d: NonNullable<typeof data>) => Promise<Result<unknown, unknown>>): void => {
+    if (data) write.run(() => task(data))
   }
-
-  /**
-   * Ticking is local-first (docs/01-functional-spec.md): the row changes on the
-   * tap, not on the round trip. A shop is where this list is used and a shop is
-   * where the signal goes — without this the tap looks ignored, so it gets
-   * repeated, and both taps land when the connection comes back.
-   *
-   * Every one of these cancels in-flight refetches first, so a response that
-   * was already on its way cannot overwrite what was just tapped.
-   */
-  const optimistically = async (
-    change: (list: ShoppingList) => ShoppingList,
-  ): Promise<ShoppingList | undefined> => {
-    await queryClient.cancelQueries({ queryKey })
-    const previous = queryClient.getQueryData<ShoppingList>(queryKey)
-    if (previous !== undefined) queryClient.setQueryData(queryKey, change(previous))
-    return previous
-  }
-
-  const rollBack = (previous: ShoppingList | undefined): void => {
-    if (previous !== undefined) queryClient.setQueryData(queryKey, previous)
-  }
-
-  const toggleMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async ({ id, checked }: { id: IngredientId; checked: boolean }) => {
-      if (weekPlanId === undefined) return
-      await setChecked(client, weekPlanId, id, checked)
-    },
-    onMutate: async ({ id, checked }) =>
-      await optimistically((list) => ({
-        ...list,
-        buy: list.buy.map((line) => (line.ingredientId === id ? { ...line, checked } : line)),
-      })),
-    onError: (_error, _variables, previous) => {
-      rollBack(previous)
-    },
-    onSettled: invalidate,
-  })
-
-  const outOfMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (id: IngredientId) => {
-      if (household === undefined) return
-      await markRunningLow(client, household.id, id)
-    },
-    onSettled: invalidate,
-  })
-
-  const stapleMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async ({ id, keep }: { id: IngredientId; keep: boolean }) => {
-      if (household === undefined) return
-      await (keep ? makeStaple : forgetStaple)(client, household.id, id)
-    },
-    onSettled: invalidate,
-  })
-
-  const addMutation = useMutation({
-    mutationFn: async (label: string) => {
-      if (weekPlanId === undefined) return
-      await addExtra(client, weekPlanId, label)
-    },
-    // The real row arrives with the refetch and replaces this one. Until then
-    // the Extra is on the list, which is the point of writing it down.
-    onMutate: async (label) =>
-      await optimistically((list) => ({
-        ...list,
-        extras: [
-          ...list.extras,
-          { id: brand<string, 'ExtraId'>(`pending-${String(Date.now())}`), label, checked: false },
-        ],
-      })),
-    onError: (_error, _variables, previous) => {
-      rollBack(previous)
-    },
-    onSettled: invalidate,
-  })
-
-  const extraMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async ({ id, checked }: { id: ExtraId; checked: boolean }) => {
-      await setExtraChecked(client, id, checked)
-    },
-    onMutate: async ({ id, checked }) =>
-      await optimistically((list) => ({
-        ...list,
-        extras: list.extras.map((e: Extra) => (e.id === id ? { ...e, checked } : e)),
-      })),
-    onError: (_error, _variables, previous) => {
-      rollBack(previous)
-    },
-    onSettled: invalidate,
-  })
 
   return {
-    list: data ?? EMPTY,
-    isLoading: plan.isLoading || household === undefined || isLoading,
-    isError: plan.isError || isError,
-    // With no Week Plan there is nothing to fetch and the list is really empty.
-    hasData: data !== undefined || (plan.data !== undefined && weekPlanId === undefined),
-    refetch: () => {
-      void plan.refetch()
-      // Without a plan id the list query is disabled, and forcing it would cache
-      // an empty list. It runs by itself once the id arrives.
-      if (weekPlanId !== undefined) void refetch()
-    },
-    toggle: (id, checked) => {
-      toggleMutation.mutate({ id, checked })
+    list,
+    isLoading: !checked,
+    hasData: checked,
+    failed: write.failed,
+    toggle: (id, isChecked) => {
+      run((d) => setChecked(d, weekStart, id, isChecked))
     },
     outOf: (id) => {
-      outOfMutation.mutate(id)
+      run((d) => markRunningLow(d, id))
     },
     keepInCupboard: (id) => {
-      stapleMutation.mutate({ id, keep: true })
+      run((d) => makeStaple(d, id))
     },
     stopKeeping: (id) => {
-      stapleMutation.mutate({ id, keep: false })
+      run((d) => forgetStaple(d, id))
     },
     addItem: (label) => {
-      addMutation.mutate(label)
+      if (label.trim() === '') return
+      run((d) => addExtra(d, deps.random, deps.clock.now().getTime(), weekStart, label))
     },
-    toggleExtra: (id, checked) => {
-      extraMutation.mutate({ id, checked })
+    toggleExtra: (id, isChecked) => {
+      run((d) => setExtraChecked(d, id, isChecked))
     },
   }
 }

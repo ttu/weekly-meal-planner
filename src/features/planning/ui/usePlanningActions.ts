@@ -1,18 +1,17 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { isErr, type Result } from '@/shared/types/result'
-import { systemClock, type Clock } from '@/shared/time/clock'
-import { useSession, type SlotKey } from '@/features/household'
-import { addLeftover } from '../application/add-leftover'
-import { moveCookEvent } from '../application/move-cook-event'
-import { moveLeftover } from '../application/move-leftover'
-import { removeLeftover } from '../application/remove-leftover'
-import { unplanMeal } from '../application/unplan-meal'
-import { setServingsCooked } from '../application/set-servings-cooked'
-import { removeBacklogItem } from '../application/remove-backlog-item'
+import { useBoardSession, type SlotKey } from '@/features/household'
 import type { Servings } from '@/features/meals'
+import { useData, useSync } from '@/features/sync'
+import {
+  addLeftover,
+  moveCookEvent,
+  moveLeftover,
+  removeBacklogItem,
+  removeLeftover,
+  setServingsCooked,
+  unplanMeal,
+} from '../application/planning-data'
 import type { BacklogItemId, CookEventId, LeftoverId } from '../domain/types'
-import { useSelectedWeek } from './SelectedWeek'
-import { IDEMPOTENT_WRITE_RETRY } from '@/shared/net/queryClient'
+import { useWrite } from '@/shared/query/useWrite'
 
 export type LeftoverRequest = {
   readonly cookEventId: CookEventId
@@ -43,75 +42,46 @@ export type PlanningActions = {
   readonly leftoverFailed: boolean
   readonly moveFailed: boolean
   readonly unplanFailed: boolean
+  /** Servings or a Backlog removal that could not be saved. */
+  readonly otherFailed: boolean
 }
 
-/**
- * The three destructive-or-additive board actions share one invalidation key,
- * so they live together rather than in three near-identical hooks.
- */
-export const usePlanningActions = (clock: Clock = systemClock): PlanningActions => {
-  const { client, household } = useSession()
-  const queryClient = useQueryClient()
-  const { weekStart } = useSelectedWeek(clock)
-
-  const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey: ['week', household?.id, weekStart] })
-  }
-
-  /**
-   * One write: run the use case, throw its error so Query counts the failure,
-   * refresh the week either way. `idempotent` opts into retries: only for
-   * writes where repeating leaves the same state (see IDEMPOTENT_WRITE_RETRY).
-   */
-  const useWrite = <V>(
-    run: (variables: V) => Promise<Result<unknown, string>>,
-    idempotent = true,
-  ) =>
-    useMutation({
-      retry: idempotent ? IDEMPOTENT_WRITE_RETRY : false,
-      mutationFn: async (variables: V) => {
-        const result = await run(variables)
-        if (isErr(result)) throw new Error(result.error)
-      },
-      onSettled: invalidate,
-    })
-
-  // An insert is not idempotent: a retry after a lost response would add a second Leftover.
-  const leftoverMutation = useWrite((r: LeftoverRequest) => addLeftover(client, r), false)
-  const moveMutation = useWrite((r: MoveRequest) => moveCookEvent(client, r))
-  const moveLeftoverMutation = useWrite((r: MoveLeftoverRequest) => moveLeftover(client, r))
-  const removeLeftoverMutation = useWrite((id: LeftoverId) => removeLeftover(client, id))
-  const unplanMutation = useWrite((id: CookEventId) => unplanMeal(client, id))
-  const servingsMutation = useWrite(({ id, servings }: { id: CookEventId; servings: Servings }) =>
-    setServingsCooked(client, id, servings),
-  )
-  const removeMutation = useWrite((id: BacklogItemId) => removeBacklogItem(client, id))
+/** The board's additive and destructive actions, each a write to the synced rows. */
+export const usePlanningActions = (): PlanningActions => {
+  const { userId } = useBoardSession()
+  const data = useData()
+  const { deps } = useSync()
+  const leftover = useWrite()
+  const move = useWrite()
+  const unplan = useWrite()
+  const other = useWrite()
 
   return {
     addLeftoverFor: (request) => {
-      leftoverMutation.mutate(request)
+      if (data) leftover.run(() => addLeftover(data, deps.random, request))
     },
     move: (request) => {
-      moveMutation.mutate(request)
+      if (data) move.run(() => moveCookEvent(data, request))
     },
     moveLeftoverTo: (request) => {
-      moveLeftoverMutation.mutate(request)
+      if (data) leftover.run(() => moveLeftover(data, request))
     },
     removeLeftoverCard: (id) => {
-      removeLeftoverMutation.mutate(id)
+      if (data) leftover.run(() => removeLeftover(data, id))
     },
     unplan: (cookEventId) => {
-      unplanMutation.mutate(cookEventId)
+      if (!data || userId === undefined) return
+      unplan.run(() => unplanMeal(data, deps.clock.now().getTime(), cookEventId, userId))
     },
     setServings: (cookEventId, servingsCooked) => {
-      servingsMutation.mutate({ id: cookEventId, servings: servingsCooked })
+      if (data) other.run(() => setServingsCooked(data, cookEventId, servingsCooked))
     },
     removeFromBacklog: (id) => {
-      removeMutation.mutate(id)
+      if (data) other.run(() => removeBacklogItem(data, id))
     },
-    leftoverFailed:
-      leftoverMutation.isError || moveLeftoverMutation.isError || removeLeftoverMutation.isError,
-    moveFailed: moveMutation.isError,
-    unplanFailed: unplanMutation.isError,
+    leftoverFailed: leftover.failed,
+    moveFailed: move.failed,
+    unplanFailed: unplan.failed,
+    otherFailed: other.failed,
   }
 }

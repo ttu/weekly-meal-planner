@@ -15,7 +15,6 @@ export type SlotKey = Brand<string, 'SlotKey'>
 export type MealId = Brand<string, 'MealId'>
 export type IngredientId = Brand<string, 'IngredientId'>
 export type IngredientSlug = Brand<string, 'IngredientSlug'>
-export type WeekPlanId = Brand<string, 'WeekPlanId'>
 export type CookEventId = Brand<string, 'CookEventId'>
 export type LeftoverId = Brand<string, 'LeftoverId'>
 export type BacklogItemId = Brand<string, 'BacklogItemId'>

@@ -10,7 +10,11 @@ module.exports = {
         // tsconfig.jest.json relaxes exactly that, and nothing else.
         '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.json' }],
       },
-      testMatch: ['<rootDir>/src/**/*.test.ts', '<rootDir>/scripts/**/*.test.ts'],
+      testMatch: [
+        '<rootDir>/src/**/*.test.ts',
+        '<rootDir>/scripts/**/*.test.ts',
+        '<rootDir>/relay/**/*.test.ts',
+      ],
       setupFilesAfterEnv: ['<rootDir>/jest.setup.node.js'],
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
     },
