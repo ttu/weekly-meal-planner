@@ -3,7 +3,7 @@ import type { MealId, Servings } from '@/features/meals'
 import { useData, useSync } from '@/features/sync'
 import { planMeal } from '../application/planning-data'
 import type { BacklogItemId } from '../domain/types'
-import { useWrite } from './useWrite'
+import { useWrite } from '@/shared/query/useWrite'
 
 export type PlanRequest = {
   readonly mealId: MealId

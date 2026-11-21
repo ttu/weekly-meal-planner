@@ -181,6 +181,15 @@ describe('relay', () => {
       const fresh = { ...stale, afterMembership: 2 }
       expect((await call('rotate', TOKEN, fresh)).status).toBe(200)
     })
+
+    it('caps membership records, so a Member cannot keep a rotation from ever landing', async () => {
+      await create()
+      for (let i = 0; i < 20; i++) expect((await append(TOKEN, 1, 'membership')).status).toBe(200)
+      refused(await append(TOKEN, 1, 'membership'), 'busy')
+      expect((await append(TOKEN, 1, 'event')).status).toBe(200)
+      now += 60_001
+      expect((await append(TOKEN, 1, 'membership')).status).toBe(200)
+    })
   })
 
   describe('missing arguments', () => {

@@ -4,7 +4,7 @@ import type { MealId } from '@/features/meals'
 import { useData, useSync } from '@/features/sync'
 import { addToBacklog } from '../application/planning-data'
 import { useSelectedWeek } from './SelectedWeek'
-import { useWrite } from './useWrite'
+import { useWrite } from '@/shared/query/useWrite'
 
 export type AddToBacklog = {
   readonly add: (mealId: MealId) => void

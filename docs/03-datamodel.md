@@ -13,18 +13,18 @@ its default.
 
 ## Rows
 
-| Kind        | Id                               | Fields                                                                               |
-| ----------- | -------------------------------- | ------------------------------------------------------------------------------------ |
-| `household` | `main`                           | `name`, `locale` (`fi`/`en`), `size`, `slots` (ordered list)                         |
-| `member`    | the Member's signing key         | `name`, `colour` — how they are shown; access is the membership log                  |
-| `meal`      | random                           | `name`, `servings`, `ingredients[]` (`ingredientId`, `quantity`, `unit`, `optional`) |
-| `backlog`   | random                           | `week`, `mealId`, `addedBy`, `createdAt`                                             |
-| `cook`      | the Backlog Item's id, or random | `week`, `mealId`, `date`, `slot`, `servings`, `addedBy?`, `fromBacklog?`             |
-| `leftover`  | random                           | `cook`, `date`, `slot`                                                               |
-| `check`     | `<week>:<ingredient>`            | `week`, `ingredientId`, `checked`                                                    |
-| `staple`    | the Ingredient id                | `ingredientId`, `runningLow`                                                         |
-| `extra`     | random                           | `week`, `label`, `checked`, `createdAt`                                              |
-| `override`  | `<week>:<ingredient>`            | `week`, `ingredientId`, `quantity`, `unit`, `reason?`                                |
+| Kind        | Id                                       | Fields                                                                                          |
+| ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `household` | `main`                                   | `name`, `locale` (`fi`/`en`), `size`, `slots` (ordered list)                                    |
+| `member`    | the Member's signing key                 | `name`, `colour` — how they are shown; access is the membership log                             |
+| `meal`      | random                                   | `name`, `servings`, `ingredients[]` (`ingredientId`, `quantity`, `unit`, `optional`)            |
+| `backlog`   | random, or the unplanned Cook Event's id | `week`, `mealId`, `addedBy`, `createdAt`                                                        |
+| `cook`      | the Backlog Item's id, or random         | `place` (`week`, `date`, `slot` as one field), `mealId`, `servings`, `addedBy?`, `fromBacklog?` |
+| `leftover`  | random                                   | `cook`, `date`, `slot`                                                                          |
+| `check`     | `<week>:<ingredient>`                    | `week`, `ingredientId`, `checked`                                                               |
+| `staple`    | the Ingredient id                        | `ingredientId`, `runningLow`                                                                    |
+| `extra`     | random                                   | `week`, `label`, `checked`, `createdAt`                                                         |
+| `override`  | `<week>:<ingredient>`                    | `week`, `ingredientId`, `quantity`, `unit`, `reason?`                                           |
 
 `week` is the Monday of the ISO week (`2026-03-09`). There is no Week Plan row:
 nothing has to exist before the first Meal is put in a week.

@@ -208,7 +208,7 @@ const Board = ({
     setSharing,
   } = boardSheets
   const planningActions = usePlanningActions()
-  const { addLeftoverFor, leftoverFailed, moveFailed, unplanFailed } = planningActions
+  const { addLeftoverFor, leftoverFailed, moveFailed, unplanFailed, otherFailed } = planningActions
   const { offset, goToWeek } = useSelectedWeek(clock)
   const { onDropped, orderRefused } = useBoardDrop({
     board,
@@ -292,6 +292,7 @@ const Board = ({
       leftoverFailed={leftoverFailed}
       moveFailed={moveFailed}
       unplanFailed={unplanFailed}
+      otherFailed={otherFailed}
       orderRefused={orderRefused}
       stale={boardState === 'stale'}
       onRetry={weekBoard.refetch}

@@ -53,7 +53,8 @@
     "joinOffline": "Välityspalveluun ei saatu yhteyttä. Tarkista yhteys ja yritä uudelleen.",
     "shareCreating": "Tehdään kutsua…",
     "shareFailed": "Kutsua ei voitu tehdä. Vain ylläpitäjä voi, ja tarvitset yhteyden.",
-    "shareMake": "Tee kutsulinkki"
+    "shareMake": "Tee kutsulinkki",
+    "writeFailed": "Muutosta ei voitu tallentaa. Yritä uudelleen."
   },
   "slot": {
     "lunch": "Lounas",

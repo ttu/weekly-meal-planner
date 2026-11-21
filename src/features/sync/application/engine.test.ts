@@ -356,16 +356,15 @@ describe('sync engine', () => {
       await stillWorks(alice)
     })
 
-    it('refuses a removal made while another admin changed membership, and nobody is locked out', async () => {
+    it('builds a removal again when another admin changed membership first, and nobody is locked out', async () => {
       const { engine: alice } = await start('alice')
       const { engine: bob } = await joinAs('bob', must(await alice.invite('admin')))
       const { engine: carol } = await joinAs('carol', must(await alice.invite('member')))
       must(await bob.sync())
       must(await alice.invite('member'))
-      expect(errorOf(await bob.removeMember(carol.view().me))).toBe('conflict')
-      await stillWorks(alice, bob, carol)
       must(await bob.removeMember(carol.view().me))
       await stillWorks(alice, bob)
+      expect(errorOf(await carol.sync())).toBe('forbidden')
     })
 
     it('gives a late joiner every change, however many arrived before their key', async () => {

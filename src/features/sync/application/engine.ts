@@ -262,29 +262,43 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
       return publish(signOp({ kind: 'setRole', ...chained(), member, role }, me))
     })
 
+  /**
+   * A removal built on old state is refused by the relay before the token moves;
+   * it is built again on what a fresh pull brings, a few times.
+   */
   const removeMember = (member: string) =>
     serial<Result<void, AdminError>>(async () => {
-      const denied = requireAdmin()
-      if (denied) return err(denied)
-      const current = state.membership
-      if (!current) return err('noKey')
-      const next = newEpochKey(deps.random)
-      const epoch = current.epoch + 1
-      const keys: { member: string; sealed: string }[] = []
-      for (const [other, entry] of Object.entries(current.members)) {
-        if (other === member) continue
-        const sealed = sealKey(
-          next,
-          { household: state.household, epoch },
-          hexToBytes(entry.box),
-          deps.random,
-        )
-        if (isErr(sealed)) return err('badKeyset')
-        keys.push({ member: other, sealed: bytesToHex(sealed.value) })
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const removed = await removeOnce(member)
+        if (isOk(removed) || removed.error !== 'conflict') return removed
+        const pulled = await pull()
+        if (isErr(pulled)) return pulled
       }
-      const op = signOp({ kind: 'remove', ...chained(), member, epoch, keys }, me)
-      return publish(op, tokenFor(next, state.household))
+      return err('conflict')
     })
+
+  const removeOnce = async (member: string): Promise<Result<void, AdminError>> => {
+    const denied = requireAdmin()
+    if (denied) return err(denied)
+    const current = state.membership
+    if (!current) return err('noKey')
+    const next = newEpochKey(deps.random)
+    const epoch = current.epoch + 1
+    const keys: { member: string; sealed: string }[] = []
+    for (const [other, entry] of Object.entries(current.members)) {
+      if (other === member) continue
+      const sealed = sealKey(
+        next,
+        { household: state.household, epoch },
+        hexToBytes(entry.box),
+        deps.random,
+      )
+      if (isErr(sealed)) return err('badKeyset')
+      keys.push({ member: other, sealed: bytesToHex(sealed.value) })
+    }
+    const op = signOp({ kind: 'remove', ...chained(), member, epoch, keys }, me)
+    return publish(op, tokenFor(next, state.household))
+  }
 
   const write = (entity: string, field: string, value: FieldValue): Promise<void> =>
     serial(async () => {

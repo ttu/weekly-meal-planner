@@ -35,6 +35,8 @@ type Meta = {
   epochs: EpochRow[]
   /** The last membership record. Missing on boards made before it was kept. */
   membershipSeq?: number
+  /** When recent membership records were appended, to cap them. */
+  membershipAt?: number[]
 }
 
 const MAX_PAYLOAD = 65_536
@@ -44,6 +46,11 @@ const MAX_RECORDS_ROTATE = 100_100
 // The epoch list is one stored value, so it is kept small.
 const MAX_EPOCHS = 500
 const PAGE = 500
+/**
+ * Any Member can append a membership record, and each one makes a pending
+ * rotation retry. Capped so a Member cannot keep an admin from removing them.
+ */
+const MAX_MEMBERSHIP_PER_MINUTE = 20
 const TOKEN = /^[0-9a-f]{64}$/
 const BOARD = /^[\w-]{8,128}$/
 
@@ -115,8 +122,16 @@ export const appendRecord = async (
   if (epoch !== meta.epoch) return fail('epoch')
   if (meta.lastSeq >= MAX_RECORDS) return fail('full')
   const row = record(kind, meta.epoch, meta.lastSeq + 1, payload, now)
-  const membershipSeq = kind === 'membership' ? row.seq : meta.membershipSeq
-  await kv.put({ meta: { ...meta, lastSeq: row.seq, membershipSeq }, [key(row.seq)]: row })
+  if (kind !== 'membership') {
+    await kv.put({ meta: { ...meta, lastSeq: row.seq }, [key(row.seq)]: row })
+    return stamp(row)
+  }
+  const recent = (meta.membershipAt ?? []).filter((t) => t > now - 60_000)
+  if (recent.length >= MAX_MEMBERSHIP_PER_MINUTE) return fail('busy')
+  await kv.put({
+    meta: { ...meta, lastSeq: row.seq, membershipSeq: row.seq, membershipAt: [...recent, now] },
+    [key(row.seq)]: row,
+  })
   return stamp(row)
 }
 

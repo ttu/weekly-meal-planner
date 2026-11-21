@@ -14,7 +14,7 @@ const dinner = brand<string, 'SlotKey'>('dinner') as SlotKey
 const onion = brand<string, 'IngredientId'>('onion') as IngredientId
 
 /** A Meal of 4 servings needing 2 onions, planned for Wednesday of the test week. */
-const setup = async (servingsCooked = 4) => {
+const setup = async (servingsCooked = 4, slotKey = dinner) => {
   const board = await testBoard()
   const saved = await saveMeal(board.data, randomBytes, {
     name: 'Onion soup',
@@ -32,7 +32,7 @@ const setup = async (servingsCooked = 4) => {
   await planMeal(board.data, randomBytes, {
     mealId: saved.value,
     date: '2026-03-11',
-    slotKey: dinner,
+    slotKey,
     servingsCooked: brand<number, 'Servings'>(servingsCooked),
     addedBy: board.engine.view().me,
   })
@@ -50,6 +50,27 @@ describe('useShoppingList', () => {
     expect(line?.amounts[0]).toMatchObject({ quantity: 4, unit: 'pcs' })
     expect(view.result.current.list.sittings).toBe(1)
     expect(view.result.current.isError).toBe(false)
+  })
+
+  it('leaves out what is planned in a Slot the Household no longer has, as the board does', async () => {
+    const view = await setup(4, brand<string, 'SlotKey'>('gone'))
+    expect(view.result.current.list.buy).toEqual([])
+    expect(view.result.current.list.sittings).toBe(0)
+  })
+
+  it('says so when a change could not be saved', async () => {
+    const view = await setup()
+    expect(view.result.current.failed).toBe(false)
+    await act(async () => {
+      view.result.current.addItem('x'.repeat(9000))
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
+    })
+    await waitFor(() => {
+      expect(view.result.current.failed).toBe(true)
+    })
   })
 
   it('has an empty list, not an error, when nothing is planned for the week', async () => {

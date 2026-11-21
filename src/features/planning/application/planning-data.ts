@@ -3,7 +3,7 @@ import { brand } from '@/shared/types/brand'
 import { err, ok, type Result } from '@/shared/types/result'
 import type { SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/features/meals'
-import { newId, type Data, type Random } from '@/features/sync'
+import { newId, type Data, type Doc, type Random } from '@/features/sync'
 import { weekStartOfDate } from '../domain/week'
 import type {
   BacklogItem,
@@ -20,7 +20,7 @@ import type {
  * there is no Week Plan row, so nothing has to be made before the first Meal.
  *
  *   backlog:<id>   week, mealId, addedBy, createdAt
- *   cook:<id>      week, mealId, date, slot, servings, addedBy?, fromBacklog?
+ *   cook:<id>      place { week, date, slot }, mealId, servings, addedBy?, fromBacklog?
  *   leftover:<id>  cook, date, slot
  *
  * Planning a Backlog Item gives the Cook Event the Item's own id, so two Members
@@ -29,6 +29,10 @@ import type {
  * brings the Item back under that id with its author intact. A Meal that no
  * longer exists, or a Cook Event that is gone, hides what hangs off it instead
  * of leaving a card for nothing.
+ *
+ * A Cook Event's place is one field, so two Members moving it at once cannot
+ * leave it with one's date and the other's week. Rows written before that keep
+ * `week`, `date` and `slot` as fields of their own, and are still read.
  */
 export type PlanningError = 'write-failed' | 'limit-reached'
 
@@ -42,15 +46,25 @@ const backlogRow = z.object({
   addedBy: z.string(),
   createdAt: z.number().catch(0),
 })
-const cookRow = z.object({
-  week: z.string(),
+const placeRow = z.object({ week: z.string(), date: z.string(), slot: z.string() })
+const cookFields = z.object({
   mealId: z.string(),
-  date: z.string(),
-  slot: z.string(),
   servings: z.number().int().min(1).max(50),
   addedBy: z.string().optional(),
   fromBacklog: z.string().optional(),
 })
+type CookRow = z.infer<typeof cookFields> & z.infer<typeof placeRow>
+
+const cookRow = (doc: Doc | undefined): CookRow | undefined => {
+  const fields = cookFields.safeParse(doc ?? {})
+  const place = placeRow.safeParse(doc?.place ?? doc ?? {})
+  return fields.success && place.success ? { ...fields.data, ...place.data } : undefined
+}
+
+const placeOf = (date: string, slot: SlotKey) => ({
+  place: { week: weekStartOfDate(date), date, slot },
+})
+
 const leftoverRow = z.object({ cook: z.string(), date: z.string(), slot: z.string() })
 
 export type MemberLook = { readonly name: string; readonly colour: string }
@@ -73,18 +87,18 @@ export const readWeek = (
     (key === undefined ? undefined : members.get(key)) ?? { name: '', colour: '' }
 
   const cookEvents = data.list('cook').flatMap(({ id, doc }) => {
-    const row = cookRow.safeParse(doc)
-    const meal = row.success ? meals.get(row.data.mealId) : undefined
-    if (!row.success || row.data.week !== weekStart || !meal) return []
-    const author = who(row.data.addedBy)
+    const row = cookRow(doc)
+    const meal = row ? meals.get(row.mealId) : undefined
+    if (!row || row.week !== weekStart || !meal) return []
+    const author = who(row.addedBy)
     return [
       {
         id: brand<string, 'CookEventId'>(id),
-        mealId: brand<string, 'MealId'>(row.data.mealId),
+        mealId: brand<string, 'MealId'>(row.mealId),
         mealName: meal.name,
-        date: row.data.date,
-        slotKey: brand<string, 'SlotKey'>(row.data.slot),
-        servingsCooked: brand<number, 'Servings'>(row.data.servings),
+        date: row.date,
+        slotKey: brand<string, 'SlotKey'>(row.slot),
+        servingsCooked: brand<number, 'Servings'>(row.servings),
         addedByName: author.name,
         addedByColour: author.colour,
       },
@@ -192,14 +206,15 @@ export const planMeal = async (
   const week = weekStartOfDate(input.date)
   const claimed = input.backlogItemId
   if (claimed !== undefined && data.get('backlog', claimed) === undefined) return ok(undefined)
-  if (countIn(data, 'cook', 'week', week) >= MAX_PER_WEEK) return err('limit-reached')
+  const planned = data.list('cook').filter(({ doc }) => cookRow(doc)?.week === week).length
+  if (planned >= MAX_PER_WEEK) return err('limit-reached')
   const id = claimed ?? newId(random)
   return attempt(async () => {
+    // The id comes back from the Backlog: a Leftover someone added to it while it was off the board must not.
+    if (claimed !== undefined) await removeLeftoversOf(data, id)
     await data.put('cook', id, {
-      week,
+      ...placeOf(input.date, input.slotKey),
       mealId: input.mealId,
-      date: input.date,
-      slot: input.slotKey,
       servings: Number(input.servingsCooked),
       addedBy: input.addedBy,
       ...(claimed === undefined ? {} : { fromBacklog: claimed }),
@@ -212,27 +227,31 @@ export const planMeal = async (
 /** Removes the Cook Event and its Leftovers, and puts the Meal back on the Backlog (ADR 0004). */
 export const unplanMeal = async (
   data: Data,
-  random: Random,
   now: number,
   cookEventId: CookEventId,
   me: string,
 ): Promise<Result<BacklogItemId | undefined, PlanningError>> => {
-  const row = cookRow.safeParse(data.get('cook', cookEventId) ?? {})
-  if (!row.success) return ok(undefined)
-  const restored = row.data.fromBacklog ?? newId(random)
+  const row = cookRow(data.get('cook', cookEventId))
+  if (!row) return ok(undefined)
+  // Never a fresh id: two Members unplanning at once must write the same Backlog Item.
+  const restored = row.fromBacklog ?? cookEventId
   return attempt(async () => {
     await data.put('backlog', restored, {
-      week: row.data.week,
-      mealId: row.data.mealId,
-      addedBy: row.data.addedBy ?? me,
+      week: row.week,
+      mealId: row.mealId,
+      addedBy: row.addedBy ?? me,
       createdAt: now,
     })
     await data.remove('cook', cookEventId)
-    for (const { id, doc } of data.list('leftover')) {
-      if (doc.cook === cookEventId) await data.remove('leftover', id)
-    }
+    await removeLeftoversOf(data, cookEventId)
     return brand<string, 'BacklogItemId'>(restored)
   })
+}
+
+const removeLeftoversOf = async (data: Data, cookEventId: string): Promise<void> => {
+  for (const { id, doc } of data.list('leftover')) {
+    if (doc.cook === cookEventId) await data.remove('leftover', id)
+  }
 }
 
 /** Leftovers keep their own date and Slot: moving the Meal does not drag them along. */
@@ -242,11 +261,7 @@ export const moveCookEvent = (
 ): Promise<Result<CookEventId, PlanningError>> =>
   attempt(async () => {
     // Moving to another week re-files it under that week's Monday.
-    await data.put('cook', input.cookEventId, {
-      date: input.date,
-      slot: input.slotKey,
-      week: weekStartOfDate(input.date),
-    })
+    await data.put('cook', input.cookEventId, placeOf(input.date, input.slotKey))
     return input.cookEventId
   })
 

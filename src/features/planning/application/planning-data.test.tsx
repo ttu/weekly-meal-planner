@@ -4,7 +4,7 @@ import { brand } from '@/shared/types/brand'
 import { isErr, isOk } from '@/shared/types/result'
 import type { SlotKey } from '@/features/household'
 import type { MealId, Servings } from '@/features/meals'
-import type { Data } from '@/features/sync'
+import { dataOf, joinHousehold, type Data } from '@/features/sync'
 import {
   addLeftover,
   addToBacklog,
@@ -37,7 +37,75 @@ const must = <T,>(r: { kind: string; value?: T; error?: unknown }): T => {
   return r.value as T
 }
 
+/** Two Members on one board, each on their own device, in step. */
+const twoMembers = async () => {
+  const board = await testBoard()
+  const invite = must(await board.engine.invite('member'))
+  const other = must(await joinHousehold({ ...board.deps, storage: board.deps.storage }, invite))
+  const sync = async () => {
+    for (const e of [board.engine, other, board.engine]) must(await e.sync())
+  }
+  return { a: board.data, b: dataOf(other), sync }
+}
+
+const direct = (data: Data, date = '2026-03-11') =>
+  planMeal(data, randomBytes, {
+    mealId: tacos,
+    date,
+    slotKey: dinner,
+    servingsCooked: four,
+    addedBy: 'me',
+  })
+
 describe('planning on the synced board', () => {
+  it('leaves one Backlog Item when two Members unplan the same Cook Event at once', async () => {
+    const { a, b, sync } = await twoMembers()
+    const cook = must(await direct(a))!
+    await sync()
+    must(await unplanMeal(a, NOW, cook, 'me'))
+    must(await unplanMeal(b, NOW + 1, cook, 'me'))
+    await sync()
+    expect(week(a).backlog).toHaveLength(1)
+    expect(week(b).backlog).toHaveLength(1)
+  })
+
+  it('does not bring back a Leftover added while its Meal was off the board', async () => {
+    const { a, b, sync } = await twoMembers()
+    const cook = must(await direct(a))!
+    await sync()
+    const item = must(await unplanMeal(a, NOW, cook, 'me'))!
+    must(
+      await addLeftover(b, randomBytes, { cookEventId: cook, date: '2026-03-12', slotKey: lunch }),
+    )
+    await sync()
+    must(
+      await planMeal(a, randomBytes, {
+        backlogItemId: item,
+        mealId: tacos,
+        date: '2026-03-13',
+        slotKey: dinner,
+        servingsCooked: four,
+        addedBy: 'me',
+      }),
+    )
+    await sync()
+    expect(week(a).cookEvents).toHaveLength(1)
+    expect(week(a).leftovers).toEqual([])
+    expect(week(b).leftovers).toEqual([])
+  })
+
+  it('keeps a Cook Event in one place when two Members move it at once', async () => {
+    const { a, b, sync } = await twoMembers()
+    const cook = must(await direct(a))!
+    await sync()
+    must(await moveCookEvent(a, { cookEventId: cook, date: '2026-03-17', slotKey: dinner }))
+    must(await moveCookEvent(b, { cookEventId: cook, date: '2026-03-10', slotKey: lunch }))
+    await sync()
+    const shown = [...week(a).cookEvents, ...week(a, NEXT_WEEK).cookEvents]
+    expect(shown).toHaveLength(1)
+    expect([...week(b).cookEvents, ...week(b, NEXT_WEEK).cookEvents]).toEqual(shown)
+  })
+
   it('puts a Meal on the Backlog with who wanted it', async () => {
     const { data } = await testBoard()
     must(
@@ -140,7 +208,7 @@ describe('planning on the synced board', () => {
         slotKey: lunch,
       }),
     )
-    must(await unplanMeal(data, randomBytes, NOW, cook!, 'someone-else'))
+    must(await unplanMeal(data, NOW, cook!, 'someone-else'))
     const after = week(data)
     expect(after.cookEvents).toEqual([])
     expect(after.leftovers).toEqual([])
@@ -161,7 +229,7 @@ describe('planning on the synced board', () => {
       addedBy: 'me',
     }
     await planMeal(data, randomBytes, input)
-    await unplanMeal(data, randomBytes, NOW, item as never, 'me')
+    await unplanMeal(data, NOW, item as never, 'me')
     expect(week(data).backlog).toHaveLength(1)
     await planMeal(data, randomBytes, input)
     expect(week(data).backlog).toEqual([])

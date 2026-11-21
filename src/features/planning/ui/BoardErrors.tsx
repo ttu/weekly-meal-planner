@@ -7,6 +7,7 @@ type Props = {
   readonly leftoverFailed: boolean
   readonly moveFailed: boolean
   readonly unplanFailed: boolean
+  readonly otherFailed: boolean
   readonly orderRefused: boolean
   /** The week showed once, and the refresh since has failed. */
   readonly stale: boolean
@@ -20,6 +21,7 @@ export const BoardErrors = ({
   leftoverFailed,
   moveFailed,
   unplanFailed,
+  otherFailed,
   orderRefused,
   stale,
   onRetry,
@@ -33,6 +35,7 @@ export const BoardErrors = ({
       {leftoverFailed && <Notice message={t('leftover.failed')} testID="leftover-error" />}
       {moveFailed && <Notice message={t('plan.moveFailed')} testID="move-error" />}
       {unplanFailed && <Notice message={t('unplan.failed')} testID="unplan-error" />}
+      {otherFailed && <Notice message={t('board.writeFailed')} testID="write-error" />}
       {orderRefused && <Notice message={t('board.leftoverOrder')} testID="leftover-order-error" />}
       {stale && (
         <Notice

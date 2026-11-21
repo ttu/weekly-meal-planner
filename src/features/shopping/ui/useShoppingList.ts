@@ -4,7 +4,9 @@ import { readMembers, useBoardSession } from '@/features/household'
 import { mealIndex } from '@/features/meals'
 import { readWeek, useSelectedWeek } from '@/features/planning'
 import { useData, useSync, useView } from '@/features/sync'
+import { useWrite } from '@/shared/query/useWrite'
 import type { IngredientId } from '@/shared/types/ids'
+import type { Result } from '@/shared/types/result'
 import {
   addExtra,
   forgetStaple,
@@ -27,6 +29,8 @@ export type ShoppingListView = {
   /** The device has looked for its board, so an empty list really is empty. */
   readonly hasData: boolean
   readonly refetch: () => void
+  /** The last change could not be saved. */
+  readonly failed: boolean
   readonly toggle: (ingredientId: IngredientId, checked: boolean) => void
   readonly outOf: (ingredientId: IngredientId) => void
   readonly addItem: (label: string) => void
@@ -57,15 +61,17 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     const members = new Map(
       readMembers(view, data).map((m) => [m.id, { name: m.displayName, colour: m.colour }]),
     )
+    // A Slot that was removed hides its Meals on the board, so they are not bought for either.
+    const slots = new Set(household.slots.map((s) => String(s.key)))
     const { cookEvents } = readWeek(data, weekStart, meals, members)
-    return deriveShoppingList(
-      readShoppingInput(data, weekStart, household.locale, cookEvents, meals),
-    )
+    const shown = cookEvents.filter((c) => slots.has(String(c.slotKey)))
+    return deriveShoppingList(readShoppingInput(data, weekStart, household.locale, shown, meals))
     // `view` changes whenever the board does, which is when the rows may have.
   }, [household, data, view, weekStart])
 
-  const run = (task: (d: NonNullable<typeof data>) => Promise<unknown>): void => {
-    if (data) void task(data)
+  const write = useWrite()
+  const run = (task: (d: NonNullable<typeof data>) => Promise<Result<unknown, unknown>>): void => {
+    if (data) write.run(() => task(data))
   }
 
   return {
@@ -74,6 +80,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
     isError: false,
     hasData: checked,
     refetch: noop,
+    failed: write.failed,
     toggle: (id, isChecked) => {
       run((d) => setChecked(d, weekStart, id, isChecked))
     },
@@ -87,6 +94,7 @@ export const useShoppingList = (clock: Clock = systemClock): ShoppingListView =>
       run((d) => forgetStaple(d, id))
     },
     addItem: (label) => {
+      if (label.trim() === '') return
       run((d) => addExtra(d, deps.random, deps.clock.now().getTime(), weekStart, label))
     },
     toggleExtra: (id, isChecked) => {

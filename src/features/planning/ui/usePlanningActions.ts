@@ -11,7 +11,7 @@ import {
   unplanMeal,
 } from '../application/planning-data'
 import type { BacklogItemId, CookEventId, LeftoverId } from '../domain/types'
-import { useWrite } from './useWrite'
+import { useWrite } from '@/shared/query/useWrite'
 
 export type LeftoverRequest = {
   readonly cookEventId: CookEventId
@@ -42,6 +42,8 @@ export type PlanningActions = {
   readonly leftoverFailed: boolean
   readonly moveFailed: boolean
   readonly unplanFailed: boolean
+  /** Servings or a Backlog removal that could not be saved. */
+  readonly otherFailed: boolean
 }
 
 /** The board's additive and destructive actions, each a write to the synced rows. */
@@ -69,9 +71,7 @@ export const usePlanningActions = (): PlanningActions => {
     },
     unplan: (cookEventId) => {
       if (!data || userId === undefined) return
-      unplan.run(() =>
-        unplanMeal(data, deps.random, deps.clock.now().getTime(), cookEventId, userId),
-      )
+      unplan.run(() => unplanMeal(data, deps.clock.now().getTime(), cookEventId, userId))
     },
     setServings: (cookEventId, servingsCooked) => {
       if (data) other.run(() => setServingsCooked(data, cookEventId, servingsCooked))
@@ -82,5 +82,6 @@ export const usePlanningActions = (): PlanningActions => {
     leftoverFailed: leftover.failed,
     moveFailed: move.failed,
     unplanFailed: unplan.failed,
+    otherFailed: other.failed,
   }
 }

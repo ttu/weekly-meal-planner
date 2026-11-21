@@ -112,5 +112,19 @@ describe('the board actions', () => {
       expect(view.result.current.actions.leftoverFailed).toBe(true)
     })
     expect(view.result.current.actions.moveFailed).toBe(false)
+    expect(view.result.current.actions.otherFailed).toBe(false)
+    await act(async () => {
+      view.result.current.actions.setServings(
+        card.cookEvent.id,
+        brand<number, 'Servings'>(Infinity),
+      )
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
+    })
+    await waitFor(() => {
+      expect(view.result.current.actions.otherFailed).toBe(true)
+    })
   })
 })
