@@ -20,7 +20,7 @@ export type Data = {
 
 const entityOf = (kind: string, id: string): string => `${kind}:${id}`
 
-export const dataOf = (engine: Pick<Engine, 'view' | 'write'>): Data => {
+export const dataOf = (engine: Pick<Engine, 'view' | 'write' | 'writeMany'>): Data => {
   const read = (store: Store, entity: string): Doc | undefined => {
     const cells = Object.hasOwn(store, entity) ? store[entity] : undefined
     if (!cells) return undefined
@@ -41,17 +41,14 @@ export const dataOf = (engine: Pick<Engine, 'view' | 'write'>): Data => {
           return doc ? [{ id: entity.slice(prefix.length), doc }] : []
         })
     },
-    put: async (kind, id, fields) => {
+    put: (kind, id, fields) => {
       const entity = entityOf(kind, id)
-      const cells = Object.hasOwn(engine.view().store, entity)
-        ? engine.view().store[entity]
-        : undefined
-      for (const [field, value] of Object.entries(fields)) {
-        await engine.write(entity, field, value)
-      }
+      const { store } = engine.view()
+      const cells = Object.hasOwn(store, entity) ? store[entity] : undefined
       // Writing to a removed row brings it back: a Meal moved off the Backlog and
       // back again is the same row, not a second one.
-      if (cells?.deleted?.value === true) await engine.write(entity, 'deleted', false)
+      const revive = cells?.deleted?.value === true ? { deleted: false } : {}
+      return engine.writeMany(entity, { ...fields, ...revive })
     },
     remove: (kind, id) => engine.write(entityOf(kind, id), 'deleted', true),
   }

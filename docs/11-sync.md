@@ -63,7 +63,22 @@ decrypt, and merge. The relay never holds a key.
   clock more than a day ahead starts over from the wall clock, so one wrong
   reading does not lose every later write.
 - **Keys are saved before the snapshot**, so a snapshot never points past a key
-  the device lacks. Each relay call gives up after 15 seconds, as offline.
+  the device lacks. The vault is written only when the keys or the invite token
+  change; saves run one after another, so the last one written is the latest.
+  Each relay call gives up after 15 seconds, as offline.
+- **A local write never waits for the network.** It lands in the outbox and the
+  snapshot at once; syncs, invites and removals queue behind each other, not in
+  front of writes. `writeMany` writes several fields of a row as one save, and
+  `Data.put` uses it.
+- **A write too big for the relay is refused on the writing device**: more than
+  64 KiB of hex once sealed would be refused on every try, and hold up every
+  write queued after it.
+- **`lastSeq` only moves over records with none missing before them.** A
+  device's own append can land past records another device added since its last
+  pull; those are pulled next time, not skipped.
+- **A saved board that cannot be read is an error, not "no board".** The app
+  shows the load error with a retry instead of sending the device to /start,
+  where starting a board would replace the seat it still has.
 
 ## What the relay sees
 
@@ -71,10 +86,15 @@ Record kind, epoch, size, order and time, and the signed membership operations
 (public keys and roles). Never an event's content, a key, or a Household name.
 Its functions raise `relay_<reason>`; every comparison fails closed on NULL.
 
+A board holds at most 100,000 records and 50 MB of payload (a little more for a
+rotation, so a full board can still cut a Member off); past either, appends are
+refused as `full`. A pull page ends at 500 records or about 1 MB of payload,
+whichever comes first, and always holds at least one record.
+
 The Worker turns away, before any board's object wakes: a board name it cannot
 decode, a body over 200 KB, and a caller IP past 300 calls a minute. Board
 creation is checked and counted against the hourly cap in one call to the gate,
-and given back if the board is not made. Tests run the real Worker with only
+and given back if the board is not made, also when making it fails outright. Tests run the real Worker with only
 its storage faked (`relay/memory.ts`).
 
 ## What a removed Member keeps

@@ -3,7 +3,7 @@ import { isOk } from '@/shared/types/result'
 import { fakeRandom } from '../domain/fake-random'
 import { newIdentity } from '../domain/identity'
 import { dataOf, type Data } from './data'
-import { createHousehold, type KeyValue } from './engine'
+import { createHousehold, type Engine, type KeyValue } from './engine'
 
 const memoryKv = (): KeyValue => {
   const map = new Map<string, string>()
@@ -18,6 +18,7 @@ const memoryKv = (): KeyValue => {
 
 describe('dataOf', () => {
   let data: Data
+  let engine: Engine
 
   beforeEach(async () => {
     const random = fakeRandom('data')
@@ -32,7 +33,8 @@ describe('dataOf', () => {
       newIdentity(random),
     )
     if (!isOk(made)) throw new Error('could not start a board')
-    data = dataOf(made.value)
+    engine = made.value
+    data = dataOf(engine)
   })
 
   it('reads back what was put, field by field', async () => {
@@ -70,5 +72,14 @@ describe('dataOf', () => {
     expect(data.get('meal', 'm1')).toBeUndefined()
     await data.put('meal', 'm1', { servings: 6 })
     expect(data.get('meal', 'm1')).toMatchObject({ name: 'Soup', servings: 6 })
+  })
+
+  it('puts a whole row as one change, however many fields it has', async () => {
+    let changes = 0
+    engine.subscribe(() => {
+      changes++
+    })
+    await data.put('meal', 'm1', { name: 'Soup', servings: 4, notes: 'hot' })
+    expect(changes).toBe(1)
   })
 })

@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { StyleSheet } from 'react-native'
 import { Blank } from '@/shared/ui/Blank'
+import { LoadError } from '@/shared/ui/LoadState'
 import InstrumentSans from '../../assets/fonts/InstrumentSans-Variable.ttf'
 import InstrumentSerif from '../../assets/fonts/InstrumentSerif-Regular.ttf'
 import { readRelayUrl } from '@/shared/env'
@@ -14,7 +15,7 @@ import { NetworkSourceProvider } from '@/shared/net/NetworkSourceContext'
 import { ThemeProvider, themed, useThemed } from '@/shared/theme/theme'
 import { SelectedWeekProvider } from '@/features/planning'
 import { useBoardSession } from '@/features/household'
-import { platformDeps, SyncProvider } from '@/features/sync'
+import { platformDeps, SyncProvider, useSync } from '@/features/sync'
 
 initI18n(DEFAULT_LOCALE)
 
@@ -28,7 +29,10 @@ const sheets = themed((tokens) =>
  */
 const AppSession = (): React.JSX.Element => {
   const { checked } = useBoardSession()
+  const { failed, retry } = useSync()
 
+  // Not /start: this device may hold a seat it could not read, and starting would replace it.
+  if (failed) return <LoadError onRetry={retry} />
   if (!checked) return <Blank />
 
   return (

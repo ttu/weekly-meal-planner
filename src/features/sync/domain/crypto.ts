@@ -39,6 +39,9 @@ export const newKeyPair = (random: Random): KeyPair => {
   return { secretKey, publicKey: x25519.getPublicKey(secretKey) }
 }
 
+/** How long `encrypt` makes a plaintext of `length` bytes. */
+export const sealedLength = (length: number): number => NONCE_BYTES + length + TAG_BYTES
+
 /** Output is `nonce || ciphertext+tag`. */
 export const encrypt = (
   key: EpochKey,

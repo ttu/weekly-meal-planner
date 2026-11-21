@@ -1,7 +1,7 @@
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { err, isErr, isOk, ok, type Result } from '@/shared/types/result'
 import type { Clock } from '@/shared/time/clock'
-import { encrypt, newEpochKey, sealKey, type Random } from '../domain/crypto'
+import { encrypt, newEpochKey, sealedLength, sealKey, type Random } from '../domain/crypto'
 import { encodeEvent, eventBody, type EventBody } from '../domain/event-codec'
 import { tickHlc } from '../domain/hlc'
 import { identityFromSecrets, memberKeyOf, newIdentity, type Identity } from '../domain/identity'
@@ -68,6 +68,11 @@ export type Engine = {
   readonly view: () => View
   readonly subscribe: (listener: () => void) => () => void
   readonly write: (entity: string, field: string, value: FieldValue) => Promise<void>
+  /** Several fields of one entity: one save, one notification. All are refused if one is. */
+  readonly writeMany: (
+    entity: string,
+    fields: { readonly [field: string]: FieldValue },
+  ) => Promise<void>
   /** `all` keeps pulling until the relay has nothing more, however long the board. */
   readonly sync: (options?: { readonly all?: boolean }) => Promise<Result<void, RelayError>>
   readonly invite: (role: Role) => Promise<Result<Invite, AdminError>>
@@ -84,6 +89,8 @@ const keysKey = (household: string) => `sync/${household}/keys`
 const PULL_ROUNDS = 50
 /** A whole board is at most ~200 pages; the cap only stops a relay that never runs dry. */
 const JOIN_ROUNDS = 1000
+/** The relay's own limit on a record, in hex characters: `MAX_PAYLOAD` in relay/core.ts. */
+const MAX_SEALED_HEX = 65_536
 const toHex = (value: unknown): string =>
   bytesToHex(new TextEncoder().encode(JSON.stringify(value)))
 
@@ -102,7 +109,8 @@ const problemAfter = (
   return result.error === 'offline' ? last : undefined
 }
 
-const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
+/** `savedVault` is what the vault already holds for this board, so an unchanged one is not rewritten. */
+const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: string): Engine => {
   let state = initial
   const listeners = new Set<() => void>()
   const applied = new Set<string>()
@@ -115,7 +123,9 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     })
   }
 
-  // One thing at a time: a write must not interleave with a pull that rewrites the state.
+  // Network work one at a time. Local writes do not wait for it: every change to
+  // `state` is computed from the current value with no await in between, so
+  // neither side can overwrite the other.
   let chain: Promise<unknown> = Promise.resolve()
   const serial = <T>(task: () => Promise<T>): Promise<T> => {
     const run = chain.then(task, task)
@@ -123,14 +133,35 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     return run
   }
 
+  // Saves one after another, each of the state as it is then, so the last one written is the latest.
+  let saving: Promise<unknown> = Promise.resolve()
+  let vault = savedVault
+  const persist = (): Promise<void> => {
+    const run = saving.then(async () => {
+      const saved = serialise(state)
+      // Keys first: a snapshot saved past a key the vault lacks could never sync again.
+      if (saved.keys !== vault) {
+        await deps.vault.set(keysKey(state.household), saved.keys)
+        vault = saved.keys
+      }
+      await deps.storage.set(snapshotKey(state.household), saved.snapshot)
+    })
+    saving = run.catch(() => undefined)
+    return run
+  }
+
   const commit = async (next: EngineState): Promise<void> => {
     state = next
-    await save(deps, next)
+    await persist()
     notify()
   }
 
-  const take = async (records: readonly RelayRecord[]): Promise<void> => {
-    let next = state
+  /**
+   * `lastSeq` only moves over records with none missing before them: our own
+   * append can land past records another device added since our last pull.
+   */
+  const absorb = (base: EngineState, records: readonly RelayRecord[]): EngineState => {
+    let next = base
     for (const record of records) {
       const result = ingest(next, record, me, now())
       result.applied.forEach((id) => applied.add(id))
@@ -141,10 +172,13 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
       }
       const membershipSeq =
         record.kind === 'membership' ? Math.max(next.membershipSeq, record.seq) : next.membershipSeq
-      next = { ...result.state, lastSeq: Math.max(next.lastSeq, record.seq), membershipSeq }
+      const lastSeq = record.seq === next.lastSeq + 1 ? record.seq : next.lastSeq
+      next = { ...result.state, lastSeq, membershipSeq }
     }
-    await commit(next)
+    return next
   }
+
+  const take = (records: readonly RelayRecord[]): Promise<void> => commit(absorb(state, records))
 
   const pull = async (rounds = PULL_ROUNDS): Promise<Result<void, RelayError>> => {
     for (let round = 0; round < rounds; round++) {
@@ -178,13 +212,14 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     )
     const sent = await deps.relay.append(state.household, token, epoch, 'event', bytesToHex(sealed))
     if (isErr(sent)) return err(sent.error)
-    await commit({ ...state, outbox: state.outbox.filter((e) => e.id !== event.id) })
-    await take([sent.value])
+    const sentOut = { ...state, outbox: state.outbox.filter((e) => e.id !== event.id) }
+    await commit(absorb(sentOut, [sent.value]))
     return ok(undefined)
   }
 
+  // Read fresh each time: writes made while sending join the queue.
   const flush = async (): Promise<Result<void, RelayError>> => {
-    for (const event of state.outbox) {
+    for (let event = state.outbox[0]; event; event = state.outbox[0]) {
       const sent = await flushOne(event)
       if (isErr(sent)) return sent
     }
@@ -321,38 +356,56 @@ const make = (deps: Deps, me: Identity, initial: EngineState): Engine => {
     return publish(op, tokenFor(next, state.household))
   }
 
-  const write = (entity: string, field: string, value: FieldValue): Promise<void> =>
-    serial(async () => {
-      const hlc = tickHlc(state.hlc, now())
+  const writeMany = (
+    entity: string,
+    fields: { readonly [field: string]: FieldValue },
+  ): Promise<void> => {
+    let hlc = state.hlc
+    const events: EventBody[] = []
+    for (const [field, value] of Object.entries(fields)) {
+      hlc = tickHlc(hlc, now())
       const event = { id: bytesToHex(deps.random(16)), hlc, entity, field, value }
       // Every device drops what fails this, the writer included: better refused now than lost later.
       if (!eventBody.safeParse(event).success)
-        throw new Error(`invalid write to ${entity}.${field}`)
-      await commit({ ...state, hlc, outbox: [...state.outbox, event] })
-    })
+        return Promise.reject(new Error(`invalid write to ${entity}.${field}`))
+      // The relay would refuse it on every try, and everything queued behind it would wait.
+      if (2 * sealedLength(encodeEvent(event).length) > MAX_SEALED_HEX)
+        return Promise.reject(new Error(`write to ${entity}.${field} is too large to send`))
+      events.push(event)
+    }
+    if (events.length === 0) return Promise.resolve()
+    return commit({ ...state, hlc, outbox: [...state.outbox, ...events] })
+  }
+
+  let viewed: { state: EngineState; problem: SyncProblem | undefined; view: View } | undefined
+  const view = (): View => {
+    if (viewed?.state === state && viewed.problem === problem) return viewed.view
+    // Writes still waiting for the relay show at once, judged against our own clock.
+    const pending = state.outbox.map((e) => ({ ...e, receivedAt: now() }))
+    const next: View = {
+      household: state.household,
+      me: mine,
+      role: state.membership?.members[mine]?.role,
+      epoch: state.membership?.epoch ?? 0,
+      status: state.status,
+      store: applyEvents(state.store, pending),
+      membership: state.membership,
+      pending: state.outbox.length,
+      problem,
+    }
+    viewed = { state, problem, view: next }
+    return next
+  }
 
   return {
     household: initial.household,
-    view: () => {
-      // Writes still waiting for the relay show at once, judged against our own clock.
-      const pending = state.outbox.map((e) => ({ ...e, receivedAt: now() }))
-      return {
-        household: state.household,
-        me: mine,
-        role: state.membership?.members[mine]?.role,
-        epoch: state.membership?.epoch ?? 0,
-        status: state.status,
-        store: applyEvents(state.store, pending),
-        membership: state.membership,
-        pending: state.outbox.length,
-        problem,
-      }
-    },
+    view,
     subscribe: (listener) => {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
-    write,
+    write: (entity, field, value) => writeMany(entity, { [field]: value }),
+    writeMany,
     sync: (options) =>
       serial(async () => {
         const result = await syncNow(options?.all ? JOIN_ROUNDS : PULL_ROUNDS)
@@ -397,10 +450,11 @@ const empty = (household: string, me: Identity, now: number): EngineState => ({
 })
 
 /** Keys first: a snapshot saved past a key the vault lacks could never sync again. */
-const save = async (deps: Deps, state: EngineState): Promise<void> => {
+const save = async (deps: Deps, state: EngineState): Promise<string> => {
   const saved = serialise(state)
   await deps.vault.set(keysKey(state.household), saved.keys)
   await deps.storage.set(snapshotKey(state.household), saved.snapshot)
+  return saved.keys
 }
 
 /** Start a new board: this device becomes its first admin. */
@@ -436,8 +490,8 @@ export const createHousehold = async (
     lastSeq: created.value.seq,
     membershipSeq: created.value.seq,
   }
-  await save(deps, state)
-  return ok(make(deps, me, state))
+  const vault = await save(deps, state)
+  return ok(make(deps, me, state, vault))
 }
 
 /** The identity a seat in an invite stands for; the caller keeps it safe. */
@@ -461,14 +515,19 @@ export const joinHousehold = async (
   return engine.view().role ? ok(engine) : err('noSeat')
 }
 
-/** Reopen a board this device already knows. */
+/**
+ * Reopen a board this device already knows. Undefined when it has none saved;
+ * a saved one that cannot be read throws, as starting over would give up the seat.
+ */
 export const openHousehold = async (
   deps: Deps,
   me: Identity,
   household: string,
 ): Promise<Engine | undefined> => {
   const snapshot = await deps.storage.get(snapshotKey(household))
+  if (!snapshot) return undefined
   const keys = await deps.vault.get(keysKey(household))
-  const state = snapshot && keys ? deserialise(snapshot, keys) : undefined
-  return state ? make(deps, me, state) : undefined
+  const state = keys ? deserialise(snapshot, keys) : undefined
+  if (!state || !keys) throw new Error('The saved board is unreadable')
+  return make(deps, me, state, keys)
 }

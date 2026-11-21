@@ -84,6 +84,7 @@ describe('sync engine', () => {
     await engine.write('meal:soup', 'title', 'Soup')
     expect(title(engine)).toBe('Soup')
     expect(engine.view().pending).toBe(1)
+    expect(engine.view()).toBe(engine.view())
     must(await engine.sync())
     expect(engine.view().pending).toBe(0)
     expect(title(engine)).toBe('Soup')
@@ -462,5 +463,123 @@ describe('sync engine', () => {
     expect(isErr(await joinHousehold(dev, wrong))).toBe(true)
     expect(hexToBytes(invite.signSecretKey)).toHaveLength(32)
     expect(memberKeyOf(newIdentity(fakeRandom('x')))).toHaveLength(64)
+  })
+
+  it('sees what another Member wrote between its own pull and its own send', async () => {
+    const { engine: alice } = await start('alice')
+    const invite = must(await alice.invite('member'))
+    const dev = device('bob')
+    const relay = memoryRelay(server)
+    let between: (() => Promise<void>) | undefined
+    const racing = {
+      ...relay,
+      pull: async (...args: Parameters<typeof relay.pull>) => {
+        const got = await relay.pull(...args)
+        const run = between
+        between = undefined
+        await run?.()
+        return got
+      },
+    }
+    const bob = must(await joinHousehold({ ...dev, relay: racing }, invite))
+    await bob.write('meal:stew', 'title', 'Stew')
+    between = async () => {
+      tick()
+      await alice.write('meal:soup', 'title', 'Soup')
+      must(await alice.sync())
+    }
+    must(await bob.sync())
+    must(await bob.sync())
+    expect(title(bob)).toBe('Soup')
+  })
+
+  it('takes a write at once while the relay has not answered, and keeps it through that sync', async () => {
+    const { engine: alice, dev } = await start('alice')
+    const { engine: bob } = await joinAs('bob', must(await alice.invite('member')))
+    await bob.write('meal:stew', 'title', 'Stew')
+    must(await bob.sync())
+    let open: () => void = () => undefined
+    const gate = new Promise<void>((resolve) => {
+      open = resolve
+    })
+    const relay = memoryRelay(server)
+    const held = {
+      ...relay,
+      pull: async (...args: Parameters<typeof relay.pull>) => {
+        await gate
+        return relay.pull(...args)
+      },
+    }
+    const reopened = await openHousehold(
+      { ...dev, relay: held },
+      identityFromInvite(seatOf(alice)),
+      alice.household,
+    )
+    if (!reopened) throw new Error('could not reopen')
+    const syncing = reopened.sync()
+    await reopened.write('meal:soup', 'title', 'Soup')
+    expect(title(reopened)).toBe('Soup')
+    open()
+    must(await syncing)
+    expect(title(reopened)).toBe('Soup')
+    expect(title(reopened, 'meal:stew')).toBe('Stew')
+    must(await reopened.sync())
+    expect(reopened.view().pending).toBe(0)
+  })
+
+  it('writes several fields of a row as one save', async () => {
+    const { engine: alice, dev } = await start('alice')
+    const sets: string[] = []
+    const storage = dev.storage
+    const counted: KeyValue = {
+      get: storage.get,
+      set: (k, v) => {
+        sets.push(k)
+        return storage.set(k, v)
+      },
+    }
+    const reopened = await openHousehold(
+      { ...dev, storage: counted },
+      identityFromInvite(seatOf(alice)),
+      alice.household,
+    )
+    if (!reopened) throw new Error('could not reopen')
+    await reopened.writeMany('meal:soup', { title: 'Soup', servings: 4 })
+    expect(sets).toHaveLength(1)
+    expect(reopened.view().pending).toBe(2)
+    expect(readField(reopened.view().store, 'meal:soup', 'servings')).toBe(4)
+  })
+
+  it('leaves the vault alone for a plain write, and saves once per event sent', async () => {
+    const { engine: alice, dev } = await start('alice')
+    const writes: string[] = []
+    const watch = (kv: KeyValue, name: string): KeyValue => ({
+      get: kv.get,
+      set: (k, v) => {
+        writes.push(name)
+        return kv.set(k, v)
+      },
+    })
+    const reopened = await openHousehold(
+      { ...dev, storage: watch(dev.storage, 'storage'), vault: watch(dev.vault, 'vault') },
+      identityFromInvite(seatOf(alice)),
+      alice.household,
+    )
+    if (!reopened) throw new Error('could not reopen')
+    await reopened.write('meal:soup', 'title', 'Soup')
+    expect(writes).toEqual(['storage'])
+    writes.length = 0
+    must(await reopened.sync())
+    expect(writes).toEqual(['storage'])
+  })
+
+  it('refuses a write too big for the relay to take, so it cannot block the ones after it', async () => {
+    const { engine: alice } = await start('alice')
+    const big = Array.from({ length: 10 }, () => 'x'.repeat(8000))
+    await expect(alice.write('meal:soup', 'steps', big)).rejects.toThrow()
+    expect(alice.view().pending).toBe(0)
+    await alice.write('meal:soup', 'title', 'Soup')
+    must(await alice.sync())
+    expect(alice.view().pending).toBe(0)
   })
 })

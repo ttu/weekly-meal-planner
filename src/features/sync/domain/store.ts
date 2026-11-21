@@ -44,19 +44,24 @@ const own = (store: Store, entity: string, field: string): Cell | undefined => {
  * Last-writer-wins per field. Pure, and idempotent and order-independent, which
  * is what lets events arrive twice, late, or out of order and still converge.
  */
-export const applyEvents = (store: Store, events: readonly SyncEvent[]): Store =>
-  events.reduce<Store>((acc, event) => {
-    if (!isAcceptable(event)) return acc
-    const current = own(acc, event.entity, event.field)
-    if (current && compareHlc(event.hlc, current.hlc) <= 0) return acc
-    return {
-      ...acc,
-      [event.entity]: {
-        ...acc[event.entity],
-        [event.field]: { hlc: event.hlc, value: event.value },
-      },
+export const applyEvents = (store: Store, events: readonly SyncEvent[]): Store => {
+  // Copied once per batch, and each entity once, not once per event.
+  let out: Record<string, Record<string, Cell>> | undefined
+  const copied = new Set<string>()
+  for (const event of events) {
+    if (!isAcceptable(event)) continue
+    const current = own(out ?? store, event.entity, event.field)
+    if (current && compareHlc(event.hlc, current.hlc) <= 0) continue
+    out ??= { ...store }
+    if (!copied.has(event.entity)) {
+      out[event.entity] = { ...(Object.hasOwn(out, event.entity) ? out[event.entity] : {}) }
+      copied.add(event.entity)
     }
-  }, store)
+    const cells = out[event.entity]
+    if (cells) cells[event.field] = { hlc: event.hlc, value: event.value }
+  }
+  return out ?? store
+}
 
 export const readField = (store: Store, entity: string, field: string): FieldValue | undefined =>
   own(store, entity, field)?.value

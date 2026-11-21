@@ -1,7 +1,8 @@
-import { act, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useEffect } from 'react'
 import { Text } from 'react-native'
 import { memoryRelay } from '@/test/memory-relay'
+import { rememberBoard } from '../application/device'
 import { createHousehold } from '../application/engine'
 import { fakeRandom } from '../domain/fake-random'
 import { newIdentity } from '../domain/identity'
@@ -91,6 +92,60 @@ describe('SyncProvider', () => {
     )
     await waitFor(() => {
       expect(screen.getByText('ready|open|admin|Soup')).toBeTruthy()
+    })
+  })
+
+  const Status = (): React.JSX.Element => {
+    const { ready, failed, engine, retry } = useSync()
+    const loaded = ready ? 'ready' : 'loading'
+    return (
+      <Text onPress={retry}>
+        {failed ? 'failed' : loaded}|{engine ? 'open' : 'none'}
+      </Text>
+    )
+  }
+
+  it('says it failed, rather than loading forever, when storage cannot be read, and tries again', async () => {
+    const d = deps()
+    let broken = true
+    const storage: KeyValue = {
+      get: (k) => (broken ? Promise.reject(new Error('storage down')) : d.storage.get(k)),
+      set: d.storage.set,
+    }
+    const logged: string[] = []
+    const logger = { log: (_: string, event: string) => logged.push(event) }
+    await render(
+      <SyncProvider deps={{ ...d, storage }} logger={logger}>
+        <Status />
+      </SyncProvider>,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('failed|none')).toBeTruthy()
+    })
+    expect(logged).toEqual(['sync.open_failed'])
+    broken = false
+    await act(async () => {
+      await fireEvent.press(screen.getByText('failed|none'))
+    })
+    await waitFor(() => {
+      expect(screen.getByText('ready|none')).toBeTruthy()
+    })
+  })
+
+  it('treats a saved board it cannot read as a failure, not as no board', async () => {
+    const d = deps()
+    const me = newIdentity(fakeRandom('me'))
+    const made = await createHousehold(d, me)
+    if (made.kind !== 'ok') throw new Error('no board')
+    await rememberBoard(d, made.value.household, me)
+    await d.storage.set(`sync/${made.value.household}`, 'not json')
+    await render(
+      <SyncProvider deps={d} logger={{ log: () => undefined }}>
+        <Status />
+      </SyncProvider>,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('failed|none')).toBeTruthy()
     })
   })
 })

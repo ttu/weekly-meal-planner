@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useSyncExternalStore } from 'react'
+import { createLogger, type Logger } from '@/shared/logger/logger'
 import { createAppStateSource } from '@/shared/net/appState'
 import { dataOf, type Data } from '../application/data'
 import { forgetBoard, loadIdentity, recallBoard, rememberBoard } from '../application/device'
@@ -11,6 +12,10 @@ import type { Identity } from '../domain/identity'
 type Session = {
   /** False until the device's keys and last board have been looked for. */
   readonly ready: boolean
+  /** Looking for them failed: the device has data it could not read, or storage did not answer. */
+  readonly failed: boolean
+  /** Look again, after `failed`. */
+  readonly retry: () => void
   readonly deps: Deps
   readonly identity: Identity | undefined
   readonly engine: Engine | undefined
@@ -35,13 +40,23 @@ type Props = {
   /** A board already open, to skip looking for one: what tests and the first screens after start hand over. */
   readonly initial?: { readonly engine: Engine; readonly identity: Identity } | undefined
   readonly children: React.ReactNode
+  /** Where a failure to open the board is reported. */
+  readonly logger?: Logger
 }
 
 /** Opens the board this device had, keeps it syncing, and offers it to the screens. */
-export const SyncProvider = ({ deps, initial, children }: Props): React.JSX.Element => {
+export const SyncProvider = ({
+  deps,
+  initial,
+  children,
+  logger: given,
+}: Props): React.JSX.Element => {
   const [identity, setIdentity] = useState<Identity | undefined>(initial?.identity)
   const [engine, setEngine] = useState<Engine | undefined>(initial?.engine)
   const [ready, setReady] = useState(initial !== undefined)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const logger = useMemo(() => given ?? createLogger('sync'), [given])
 
   useEffect(() => {
     if (initial) return undefined
@@ -54,11 +69,22 @@ export const SyncProvider = ({ deps, initial, children }: Props): React.JSX.Elem
       setIdentity(me)
       setEngine(opened)
       setReady(true)
-    })()
+    })().catch((e: unknown) => {
+      // Never "no board": starting one now would write over the seat this device still has.
+      logger.log('error', 'sync.open_failed', {
+        reason: e instanceof Error ? e.message : 'unknown',
+      })
+      if (task.live) setFailed(true)
+    })
     return () => {
       task.live = false
     }
-  }, [deps, initial])
+  }, [deps, initial, attempt, logger])
+
+  const retry = useCallback(() => {
+    setFailed(false)
+    setAttempt((n) => n + 1)
+  }, [])
 
   useEffect(() => {
     if (!engine) return undefined
@@ -82,8 +108,8 @@ export const SyncProvider = ({ deps, initial, children }: Props): React.JSX.Elem
   }, [deps])
 
   const session = useMemo(
-    () => ({ ready, deps, identity, engine, adopt, leave }),
-    [ready, deps, identity, engine, adopt, leave],
+    () => ({ ready, failed, retry, deps, identity, engine, adopt, leave }),
+    [ready, failed, retry, deps, identity, engine, adopt, leave],
   )
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }
