@@ -1,4 +1,5 @@
-import { createContext, use, useMemo, useState, type ReactNode } from 'react'
+import { createContext, use, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
+import { createAppStateSource, type AppStateSource } from '@/shared/net/appState'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { weekStartFrom } from '../domain/week'
 import type { WeekStart } from '../domain/types'
@@ -21,21 +22,31 @@ const Context = createContext<SelectedWeek | undefined>(undefined)
  * the only thing that makes sense, and keeping the offset in either screen
  * would let them disagree.
  *
- * Only the offset is held, never a date: a board left open overnight should
- * roll onto the new week with the clock, not stay on yesterday's Monday.
+ * Only the offset is held, never a date: the Monday is worked out from the
+ * clock on every render, and coming back to the foreground re-renders, so a
+ * board opened on Sunday and resumed on Monday shows the new week.
  */
 export const SelectedWeekProvider = ({
   children,
   clock = systemClock,
+  appState: injected,
 }: {
   readonly children: ReactNode
   readonly clock?: Clock
+  readonly appState?: AppStateSource
 }): React.JSX.Element => {
   const [offset, setOffset] = useState(0)
-  const value = useMemo(
-    () => ({ weekStart: weekStartFrom(clock, offset), offset, goToWeek: setOffset }),
-    [clock, offset],
+  const [appState] = useState(() => injected ?? createAppStateSource())
+  const [, wake] = useReducer((n: number) => n + 1, 0)
+  useEffect(
+    () =>
+      appState.subscribe((active) => {
+        if (active) wake()
+      }),
+    [appState],
   )
+  const weekStart = weekStartFrom(clock, offset)
+  const value = useMemo(() => ({ weekStart, offset, goToWeek: setOffset }), [weekStart, offset])
 
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
@@ -46,9 +57,10 @@ export const SelectedWeekProvider = ({
  */
 export const useSelectedWeek = (clock: Clock = systemClock): SelectedWeek => {
   const fromContext = use(Context)
+  const weekStart = weekStartFrom(clock, 0)
   const standalone = useMemo(
-    () => ({ weekStart: weekStartFrom(clock, 0), offset: 0, goToWeek: () => undefined }),
-    [clock],
+    () => ({ weekStart, offset: 0, goToWeek: () => undefined }),
+    [weekStart],
   )
   return fromContext ?? standalone
 }
