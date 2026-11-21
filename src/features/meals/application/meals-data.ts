@@ -6,7 +6,13 @@ import type { Locale } from '@/shared/i18n'
 import { newId, type Data, type Random } from '@/features/sync'
 import { catalogueIngredients, catalogueMeals } from '../domain/catalogue'
 import { validateMealDraft, type MealDraft, type MealDraftError } from '../domain/meal-draft'
-import type { HouseholdId, Meal, MealDetail, MealId } from '../domain/types'
+import {
+  MAX_SERVINGS,
+  type HouseholdId,
+  type Meal,
+  type MealDetail,
+  type MealId,
+} from '../domain/types'
 
 /**
  * Household Meals as rows of the synced board: `meal:<id>`. The Ingredients are
@@ -25,7 +31,7 @@ const ingredientSchema = z.object({
 
 const rowSchema = z.object({
   name: z.string().min(1).max(120),
-  servings: z.number().int().min(1).max(50),
+  servings: z.number().int().min(1).max(MAX_SERVINGS),
   // Parsed one by one: a single element that makes no sense drops alone,
   // rather than blanking the Meal for the next save to write [] over it.
   ingredients: z
