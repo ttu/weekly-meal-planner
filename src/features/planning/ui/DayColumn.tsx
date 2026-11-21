@@ -4,10 +4,11 @@ import { useTranslation, type Locale } from '@/shared/i18n'
 import { slotName, type SlotKey } from '@/features/household'
 import { formatWeekday } from '../domain/format-day'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
-import { LeftoverCard, MealCard } from '@/features/meals'
+import { MealCard } from '@/features/meals'
 import type { BoardCard, CookEvent, CookEventId, LeftoverId } from '../domain/types'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
+import { PlacedLeftover } from './PlacedLeftover'
 import type { DragPayload, DropTarget } from './DragContext'
 import { cardKey, type BoardDay } from '../domain/board'
 
@@ -59,14 +60,6 @@ const sheets = themed((tokens) =>
     },
     emptyText: { ...tokens.type.mealNameSmall, fontWeight: '400', color: tokens.color.textGhost },
     actions: { flexDirection: 'row', gap: tokens.space.md, paddingLeft: 2 },
-    removeLeftover: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-    },
-    removeLeftoverText: { ...tokens.type.meta, color: tokens.color.textGhost },
     action: { ...tokens.type.meta, color: tokens.color.textSupport },
   }),
 )
@@ -88,39 +81,13 @@ const Card = ({
   onRemoveLeftover,
   onDropped,
 }: CardProps): React.JSX.Element => {
-  const styles = useThemed(sheets)
-  const { t } = useTranslation()
-
   if (card.kind === 'leftover') {
-    const { leftover } = card
-
-    // A Leftover moves like any other card: "we'll finish it on Friday" is the
-    // commonest edit there is. The × is a sibling of the draggable, not a child
-    // of it — a button inside a button is invalid on web and swallows the tap.
     return (
-      <View>
-        <DraggableCard
-          payload={{ kind: 'leftover', leftover }}
-          onDropped={onDropped}
-          accessibilityLabel={t('leftover.suffix', { meal: leftover.parentMealName })}
-          testID={`leftover-${leftover.id}`}
-        >
-          <LeftoverCard parentMealName={leftover.parentMealName} />
-        </DraggableCard>
-        {onRemoveLeftover !== undefined && (
-          <Pressable
-            style={styles.removeLeftover}
-            onPress={() => {
-              onRemoveLeftover(leftover.id)
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('leftover.remove')}
-            testID={`remove-leftover-${leftover.id}`}
-          >
-            <Text style={styles.removeLeftoverText}>×</Text>
-          </Pressable>
-        )}
-      </View>
+      <PlacedLeftover
+        leftover={card.leftover}
+        onRemoveLeftover={onRemoveLeftover}
+        onDropped={onDropped}
+      />
     )
   }
 

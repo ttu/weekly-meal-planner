@@ -182,7 +182,11 @@ const Board = ({
   const insets = useSafeAreaInsets()
   // The safe-area inset is only known at runtime, so this one sheet is built here.
   const insetStyles = useMemo(
-    () => StyleSheet.create({ top: { paddingTop: insets.top } }),
+    () =>
+      StyleSheet.create({
+        top: { paddingTop: insets.top },
+        contentTop: { paddingTop: insets.top + tokens.space.md },
+      }),
     [insets.top],
   )
   const { household } = useBoardSession()
@@ -479,7 +483,7 @@ const Board = ({
           scrollEventThrottle={16}
           onScroll={autoScroll.onScroll}
           onContentSizeChange={autoScroll.onContentSizeChange}
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+          contentContainerStyle={[styles.content, insetStyles.contentTop]}
         >
           <View style={styles.boardNameRow}>
             <BoardNameButton

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { brand } from '@/shared/types/brand'
 import { err, ok, type Result } from '@/shared/types/result'
 import type { SlotKey } from '@/features/household'
-import type { MealId, Servings } from '@/features/meals'
+import { MAX_SERVINGS, type MealId, type Servings } from '@/features/meals'
 import { newId, type Data, type Doc, type Random } from '@/features/sync'
 import { weekStartOfDate } from '../domain/week'
 import type {
@@ -49,7 +49,7 @@ const backlogRow = z.object({
 const placeRow = z.object({ week: z.string(), date: z.string(), slot: z.string() })
 const cookFields = z.object({
   mealId: z.string(),
-  servings: z.number().int().min(1).max(50),
+  servings: z.number().int().min(1).max(MAX_SERVINGS),
   addedBy: z.string().optional(),
   fromBacklog: z.string().optional(),
 })

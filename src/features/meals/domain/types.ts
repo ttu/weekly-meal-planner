@@ -18,6 +18,9 @@ export type {
 } from '@/shared/types/ids'
 export type { Dimension } from '@/shared/units'
 
+/** The most Servings a Meal is for, or a Cook Event is cooked for: one bound for the editor, the board and the rows. */
+export const MAX_SERVINGS = 50
+
 export type Meal = {
   readonly id: MealId
   readonly householdId?: HouseholdId

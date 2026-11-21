@@ -11,7 +11,7 @@ import { defaultAmountFor, parseQuantity } from '@/shared/units'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
 import { IngredientRow, UnknownIngredientRow } from './IngredientRow'
-import type { Ingredient, IngredientId, Servings } from '../domain/types'
+import { MAX_SERVINGS, type Ingredient, type IngredientId, type Servings } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
 import type { EditorError } from './useSaveMeal'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
@@ -188,7 +188,7 @@ export const MealEditorScreen = ({
           <Pressable
             style={styles.stepper}
             onPress={() => {
-              setServings((n) => Math.min(50, n + 1))
+              setServings((n) => Math.min(MAX_SERVINGS, n + 1))
             }}
             accessibilityRole="button"
             accessibilityLabel={t('meal.servings')}

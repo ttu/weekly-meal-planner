@@ -4,11 +4,11 @@ import { useTranslation, type Locale } from '@/shared/i18n'
 import { slotName, type SlotKey } from '@/features/household'
 import { AnimatedCard } from '@/shared/motion/AnimatedCard'
 import { formatColumnHeading } from '../domain/format-day'
-import { LeftoverCard } from '@/features/meals'
-import type { CookEvent, CookEventId, Leftover, LeftoverId } from '../domain/types'
+import type { CookEvent, CookEventId, LeftoverId } from '../domain/types'
 import { cardKey, type BoardDay } from '../domain/board'
 import { DraggableCard } from './DraggableCard'
 import { DropSlot } from './DropSlot'
+import { PlacedLeftover } from './PlacedLeftover'
 import type { DragPayload, DropTarget } from './DragContext'
 
 /**
@@ -23,6 +23,7 @@ const sheets = themed((tokens) =>
       borderRightWidth: 1,
       borderRightColor: tokens.color.cardBorder,
     },
+    columnLast: { borderRightWidth: 0 },
     columnToday: { backgroundColor: tokens.color.todayTint },
     columnChanged: { boxShadow: `inset 0 0 0 2px ${tokens.color.todayEdge}` },
     head: {
@@ -106,77 +107,8 @@ const sheets = themed((tokens) =>
       color: tokens.color.textSupport,
       paddingTop: 2,
     },
-    leftover: {
-      backgroundColor: tokens.color.surfaceInset,
-      borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: tokens.color.dashedInset,
-      borderRadius: tokens.radius.md,
-      paddingVertical: tokens.space.sm,
-      paddingHorizontal: 10,
-    },
-    leftoverText: { ...tokens.type.meta, color: tokens.color.textMuted },
-    removeLeftover: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-    },
-    removeLeftoverText: {
-      ...tokens.type.labelTiny,
-      fontSize: tokens.type.label.fontSize,
-      color: tokens.color.textGhost,
-    },
-    leftoverWord: {
-      fontFamily: tokens.type.dayHeading.fontFamily,
-      fontStyle: 'italic',
-      fontSize: tokens.type.body.fontSize,
-    },
   }),
 )
-
-/** A Leftover in a 100px column: the card, and the × that takes it off the
- *  week. Tapping the card itself opens nothing — a Leftover has nothing to
- *  edit (ADR 0004). */
-const WideLeftoverCard = ({
-  leftover,
-  onRemoveLeftover,
-  onDropped,
-}: {
-  readonly leftover: Leftover
-  readonly onRemoveLeftover?: ((leftoverId: LeftoverId) => void) | undefined
-  readonly onDropped?: ((payload: DragPayload, target: DropTarget) => void) | undefined
-}): React.JSX.Element => {
-  const styles = useThemed(sheets)
-  const { t } = useTranslation()
-
-  return (
-    <View>
-      <DraggableCard
-        payload={{ kind: 'leftover', leftover }}
-        onDropped={onDropped}
-        accessibilityLabel={t('leftover.suffix', { meal: leftover.parentMealName })}
-        testID={`leftover-${leftover.id}`}
-      >
-        <LeftoverCard compact parentMealName={leftover.parentMealName} />
-      </DraggableCard>
-      {onRemoveLeftover !== undefined && (
-        <Pressable
-          style={styles.removeLeftover}
-          onPress={() => {
-            onRemoveLeftover(leftover.id)
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('leftover.remove')}
-          testID={`remove-leftover-${leftover.id}`}
-        >
-          <Text style={styles.removeLeftoverText}>×</Text>
-        </Pressable>
-      )}
-    </View>
-  )
-}
 
 /** The same two actions the phone card carries, at the size a 100px column can
  *  hold. Without them a Leftover could not be made above 1024px at all. */
@@ -340,7 +272,7 @@ export const WideDayColumn = ({
     <View
       style={[
         styles.column,
-        isLast && { borderRightWidth: 0 },
+        isLast && styles.columnLast,
         isToday && styles.columnToday,
         recentlyChanged && styles.columnChanged,
       ]}
@@ -390,8 +322,9 @@ export const WideDayColumn = ({
 
             {slot.cards.map((card) =>
               card.kind === 'leftover' ? (
-                <WideLeftoverCard
+                <PlacedLeftover
                   key={cardKey(card)}
+                  compact
                   leftover={card.leftover}
                   onRemoveLeftover={onRemoveLeftover}
                   onDropped={onDropped}
