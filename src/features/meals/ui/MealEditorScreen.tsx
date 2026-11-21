@@ -10,7 +10,7 @@ import { isOk } from '@/shared/types/result'
 import { defaultAmountFor, parseQuantity } from '@/shared/units'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
-import { IngredientRow } from './IngredientRow'
+import { IngredientRow, UnknownIngredientRow } from './IngredientRow'
 import type { Ingredient, IngredientId, Servings } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
 import type { EditorError } from './useSaveMeal'
@@ -132,6 +132,9 @@ export const MealEditorScreen = ({
       current.map((entry) => (entry.ingredientId === id ? { ...entry, ...patch } : entry)),
     )
   }
+  const removeEntry = (id: IngredientId): void => {
+    setEntries((current) => current.filter((e) => e.ingredientId !== id))
+  }
 
   return (
     <KeyboardAvoiding>
@@ -204,7 +207,17 @@ export const MealEditorScreen = ({
         ) : (
           entries.map((entry) => {
             const ingredient = byId.get(entry.ingredientId)
-            if (ingredient === undefined) return null
+            if (ingredient === undefined) {
+              return (
+                <UnknownIngredientRow
+                  key={entry.ingredientId}
+                  slug={entry.ingredientId}
+                  onRemove={() => {
+                    removeEntry(entry.ingredientId)
+                  }}
+                />
+              )
+            }
             return (
               <IngredientRow
                 key={entry.ingredientId}
@@ -219,9 +232,7 @@ export const MealEditorScreen = ({
                   updateEntry(entry.ingredientId, { unit })
                 }}
                 onRemove={() => {
-                  setEntries((current) =>
-                    current.filter((e) => e.ingredientId !== entry.ingredientId),
-                  )
+                  removeEntry(entry.ingredientId)
                 }}
               />
             )
@@ -328,7 +339,6 @@ export const MealEditorScreen = ({
                           ingredientId: entry.ingredientId,
                           quantity: quantity.value,
                           unit: entry.unit,
-                          optional: false,
                         },
                       ]
                     : []

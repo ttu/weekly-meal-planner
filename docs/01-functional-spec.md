@@ -136,7 +136,7 @@ the line.
   picture we do not host.
   `household_id NULL` means public catalogue; otherwise it belongs to that
   household.
-- **`meal_ingredient`** — meal, ingredient, `quantity`, `unit`, `optional` flag.
+- **`meal_ingredient`** — meal, ingredient, `quantity`, `unit`.
   A check constraint requires the unit to be convertible within the ingredient's
   dimension.
 

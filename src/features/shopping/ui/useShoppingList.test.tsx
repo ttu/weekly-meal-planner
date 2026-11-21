@@ -24,7 +24,6 @@ const setup = async (servingsCooked = 4, slotKey = dinner) => {
         ingredientId: onion,
         quantity: brand<number, 'Quantity'>(2),
         unit: 'pcs',
-        optional: false,
       },
     ],
   })

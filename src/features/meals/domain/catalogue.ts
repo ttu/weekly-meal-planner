@@ -58,6 +58,5 @@ export const catalogueMeals = (locale: Locale): readonly MealDetail[] =>
       ingredientId: brand<string, 'IngredientId'>(i.slug),
       quantity: brand<number, 'Quantity'>(i.quantity),
       unit: i.unit,
-      optional: false,
     })),
   }))

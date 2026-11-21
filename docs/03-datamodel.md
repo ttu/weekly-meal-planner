@@ -17,7 +17,7 @@ its default.
 | ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `household` | `main`                                   | `name`, `locale` (`fi`/`en`), `size`, `slots` (ordered list)                                    |
 | `member`    | the Member's signing key                 | `name`, `colour` — how they are shown; access is the membership log                             |
-| `meal`      | random                                   | `name`, `servings`, `ingredients[]` (`ingredientId`, `quantity`, `unit`, `optional`)            |
+| `meal`      | random                                   | `name`, `servings`, `ingredients[]` (`ingredientId`, `quantity`, `unit`)                        |
 | `backlog`   | random, or the unplanned Cook Event's id | `week`, `mealId`, `addedBy`, `createdAt`                                                        |
 | `cook`      | the Backlog Item's id, or random         | `place` (`week`, `date`, `slot` as one field), `mealId`, `servings`, `addedBy?`, `fromBacklog?` |
 | `leftover`  | random                                   | `cook`, `date`, `slot`                                                                          |

@@ -47,7 +47,6 @@ export type MealDetail = Meal & {
     readonly ingredientId: IngredientId
     readonly quantity: Quantity
     readonly unit: string
-    readonly optional: boolean
   }[]
 }
 

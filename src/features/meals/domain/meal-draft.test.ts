@@ -9,7 +9,6 @@ const draft = (name: string, ingredients: { id: string }[] = []) => ({
     ingredientId: i.id as IngredientId,
     quantity: 1 as Quantity,
     unit: 'g',
-    optional: false,
   })),
 })
 

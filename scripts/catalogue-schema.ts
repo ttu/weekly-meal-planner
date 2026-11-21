@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { unitsFor } from '../src/shared/units'
 
 const localised = z.object({ fi: z.string().min(1), en: z.string().min(1) })
 
@@ -25,17 +26,8 @@ export const mealSchema = z.object({
 export type CatalogueIngredient = z.infer<typeof ingredientSchema>
 export type CatalogueMeal = z.infer<typeof mealSchema>
 
-const UNITS: Record<string, readonly string[]> = {
-  mass: ['g', 'kg'],
-  volume: ['ml', 'dl', 'l'],
-  count: ['pcs', 'tin', 'pack', 'bunch'],
-}
-
-/** A unit belongs to a dimension, or the dimension is one we do not police. */
-const unitFits = (dimension: string, unit: string): boolean => {
-  const units = UNITS[dimension]
-  return units === undefined || units.includes(unit)
-}
+const unitFits = (dimension: CatalogueIngredient['dimension'], unit: string): boolean =>
+  unitsFor(dimension).includes(unit)
 
 const baseUnitProblems = (ingredients: readonly CatalogueIngredient[]): readonly string[] =>
   ingredients.flatMap((ingredient) =>

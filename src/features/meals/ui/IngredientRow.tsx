@@ -109,3 +109,38 @@ export const IngredientRow = ({
     </View>
   )
 }
+
+/**
+ * A row naming a slug this build does not know — written by another Member's
+ * newer one. Shown by its slug so the reason a save is refused is on screen,
+ * and removable so the Meal can still be saved here.
+ */
+export const UnknownIngredientRow = ({
+  slug,
+  onRemove,
+}: {
+  readonly slug: string
+  readonly onRemove: () => void
+}): React.JSX.Element => {
+  const styles = useThemed(sheets)
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.row} testID={`ingredient-row-${slug}`}>
+      <View style={styles.topRow}>
+        <Text style={styles.name}>{slug}</Text>
+        <Pressable
+          onPress={onRemove}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('ingredient.remove')} ${slug}`}
+          testID={`ingredient-remove-${slug}`}
+        >
+          <Text style={styles.remove}>{t('ingredient.remove')}</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.error} testID={`ingredient-unknown-${slug}`}>
+        {t('ingredient.unknown')}
+      </Text>
+    </View>
+  )
+}

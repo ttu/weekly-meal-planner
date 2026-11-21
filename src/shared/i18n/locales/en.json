@@ -182,7 +182,8 @@
     "badQuantity": "Give an amount above zero.",
     "heading": "Ingredients",
     "search": "Search Ingredients",
-    "noResults": "No Ingredients match that."
+    "noResults": "No Ingredients match that.",
+    "unknown": "Added on a newer version of Menami. Remove it to save the Meal here."
   },
   "shopping": {
     "title": "Shopping",

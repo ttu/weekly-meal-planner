@@ -16,7 +16,6 @@ const draft = (over: Record<string, unknown> = {}) => ({
       ingredientId: brand<string, 'IngredientId'>('onion'),
       quantity: brand<number, 'Quantity'>(2),
       unit: 'pcs',
-      optional: false,
     },
   ],
   ...over,
@@ -102,6 +101,23 @@ describe('Household Meals on the synced board', () => {
     expect(
       listMeals(data, HOUSEHOLD, 'en').filter((m) => m.householdId !== undefined),
     ).toHaveLength(1)
+  })
+
+  // One bad element must not blank the Meal, or the next save writes [] over
+  // the real list.
+  it('drops only the Ingredient that does not parse, keeping the rest', async () => {
+    const { data } = await testBoard()
+    await data.put('meal', 'm1', {
+      name: 'Soup',
+      servings: 4,
+      ingredients: [
+        { ingredientId: 'onion', quantity: 2, unit: 'pcs', optional: true },
+        { ingredientId: 'carrot', quantity: -1, unit: 'pcs' },
+      ],
+    })
+    expect(getMeal(data, HOUSEHOLD, 'en', brand<string, 'MealId'>('m1'))?.ingredients).toEqual([
+      { ingredientId: 'onion', quantity: 2, unit: 'pcs' },
+    ])
   })
 })
 

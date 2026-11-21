@@ -5,7 +5,6 @@ export type MealIngredientDraft = {
   readonly ingredientId: IngredientId
   readonly quantity: Quantity
   readonly unit: string
-  readonly optional: boolean
 }
 
 export type MealDraft = {

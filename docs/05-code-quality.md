@@ -147,7 +147,7 @@ default it flagged things whose only fix was to make the code less readable,
 which teaches people to route around the gate rather than listen to it.
 
 Real duplications it has caught and that were extracted rather than suppressed:
-`formStyles`, `resolveLocalisedName`, `partitionMeals`, and shopping reading
+`formStyles`, `partitionMeals`, and shopping reading
 Ingredients through `loadIngredients` instead of repeating the query.
 
 ## Observability

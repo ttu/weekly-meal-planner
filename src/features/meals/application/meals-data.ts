@@ -16,19 +16,27 @@ import type { HouseholdId, Meal, MealDetail, MealId } from '../domain/types'
  */
 const KIND = 'meal'
 
+/** Unknown keys (an old row's `optional`) are stripped, not refused. */
+const ingredientSchema = z.object({
+  ingredientId: z.string().min(1),
+  quantity: z.number().positive(),
+  unit: z.string().max(20),
+})
+
 const rowSchema = z.object({
   name: z.string().min(1).max(120),
   servings: z.number().int().min(1).max(50),
+  // Parsed one by one: a single element that makes no sense drops alone,
+  // rather than blanking the Meal for the next save to write [] over it.
   ingredients: z
-    .array(
-      z.object({
-        ingredientId: z.string().min(1),
-        quantity: z.number().positive(),
-        unit: z.string().max(20),
-        optional: z.boolean().catch(false),
+    .array(z.unknown())
+    .catch([])
+    .transform((rows) =>
+      rows.flatMap((row) => {
+        const parsed = ingredientSchema.safeParse(row)
+        return parsed.success ? [parsed.data] : []
       }),
-    )
-    .catch([]),
+    ),
 })
 
 const detailOf = (
@@ -45,7 +53,6 @@ const detailOf = (
     ingredientId: brand<string, 'IngredientId'>(i.ingredientId),
     quantity: brand<number, 'Quantity'>(i.quantity),
     unit: i.unit,
-    optional: i.optional,
   })),
 })
 
@@ -112,7 +119,6 @@ export const saveMeal = async (
         ingredientId: String(i.ingredientId),
         quantity: Number(i.quantity),
         unit: i.unit,
-        optional: i.optional,
       })),
     })
     return ok(id)

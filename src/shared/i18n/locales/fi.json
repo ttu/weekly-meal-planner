@@ -182,7 +182,8 @@
     "badQuantity": "Anna määrä, joka on suurempi kuin nolla.",
     "heading": "Raaka-aineet",
     "search": "Hae raaka-aineita",
-    "noResults": "Yksikään raaka-aine ei vastaa hakua."
+    "noResults": "Yksikään raaka-aine ei vastaa hakua.",
+    "unknown": "Lisätty Menamin uudemmalla versiolla. Poista se, niin voit tallentaa aterian täällä."
   },
   "shopping": {
     "title": "Ostokset",
