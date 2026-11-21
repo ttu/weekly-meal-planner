@@ -73,6 +73,14 @@ jobs:
           eas-version: 24.14.0
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
+      - name: Require RELAY_URL
+        env:
+          RELAY_URL: ${{ vars.RELAY_URL }}
+        run: |
+          [ -n "$RELAY_URL" ] || {
+            echo "The environment variable RELAY_URL is not set; the app would throw at startup."
+            exit 1
+          }
       - name: Export web
         run: pnpm run build
         env:

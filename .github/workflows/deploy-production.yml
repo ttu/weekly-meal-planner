@@ -31,7 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - name: Require the tag to be on main
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "$GITHUB_REF_NAME is not on main; production deploys only from main."
+            exit 1
+          }
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -50,6 +56,14 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Require the tag to be on main
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "$GITHUB_REF_NAME is not on main; production deploys only from main."
+            exit 1
+          }
       - name: Require a linked EAS project
         run: |
           grep -q '"projectId"' app.json || {
@@ -67,6 +81,14 @@ jobs:
           eas-version: 24.14.0
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
+      - name: Require RELAY_URL
+        env:
+          RELAY_URL: ${{ vars.RELAY_URL }}
+        run: |
+          [ -n "$RELAY_URL" ] || {
+            echo "The environment variable RELAY_URL is not set; the app would throw at startup."
+            exit 1
+          }
       - name: Export web
         run: pnpm run build
         env:
