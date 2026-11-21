@@ -34,14 +34,18 @@ export type TestBoard = {
 
 /**
  * A real board on the real sync engine, over a relay in memory: the only things
- * faked are the network and the device's storage. `wrapper` mounts the provider
- * with that board open, so hooks see what the app would.
+ * faked are the network and the device's storage, which a test may hand in to
+ * make it fail. `wrapper` mounts the provider with that board open, so hooks see
+ * what the app would.
  */
-export const testBoard = async (locale: 'fi' | 'en' = 'en'): Promise<TestBoard> => {
+export const testBoard = async (
+  locale: 'fi' | 'en' = 'en',
+  device: Partial<Pick<SyncDeps, 'storage' | 'vault'>> = {},
+): Promise<TestBoard> => {
   const deps: SyncDeps = {
     relay: memoryRelay(),
-    storage: memoryKv(),
-    vault: memoryKv(),
+    storage: device.storage ?? memoryKv(),
+    vault: device.vault ?? memoryKv(),
     random: randomBytes,
     clock: { now: () => new Date() },
   }
@@ -59,4 +63,20 @@ export const testBoard = async (locale: 'fi' | 'en' = 'en'): Promise<TestBoard> 
     </SyncProvider>
   )
   return { deps, engine, data: dataOf(engine), wrapper }
+}
+
+/** Device storage that refuses writes to the keys `refuses` picks once `broken.now` is set. */
+export const breakableKv = (
+  refuses: (key: string) => boolean = () => true,
+): { readonly kv: KeyValue; readonly broken: { now: boolean } } => {
+  const inner = memoryKv()
+  const broken = { now: false }
+  return {
+    broken,
+    kv: {
+      get: inner.get,
+      set: (k, v) =>
+        broken.now && refuses(k) ? Promise.reject(new Error('disk full')) : inner.set(k, v),
+    },
+  }
 }

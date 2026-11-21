@@ -56,7 +56,13 @@
     "shareMake": "Make an invite link",
     "writeFailed": "Could not save that change. Try again.",
     "relayFull": "This board is full. Changes stay on this phone but cannot reach the others.",
-    "relayBusy": "The sync service is busy. Changes will be sent shortly."
+    "relayBusy": "The sync service is busy. Changes will be sent shortly.",
+    "replaceTitle": "Replace the board that is open?",
+    "replaceBody": "This phone holds one board at a time. The one open now is replaced, and it cannot be opened here again without its recovery link.",
+    "replaceConfirm": "Replace it",
+    "replaceCancel": "Cancel",
+    "joinNotSaved": "You joined, but this phone could not save the board. Try again.",
+    "createNotSaved": "The board was made, but this phone could not save it. Try again."
   },
   "slot": {
     "lunch": "Lunch",

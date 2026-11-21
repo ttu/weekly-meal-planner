@@ -13,7 +13,8 @@ import type { JoinFailure } from '../application/board-flow'
 
 type Props = {
   readonly isPending: boolean
-  readonly error?: JoinFailure | undefined
+  /** `not-saved`: the seat was taken, but this device could not keep it. */
+  readonly error?: JoinFailure | 'not-saved' | undefined
   /** The link, when the page was opened from one; otherwise it is pasted here. */
   readonly initialLink?: string | undefined
   readonly onJoin: (input: { link: string; displayName: string }) => void
@@ -38,10 +39,11 @@ const sheets = themed((tokens) =>
   }),
 )
 
-const errorKeys: Record<JoinFailure, string> = {
+const errorKeys: Record<JoinFailure | 'not-saved', string> = {
   'bad-link': 'board.inviteUnreadable',
   offline: 'board.joinOffline',
   rejected: 'board.joinRejected',
+  'not-saved': 'board.joinNotSaved',
 }
 
 /** Someone with an invite link: it carries their seat, so all that is left to ask is their name. */

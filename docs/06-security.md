@@ -41,6 +41,9 @@ are public-key signatures, not names).
   colour kept. It is the same secret as an invite and handled the same way: the
   person keeps it in a password manager; whoever holds it is that Member until an
   admin removes them. Losing every device without it loses the Household.
+- **A device holds one board.** Starting or joining another replaces the open
+  board's seat on that device, so both screens ask first and say the replaced
+  board comes back only through its recovery link.
 
 ## Abuse limits
 

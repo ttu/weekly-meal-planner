@@ -12,8 +12,8 @@ import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
 type Props = {
   readonly isPending: boolean
-  /** Whether starting the board failed; there is nothing more to say than "try again". */
-  readonly failed?: boolean | undefined
+  /** Why starting the board failed: it could not be made, or it was made and this device could not keep it. */
+  readonly error?: 'failed' | 'not-saved' | undefined
   readonly onCreate: (input: { boardName: string; displayName: string }) => void
   readonly onJoinInstead?: (() => void) | undefined
 }
@@ -68,7 +68,7 @@ const sheets = themed((tokens) =>
  */
 export const StartBoardScreen = ({
   isPending,
-  failed = false,
+  error,
   onCreate,
   onJoinInstead,
 }: Props): React.JSX.Element => {
@@ -119,9 +119,9 @@ export const StartBoardScreen = ({
         />
         <Text style={styles.hint}>{t('board.yourNameHint')}</Text>
 
-        {failed && (
+        {error !== undefined && (
           <Text style={formStyles.error} testID="start-error">
-            {t('board.createFailed')}
+            {t(error === 'failed' ? 'board.createFailed' : 'board.createNotSaved')}
           </Text>
         )}
 

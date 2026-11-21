@@ -56,7 +56,13 @@
     "shareMake": "Tee kutsulinkki",
     "writeFailed": "Muutosta ei voitu tallentaa. Yritä uudelleen.",
     "relayFull": "Taulu on täynnä. Muutokset pysyvät tässä puhelimessa, mutta eivät välity muille.",
-    "relayBusy": "Synkronointipalvelu on kiireinen. Muutokset lähetetään pian."
+    "relayBusy": "Synkronointipalvelu on kiireinen. Muutokset lähetetään pian.",
+    "replaceTitle": "Korvataanko avoinna oleva taulu?",
+    "replaceBody": "Puhelimessa on yksi taulu kerrallaan. Nyt avoinna oleva taulu korvataan, eikä sitä voi avata täällä uudelleen ilman sen palautuslinkkiä.",
+    "replaceConfirm": "Korvaa",
+    "replaceCancel": "Peruuta",
+    "joinNotSaved": "Liityit tauluun, mutta tämä puhelin ei voinut tallentaa sitä. Yritä uudelleen.",
+    "createNotSaved": "Taulu luotiin, mutta tämä puhelin ei voinut tallentaa sitä. Yritä uudelleen."
   },
   "slot": {
     "lunch": "Lounas",

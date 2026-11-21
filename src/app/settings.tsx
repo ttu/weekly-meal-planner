@@ -4,6 +4,7 @@ import * as Clipboard from 'expo-clipboard'
 import { Redirect, router } from 'expo-router'
 import { isErr, isOk, ok, type Result } from '@/shared/types/result'
 import { DEFAULT_LOCALE } from '@/shared/i18n'
+import { createLogger } from '@/shared/logger/logger'
 import {
   SettingsScreen,
   DEFAULT_SIZE,
@@ -29,6 +30,7 @@ export default function Settings(): React.JSX.Element {
   const [isPending, setPending] = useState(false)
   const [error, setError] = useState<SlotEditError | 'write-failed' | undefined>(undefined)
   const [recoveryCopied, setRecoveryCopied] = useState(false)
+  const [logger] = useState(() => createLogger('settings'))
 
   if (householdChecked && household === undefined) return <Redirect href="/" />
 
@@ -62,9 +64,14 @@ export default function Settings(): React.JSX.Element {
   /** A removal or role change is an admin's signed act; the relay may refuse it. */
   const admin = (act: Promise<Result<void, unknown>> | undefined): void => {
     setError(undefined)
-    void act?.then((result) => {
-      if (!isOk(result)) setError('write-failed')
-    })
+    void act
+      ?.then((result) => {
+        if (!isOk(result)) setError('write-failed')
+      })
+      .catch((cause: unknown) => {
+        logger.log('error', 'settings.admin-failed', { cause: String(cause) })
+        setError('write-failed')
+      })
   }
 
   const slots = household?.slots ?? []
