@@ -6,11 +6,10 @@ import { rememberBoard } from '../application/device'
 import { createHousehold } from '../application/engine'
 import { fakeRandom } from '../domain/fake-random'
 import { newIdentity } from '../domain/identity'
-import { SyncProvider, useData, useSync, useView } from './SyncProvider'
+import { SyncProvider, useData, useRefresh, useSync, useView } from './SyncProvider'
 import type { Deps, KeyValue } from '../application/engine'
 
-const memoryKv = (): KeyValue => {
-  const data = new Map<string, string>()
+const memoryKv = (data = new Map<string, string>()): KeyValue => {
   return {
     get: (k) => Promise.resolve(data.get(k)),
     set: (k, v) => {
@@ -129,6 +128,49 @@ describe('SyncProvider', () => {
     })
     await waitFor(() => {
       expect(screen.getByText('ready|none')).toBeTruthy()
+    })
+  })
+
+  it('pulls a change from another device on a refresh, without waiting for the poll', async () => {
+    const relay = memoryRelay()
+    const saved = new Map<string, string>()
+    const keys = new Map<string, string>()
+    const phone: Deps = { ...deps(), relay, storage: memoryKv(saved), vault: memoryKv(keys) }
+    const me = newIdentity(fakeRandom('me'))
+    const made = await createHousehold(phone, me)
+    if (made.kind !== 'ok') throw new Error('no board')
+    await made.value.write('meal:m1', 'name', 'Soup')
+    await made.value.sync()
+    // A second device with the same board: a copy of what the phone had saved.
+    const laptop: Deps = {
+      ...deps(),
+      relay,
+      storage: memoryKv(new Map(saved)),
+      vault: memoryKv(new Map(keys)),
+    }
+    await rememberBoard(laptop, made.value.household, me)
+
+    const Refresh = (): React.JSX.Element => {
+      const { refreshing, refresh } = useRefresh()
+      return <Text onPress={refresh}>{refreshing ? 'refreshing' : 'refresh'}</Text>
+    }
+    await render(
+      <SyncProvider deps={laptop}>
+        <Probe />
+        <Refresh />
+      </SyncProvider>,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('ready|open|admin|Soup')).toBeTruthy()
+    })
+
+    await made.value.write('meal:m1', 'name', 'Stew')
+    await made.value.sync()
+    await act(async () => {
+      await fireEvent.press(screen.getByText('refresh'))
+    })
+    await waitFor(() => {
+      expect(screen.getByText('ready|open|admin|Stew')).toBeTruthy()
     })
   })
 

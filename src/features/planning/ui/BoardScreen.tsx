@@ -8,7 +8,8 @@ import { useTranslation } from '@/shared/i18n'
 import { useBoardSession, type SlotKey } from '@/features/household'
 import { isOk, type Result } from '@/shared/types/result'
 import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
-import { useView } from '@/features/sync'
+import { useRefresh, useView } from '@/features/sync'
+import { usePullToRefresh } from '@/shared/ui/pullToRefresh'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
@@ -225,6 +226,8 @@ const Board = ({
   })
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
+  const { refreshing, refresh } = useRefresh()
+  const refreshControl = usePullToRefresh(refreshing, refresh)
   const autoScroll = useEdgeAutoScroll(scroll)
   const dayOffsets = useRef(new Map<string, number>())
 
@@ -486,6 +489,7 @@ const Board = ({
           onScroll={autoScroll.onScroll}
           onContentSizeChange={autoScroll.onContentSizeChange}
           contentContainerStyle={[styles.content, insetStyles.contentTop]}
+          refreshControl={refreshControl}
         >
           <View style={styles.boardNameRow}>
             <BoardNameButton

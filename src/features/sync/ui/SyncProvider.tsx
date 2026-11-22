@@ -35,6 +35,23 @@ const useSession = (): Session => {
 
 export const useSync = useSession
 
+/**
+ * A manual pull, for pull-to-refresh: the loop polls only every couple of
+ * minutes. Safe beside the loop, as the engine runs one sync at a time.
+ */
+export const useRefresh = (): { readonly refreshing: boolean; readonly refresh: () => void } => {
+  const { engine } = useSession()
+  const [refreshing, setRefreshing] = useState(false)
+  const refresh = useCallback(() => {
+    if (!engine) return
+    setRefreshing(true)
+    void engine.sync().finally(() => {
+      setRefreshing(false)
+    })
+  }, [engine])
+  return { refreshing, refresh }
+}
+
 type Props = {
   readonly deps: Deps
   /** A board already open, to skip looking for one: what tests and the first screens after start hand over. */

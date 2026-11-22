@@ -106,6 +106,22 @@ describe('sync engine', () => {
     expect(title(alice, 'meal:stew')).toBe('Stew')
   })
 
+  it('notes when it last heard from another Member, and never for its own writes', async () => {
+    const { engine: alice } = await start('alice')
+    await alice.write('meal:soup', 'title', 'Soup')
+    must(await alice.sync())
+    expect(alice.lastHeard()).toBeUndefined()
+
+    const invite = must(await alice.invite('member'))
+    const { engine: bob } = await joinAs('bob', invite)
+    const before = Date.now()
+    await bob.write('meal:stew', 'title', 'Stew')
+    must(await bob.sync())
+    must(await alice.sync())
+    // The relay's own time for Bob's write, not when Alice happened to pull it.
+    expect(alice.lastHeard()).toBeGreaterThanOrEqual(before)
+  })
+
   it('converges when two people edit the same field while apart', async () => {
     const { engine: alice } = await start('alice')
     const { engine: bob } = await joinAs('bob', must(await alice.invite('member')))

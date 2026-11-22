@@ -44,7 +44,8 @@ have.
 
 There is no database to pay for. The only thing we run is the relay, a Cloudflare
 Worker with one Durable Object per board, holding encrypted records. Its cost
-scales with requests (every open device polls every 15 s while visible), not with
+scales with requests (every open device polls while visible: every 15 s while someone is writing,
+every 2 minutes otherwise), not with
 data, which is about half a megabyte per household-year. See `08-deployment.md`;
 check Cloudflare's current limits and price before depending on a figure.
 
@@ -222,7 +223,9 @@ The app never blocks claiming four dinners from one pot.
 Every change is an event merged last-writer-wins per field (`11-sync.md`). A
 write lands in the local copy at once and is sent when there is a connection, so
 the board works offline. Other Members' changes arrive when the device next syncs
-(on start, on foreground, about every 15 s while visible): there is no live
+(on start, on foreground, after each of its own writes, on pull-to-refresh on a
+phone, and while visible every 15 s when someone has written in the last few
+minutes or every 2 minutes when nobody has): there is no live
 channel, and so no "who is here" presence and no "this day just changed" highlight
 yet (TODO.md). When two people change the same field, the later write wins; when
 they change different fields of one row, both survive.

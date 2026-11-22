@@ -15,8 +15,8 @@ class_name = "GateObject"
 tag = "v1"
 new_sqlite_classes = ["BoardObject", "GateObject"]
 
-# Every call, per caller IP. A Household's phones poll every 15 s and send each
-# write as one call, so 300 a minute leaves a busy evening of planning room.
+# Every call, per caller IP. A Household's phones poll every 15 s at most (2
+# minutes when nobody writes) and send each write as one call, so 300 a minute leaves a busy evening of planning room.
 [[ratelimits]]
 name = "LIMITER"
 namespace_id = "1001"

@@ -14,6 +14,7 @@ import { groupBuyLines } from '../domain/group'
 import { formatAmounts, isEmptyList, stillToBuy } from '../domain/summary'
 import type { BuyLine, Extra, ExtraId, ShoppingList } from '../domain/types'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
+import { usePullToRefresh } from '@/shared/ui/pullToRefresh'
 
 /**
  * Row ergonomics are requirements, not styling: 19px text, 28px checkbox, 54px
@@ -227,6 +228,9 @@ type Props = {
    *  buy"; a failed one must not look like an empty one. */
   readonly loadState?: LoadState | undefined
   readonly onRetry?: (() => void) | undefined
+  /** Pull-to-refresh on a phone: another Member may have changed the plan. */
+  readonly onRefresh?: (() => void) | undefined
+  readonly refreshing?: boolean | undefined
   /** The last tick or Extra could not be saved. */
   readonly writeFailed?: boolean | undefined
 }
@@ -317,8 +321,11 @@ export const ShoppingListScreen = ({
   loadState = 'ready',
   onRetry,
   writeFailed = false,
+  onRefresh,
+  refreshing = false,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
+  const refreshControl = usePullToRefresh(refreshing, onRefresh)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
@@ -452,6 +459,7 @@ export const ShoppingListScreen = ({
     <KeyboardAvoiding style={styles.page} testID="shopping-screen">
       <ScrollView
         style={styles.scroll}
+        refreshControl={refreshControl}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
       >

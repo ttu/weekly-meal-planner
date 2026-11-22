@@ -14,7 +14,8 @@ reference data to sync (the Catalogue ships inside the app) and nothing to back
 up: a Household's data is on its Members' devices. Cloudflare Durable Objects
 (SQLite-backed) hold one board each; check the current free-tier limits and price
 before relying on them, and watch the Worker's request count, since every device
-polls every 15 s while visible.
+polls while visible: every 15 s while the board is busy, every 2 minutes when
+it is quiet.
 
 ## Deploy pipeline
 

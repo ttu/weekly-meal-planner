@@ -97,9 +97,9 @@ translated and the layout has a breakpoint, so both would be lying.
 A drag needs real mouse moves: walk the pointer across in about twenty steps,
 which is what react-native-gesture-handler waits to see. `Locator.count()` does
 not retry, so assert with `toHaveCount` instead. Never wait a fixed time
-(`sonarjs/no-fixed-wait-in-tests` is on for `e2e/`): a change from another
-Member arrives within the 15 s poll, so wait for it to show, with a longer
-timeout.
+(`sonarjs/no-fixed-wait-in-tests` is on for `e2e/`). The poll is 15 s while the
+board is busy and 2 minutes when quiet: once a device has written, wait about two
+busy ticks for another Member's change, or reload the page (a start syncs).
 
 ## Demo board for development
 

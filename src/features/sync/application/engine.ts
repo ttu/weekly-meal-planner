@@ -75,6 +75,11 @@ export type Engine = {
   ) => Promise<void>
   /** `all` keeps pulling until the relay has nothing more, however long the board. */
   readonly sync: (options?: { readonly all?: boolean }) => Promise<Result<void, RelayError>>
+  /**
+   * The relay's time for the newest record a pull brought, so someone else's
+   * write: this device's own are taken as they are sent. Undefined until then.
+   */
+  readonly lastHeard: () => number | undefined
   readonly invite: (role: Role) => Promise<Result<Invite, AdminError>>
   readonly setRole: (member: string, role: Role) => Promise<Result<void, AdminError>>
   readonly removeMember: (member: string) => Promise<Result<void, AdminError>>
@@ -127,6 +132,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: strin
   // `state` is computed from the current value with no await in between, so
   // neither side can overwrite the other.
   let chain: Promise<unknown> = Promise.resolve()
+  let heard: number | undefined
   const serial = <T>(task: () => Promise<T>): Promise<T> => {
     const run = chain.then(task, task)
     chain = run.catch(() => undefined)
@@ -187,6 +193,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: strin
       const got = await deps.relay.pull(state.household, token, state.lastSeq)
       if (isErr(got)) return lockOut(got.error)
       if (got.value.length === 0) return ok(undefined)
+      heard = Math.max(heard ?? 0, ...got.value.map((r) => r.receivedAt))
       await take(got.value)
     }
     return ok(undefined)
@@ -400,6 +407,7 @@ const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: strin
   return {
     household: initial.household,
     view,
+    lastHeard: () => heard,
     subscribe: (listener) => {
       listeners.add(listener)
       return () => listeners.delete(listener)

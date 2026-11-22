@@ -128,8 +128,11 @@ changed the tacos recipe" a git question.
 
 The Household's data is a set of rows on the device (`03-datamodel.md`), read
 through `useData()` / `useView()` from `SyncProvider`; a write lands locally at
-once and the sync loop sends it (on start, on returning to the foreground, every
-15 s while visible, and when a write is waiting). Reads cannot fail and writes
+once and the sync loop sends it (on start, on returning to the foreground, on
+pull-to-refresh, and when a write is waiting; a send always pulls first). While
+visible it also polls: every 15 s while the board is busy (a write here, or
+another Member's write the relay stamped in the last 5 minutes), every 2 minutes
+otherwise (`sync-loop.ts`). Reads cannot fail and writes
 work offline, so screens keep `isLoading` / `isError` / `hasData` only for the
 moment before the device has found its board. Client state (drag in progress,
 sheet open, which day is scrolled to) is local component state or a small store.

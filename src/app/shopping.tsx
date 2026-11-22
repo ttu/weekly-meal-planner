@@ -5,6 +5,7 @@ import { useLocale, useTranslation } from '@/shared/i18n'
 import { loadState } from '@/shared/query/load-state'
 import { goBackTo } from '@/shared/navigation/go-back-to'
 import { AppNav } from '@/shared/ui/AppNav'
+import { useRefresh } from '@/features/sync'
 import {
   ShoppingListScreen,
   buildAgentPrompt,
@@ -18,6 +19,7 @@ export default function Shopping(): React.JSX.Element {
   const shopping = useShoppingList()
   const { list, toggle, outOf, addItem, toggleExtra, keepInCupboard, stopKeeping } = shopping
   const [justCopied, setJustCopied] = useState(false)
+  const { refreshing, refresh } = useRefresh()
 
   return (
     <>
@@ -25,6 +27,8 @@ export default function Shopping(): React.JSX.Element {
         list={list}
         loadState={loadState(shopping)}
         writeFailed={shopping.failed}
+        refreshing={refreshing}
+        onRefresh={refresh}
         onToggle={toggle}
         onOutOf={outOf}
         onKeepInCupboard={keepInCupboard}

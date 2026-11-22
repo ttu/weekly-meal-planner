@@ -64,7 +64,8 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
 
 1. **Deploy the relay** (`relay/wrangler.toml`; the deploy workflows have never run
    against Cloudflare) and set `EXPO_PUBLIC_RELAY_URL`. Check Durable Objects'
-   limits and price, and the cost of every device polling every 15 s.
+   limits and price, and the cost of every device polling (15 s while busy, 2
+   minutes when quiet).
 2. **Grow the e2e suite** (`docs/04-testing.md`). The critical flows are covered;
    not yet drag and drop, Leftovers, Staples and Extras on the Shopping List, or
    dark mode.
