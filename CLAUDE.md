@@ -74,7 +74,8 @@ Always `pnpm run <script>`, never `npx` or a bare binary directly.
 ```
 pnpm run validate      # format:check, lint --max-warnings=0, type-check,
                       # duplication, test, build — the contract, same in CI
-pnpm run validate:all  # everything CI runs; pre-push runs this
+pnpm run validate:all  # everything CI runs, e2e too; pre-push runs this
+pnpm run e2e           # Playwright against the app and an in-memory relay
 pnpm run test:watch
 pnpm run storybook
 pnpm dlx wrangler dev --config relay/wrangler.toml   # a local relay on :8787

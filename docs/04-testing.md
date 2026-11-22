@@ -68,22 +68,38 @@ with tests written to kill a mutant.
 
 ## E2E — critical flows only
 
-Playwright against the web build, in `e2e/` (config: `playwright.config.ts`).
-**The suite from before ADR 0013 needed Supabase and was removed; it is to be
-rebuilt** against a local relay (`pnpm dlx wrangler dev --config relay/wrangler.toml`,
-`EXPO_PUBLIC_RELAY_URL=http://127.0.0.1:8787`). Until then nothing drives the
-real app in a browser, so a change to a screen is checked by running it and
-looking (CLAUDE.md).
+Playwright against the web app, in `e2e/` (config: `playwright.config.ts`),
+run with `pnpm run e2e`. It is part of `validate:all` (so pre-push) and its own
+CI job.
+
+The relay is the real relay code (`relay/worker.ts`) served from memory by
+`e2e/global-setup.ts` on port 8788, so the suite needs no Cloudflare account and
+every run starts from an empty relay. The web app runs on port 8098 with
+`EXPO_PUBLIC_RELAY_URL` pointing at it. Those are not the dev ports (8099, and
+8787 for `wrangler dev`), so a running dev server is never reused by mistake.
+Locally, an e2e server already on 8098 is reused; delete nothing, it is all in
+memory.
+
+Covered, one spec each: planning a Meal and seeing its Ingredients on the
+Shopping List; writing a Household Meal and planning it; two Members sharing a
+board through the relay until an admin removes one; a recovery link on a new
+device; every screen translated in `en` and `fi`, with no raw keys; the phone
+layout's picker and plan sheet; and the development demo board. Not covered yet:
+drag and drop, Leftovers, Staples and Extras on the Shopping List, dark mode.
+
+A browser context is a device: a board lives in its storage. A test with two
+Members opens two contexts (`newDevice` in `e2e/fixtures.ts`).
 
 Selectors are `data-testid` only, or `getByRole`/`aria-label` for interactive
 controls. Never CSS classes, text content or structural position — the copy is
 translated and the layout has a breakpoint, so both would be lying.
 
-Things the old suite learned that apply again: a board lives in browser storage
-and Playwright gives each test a fresh context, so a spec that tells one story
-shares one page; a drag needs real mouse moves (`dragOnto` walked the pointer
-across in twenty steps, which is what react-native-gesture-handler waits to see);
-and `Locator.count()` does not retry, so wait for an element before counting.
+A drag needs real mouse moves: walk the pointer across in about twenty steps,
+which is what react-native-gesture-handler waits to see. `Locator.count()` does
+not retry, so assert with `toHaveCount` instead. Never wait a fixed time
+(`sonarjs/no-fixed-wait-in-tests` is on for `e2e/`): a change from another
+Member arrives within the 15 s poll, so wait for it to show, with a longer
+timeout.
 
 ## Demo board for development
 

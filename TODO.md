@@ -65,12 +65,9 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
 1. **Deploy the relay** (`relay/wrangler.toml`; the deploy workflows have never run
    against Cloudflare) and set `EXPO_PUBLIC_RELAY_URL`. Check Durable Objects'
    limits and price, and the cost of every device polling every 15 s.
-2. **Rebuild the e2e suite** against `wrangler dev` (`docs/04-testing.md`); the
-   Supabase-based one was removed. Until then, look at every screen by hand:
-   start, join, share, settings, library, editor, board, shopping, in `fi` and `en`
-   and on a wide screen. Wait on observable conditions, never `waitForTimeout`,
-   and drop the `e2e/**` exception for `sonarjs/no-fixed-wait-in-tests` in
-   `eslint.config.mjs` when the suite is back.
+2. **Grow the e2e suite** (`docs/04-testing.md`). The critical flows are covered;
+   not yet drag and drop, Leftovers, Staples and Extras on the Shopping List, or
+   dark mode.
 3. **Recovery link follow-ups.** The link (Settings) is built. Not yet: a one-tap
    backup to iCloud Keychain / Android Block Store (both need a native module); a
    reminder to save the link. Boards created before the link existed did not seal

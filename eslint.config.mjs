@@ -249,18 +249,10 @@ export default defineConfig([
     },
   },
   {
-    // The e2e suite runs against a local relay and dumps
-    // screenshots under /tmp: `docker` comes off the developer's PATH and the
-    // screenshot paths are throwaway. Neither is a production concern.
+    // The e2e suite waits on what the screen shows, never on the clock.
     files: ['e2e/**'],
     rules: {
-      'sonarjs/no-os-command-from-path': 'off',
-      'sonarjs/publicly-writable-directories': 'off',
-      // Real debt, not a rule to keep off: the suite waits out animations and
-      // the auto-scroll dwell with fixed sleeps. Replacing them with
-      // observable conditions is a dedicated pass (see TODO.md) - doing it
-      // alongside a lint-config change risks flakiness.
-      'sonarjs/no-fixed-wait-in-tests': 'off',
+      'sonarjs/no-fixed-wait-in-tests': 'error',
       // `networkidle` is discouraged by Playwright itself and is the same
       // mistake as a fixed wait: a guess about timing dressed up as a wait.
       'sonarjs/no-networkidle-wait': 'error',
