@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
@@ -16,6 +16,8 @@ type Props = {
   readonly error?: 'failed' | 'not-saved' | undefined
   readonly onCreate: (input: { boardName: string; displayName: string }) => void
   readonly onJoinInstead?: (() => void) | undefined
+  /** Below the form; the start route puts its development-only demo board here. */
+  readonly children?: ReactNode
 }
 
 const sheets = themed((tokens) =>
@@ -71,6 +73,7 @@ export const StartBoardScreen = ({
   error,
   onCreate,
   onJoinInstead,
+  children,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
@@ -167,6 +170,7 @@ export const StartBoardScreen = ({
             </View>
           )}
         </View>
+        {children}
       </ScrollView>
     </KeyboardAvoiding>
   )

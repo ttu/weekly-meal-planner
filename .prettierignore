@@ -11,3 +11,4 @@ test-results/
 playwright-report/
 .worktrees/
 .claude/worktrees/
+.wrangler/

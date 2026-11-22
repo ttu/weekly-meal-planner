@@ -47,6 +47,7 @@ export default defineConfig([
       'coverage/**',
       'assets/**',
       'storybook-static/**',
+      '**/.wrangler/**',
       'expo-env.d.ts',
       '*.config.js',
       '*.cjs',
@@ -194,6 +195,8 @@ export default defineConfig([
         { type: 'feature', pattern: 'src/features/*', capture: ['feature'], partialMatch: true },
         { type: 'shared', pattern: 'src/shared', partialMatch: true },
         { type: 'test', pattern: 'src/test', partialMatch: true },
+        // Development-only tools (the demo board): app code that is never a feature.
+        { type: 'dev', pattern: 'src/dev', partialMatch: true },
         { type: 'relay', pattern: 'relay', partialMatch: true },
       ],
       // Font and image files are assets, not architectural elements.
@@ -210,17 +213,17 @@ export default defineConfig([
           default: 'allow',
           policies: [
             {
-              from: { element: { type: 'feature' } },
+              from: { element: { types: { anyOf: ['feature', 'dev'] } } },
               disallow: { to: { element: { type: 'feature' } } },
             },
             {
-              from: { element: { type: 'feature' } },
+              from: { element: { types: { anyOf: ['feature', 'dev'] } } },
               allow: { to: { file: { categories: 'feature-public' } } },
             },
             // shared/ is generic or it is not shared: it may never know a feature.
             {
               from: { element: { type: 'shared' } },
-              disallow: { to: { element: { types: { anyOf: ['feature', 'app'] } } } },
+              disallow: { to: { element: { types: { anyOf: ['feature', 'app', 'dev'] } } } },
             },
           ],
         },

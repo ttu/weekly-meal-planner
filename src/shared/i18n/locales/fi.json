@@ -313,5 +313,15 @@
     "browse": "Lisää jotain mitä tekisi mieli",
     "writeOwn": "Kirjoita oma ruoka",
     "invite": "Kysy perheeltä — jaa taulu"
+  },
+  "dev": {
+    "title": "Kehitys",
+    "body": "Koivisto-taulu, jossa Aino, Sanni ja Mikko, tämä viikko suunniteltuna, toiveita jonossa, perustarvikkeita ja lisäostoksia. Tästä laitteesta tulee Aino.",
+    "seed": "Täytä esimerkkitaulu",
+    "seeding": "Täytetään…",
+    "failed": "Esimerkkitaulua ei voitu tehdä. Onko paikallinen välityspalvelin käynnissä?",
+    "linksHint": "Linkki avaa taulun kyseisenä jäsenenä. Avaa se yksityisessä ikkunassa tai toisessa selaimessa — tässä selaimessa se korvaa Ainon.",
+    "openBoard": "Siirry tauluun",
+    "openAs": "Avaa jäsenenä {{name}}"
   }
 }

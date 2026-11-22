@@ -313,5 +313,15 @@
     "browse": "Add something you fancy this week",
     "writeOwn": "Write down a meal of your own",
     "invite": "Ask the family — share the board"
+  },
+  "dev": {
+    "title": "Development",
+    "body": "A board called Koivisto with Aino, Sanni and Mikko, this week planned, wishes on the Backlog, Staples and Extras. This device becomes Aino.",
+    "seed": "Fill a demo board",
+    "seeding": "Filling…",
+    "failed": "The demo board could not be made. Is the local relay running?",
+    "linksHint": "Each link opens the board as that Member. Open it in a private window or another browser — in this one it replaces Aino.",
+    "openBoard": "Go to the board",
+    "openAs": "Open as {{name}}"
   }
 }

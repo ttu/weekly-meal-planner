@@ -85,6 +85,27 @@ shares one page; a drag needs real mouse moves (`dragOnto` walked the pointer
 across in twenty steps, which is what react-native-gesture-handler waits to see);
 and `Locator.count()` does not retry, so wait for an element before counting.
 
+## Demo board for development
+
+There are no accounts, so there are no test logins. Instead, a development build
+(`__DEV__`) shows **Fill a demo board** under the Start screen. Run a local relay
+and the web app, then press it:
+
+```
+pnpm dlx wrangler dev --config relay/wrangler.toml   # :8787
+EXPO_PUBLIC_RELAY_URL=http://127.0.0.1:8787 pnpm run web
+```
+
+It builds the board `Koivisto` through the same application functions the screens
+use (`src/dev/demo-board.ts`): Aino (admin, this device), Sanni and Mikko, this
+week planned with a Leftover, a wish from each Member on the Backlog, one
+Household Meal, three Staples with cumin Running Low, and two Extras. The panel
+then lists one link per Member. To be Sanni or Mikko, open that link in a
+private window or another browser. The links carry each Member's keys, so
+they are shown on screen and never logged. Each press makes a new board; the
+local relay's state lives in `relay/.wrangler/` (ignored), and deleting it
+starts over.
+
 ## Not unit-tested
 
 Reconnection behaviour on a real network: the loop retrying after the relay is
