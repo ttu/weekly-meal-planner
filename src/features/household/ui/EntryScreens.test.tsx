@@ -49,3 +49,37 @@ describe('starting a board', () => {
     expect(onCreate).toHaveBeenCalledWith({ boardName: 'Home', displayName: 'Alice' })
   })
 })
+
+describe('the keyboard on the way in', () => {
+  beforeAll(async () => {
+    initI18n('en')
+    await setLocale('en')
+  })
+
+  it('starts the board from Enter in the name field, once both names are given', async () => {
+    const onCreate = jest.fn()
+    const view = await renderWithProviders(
+      <StartBoardScreen isPending={false} onCreate={onCreate} />,
+    )
+    await fireEvent.changeText(view.getByTestId('start-your-name'), 'Alice')
+    await fireEvent(view.getByTestId('start-your-name'), 'submitEditing')
+    expect(onCreate).not.toHaveBeenCalled()
+    await fireEvent.changeText(view.getByTestId('start-board-name'), 'Home')
+    await fireEvent(view.getByTestId('start-your-name'), 'submitEditing')
+    expect(onCreate).toHaveBeenCalledWith({ boardName: 'Home', displayName: 'Alice' })
+  })
+
+  it('joins from Enter in the name field', async () => {
+    const onJoin = jest.fn()
+    const view = await renderWithProviders(
+      <JoinBoardScreen
+        isPending={false}
+        onJoin={onJoin}
+        initialLink="https://menami.test/join#ab"
+      />,
+    )
+    await fireEvent.changeText(view.getByTestId('join-your-name'), 'Bob')
+    await fireEvent(view.getByTestId('join-your-name'), 'submitEditing')
+    expect(onJoin).toHaveBeenCalledWith({ link: 'https://menami.test/join#ab', displayName: 'Bob' })
+  })
+})

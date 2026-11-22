@@ -60,6 +60,9 @@ export const JoinBoardScreen = ({
   const insets = useSafeAreaInsets()
   const [link, setLink] = useState(initialLink)
   const [displayName, setDisplayName] = useState('')
+  const join = () => {
+    if (!isPending && link.trim() !== '') onJoin({ link, displayName })
+  }
 
   return (
     <KeyboardAvoiding>
@@ -92,7 +95,8 @@ export const JoinBoardScreen = ({
           onChangeText={setDisplayName}
           autoComplete="name"
           autoCapitalize="words"
-          returnKeyType="done"
+          returnKeyType="go"
+          onSubmitEditing={join}
           maxLength={MAX_MEMBER_NAME}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
@@ -114,9 +118,7 @@ export const JoinBoardScreen = ({
           ]}
           disabled={isPending || link.trim() === ''}
           aria-disabled={isPending || link.trim() === ''}
-          onPress={() => {
-            onJoin({ link, displayName })
-          }}
+          onPress={join}
           accessibilityRole="button"
           accessibilityLabel={t('board.join')}
           testID="join-submit"

@@ -84,7 +84,7 @@ Covered, one spec each: planning a Meal and seeing its Ingredients on the
 Shopping List; writing a Household Meal and planning it; two Members sharing a
 board through the relay until an admin removes one; a recovery link on a new
 device; every screen translated in `en` and `fi`, with no raw keys; the phone
-layout's picker and plan sheet; and the development demo board. Not covered yet:
+layout's picker and plan sheet; starting a board from the keyboard alone; and the development demo board. Not covered yet:
 drag and drop, Leftovers, Staples and Extras on the Shopping List, dark mode.
 
 A browser context is a device: a board lives in its storage. A test with two

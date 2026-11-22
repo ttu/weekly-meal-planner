@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState, type ReactNode } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View, type TextInput } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
@@ -82,6 +82,11 @@ export const StartBoardScreen = ({
   const [boardName, setBoardName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const incomplete = boardName.trim() === '' || displayName.trim() === ''
+  const yourNameRef = useRef<TextInput>(null)
+  // The button and Enter in the last field both land here, so both are guarded.
+  const create = () => {
+    if (!isPending && !incomplete) onCreate({ boardName, displayName })
+  }
 
   return (
     <KeyboardAvoiding>
@@ -101,6 +106,8 @@ export const StartBoardScreen = ({
           onChangeText={setBoardName}
           autoCapitalize="words"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => yourNameRef.current?.focus()}
           maxLength={MAX_BOARD_NAME}
           placeholder={t('board.boardNamePlaceholder')}
           accessibilityLabel={t('board.boardName')}
@@ -109,12 +116,14 @@ export const StartBoardScreen = ({
 
         <Text style={formStyles.label}>{t('board.yourName')}</Text>
         <Field
+          ref={yourNameRef}
           style={styles.fieldTight}
           value={displayName}
           onChangeText={setDisplayName}
           autoComplete="name"
           autoCapitalize="words"
-          returnKeyType="next"
+          returnKeyType="go"
+          onSubmitEditing={create}
           maxLength={MAX_MEMBER_NAME}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
@@ -141,9 +150,7 @@ export const StartBoardScreen = ({
           ]}
           disabled={isPending || incomplete}
           aria-disabled={isPending || incomplete}
-          onPress={() => {
-            onCreate({ boardName, displayName })
-          }}
+          onPress={create}
           accessibilityRole="button"
           accessibilityLabel={t('board.create')}
           testID="start-create"

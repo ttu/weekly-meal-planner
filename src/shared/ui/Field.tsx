@@ -20,6 +20,8 @@ type Props = TextInputProps & {
   readonly errorMessage?: string | undefined
   /** Typed here: react-native's own types omit it, react-native-web honours it. */
   readonly 'aria-describedby'?: string | undefined
+  /** React 19 passes it as a prop; the spread hands it to the input. */
+  readonly ref?: React.Ref<TextInput> | undefined
 }
 
 const sheets = themed((tokens) =>
