@@ -170,7 +170,9 @@
     "copied": "Kopioitu omiin aterioihin.",
     "catalogueReadOnly": "Luettelon aterioita ei voi muokata. Kopioi se ensin.",
     "servesCount": "{{count}} annosta",
-    "libraryPane": "Ateriakirjasto"
+    "libraryPane": "Ateriakirjasto",
+    "servingsFewer": "Yksi annos vähemmän",
+    "servingsMore": "Yksi annos lisää"
   },
   "ingredient": {
     "add": "Lisää raaka-aine",
@@ -249,10 +251,10 @@
     "shopping": "Ostokset",
     "boardMenu": "Taulun valikko",
     "invite": "Kutsu perhe",
-    "inviteHint": "Lähetä linkki ja kerro salasana",
+    "inviteHint": "Lähetä heille yksityinen kutsulinkki",
     "mealTimes": "Ateria-ajat",
     "leave": "Poistu taulusta tällä laitteella",
-    "leaveHint": "Tarvitset salasanan päästäksesi takaisin. Taulu ja ateriat säilyvät muille.",
+    "leaveHint": "Päästäksesi takaisin tarvitset palautuslinkkisi tai uuden kutsun. Taulu ja ateriat säilyvät muille.",
     "members": "{{names}} ja sinä"
   },
   "settings": {

@@ -170,7 +170,9 @@
     "copied": "Copied to your Meals.",
     "catalogueReadOnly": "Catalogue Meals cannot be edited. Copy it first.",
     "servesCount": "Serves {{count}}",
-    "libraryPane": "Meal library"
+    "libraryPane": "Meal library",
+    "servingsFewer": "One serving fewer",
+    "servingsMore": "One serving more"
   },
   "ingredient": {
     "add": "Add an Ingredient",
@@ -249,10 +251,10 @@
     "shopping": "Shopping",
     "boardMenu": "Board menu",
     "invite": "Invite the family",
-    "inviteHint": "Send a link and tell them the password",
+    "inviteHint": "Send them a private invite link",
     "mealTimes": "Meal times",
     "leave": "Leave this board on this device",
-    "leaveHint": "You will need the password to get back in. The board and its Meals stay for everyone else.",
+    "leaveHint": "To get back in, you need your recovery link or a new invite. The board and its Meals stay for everyone else.",
     "members": "{{names}} and you"
   },
   "settings": {

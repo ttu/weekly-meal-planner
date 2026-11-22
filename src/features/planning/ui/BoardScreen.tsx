@@ -418,7 +418,9 @@ const Board = ({
             onSelect={(mealId) => {
               add(mealId)
             }}
-            onAdd={onOpenLibrary}
+            onAdd={() => {
+              onWriteOwnMeal?.()
+            }}
             wrapRow={(meal, row) => (
               <DraggableCard
                 payload={{

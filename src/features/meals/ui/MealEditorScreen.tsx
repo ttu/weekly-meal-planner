@@ -177,7 +177,7 @@ export const MealEditorScreen = ({
               setServings((n) => Math.max(1, n - 1))
             }}
             accessibilityRole="button"
-            accessibilityLabel={t('meal.servings')}
+            accessibilityLabel={t('meal.servingsFewer')}
             testID="editor-servings-down"
           >
             <Text style={styles.stepperText}>−</Text>
@@ -191,7 +191,7 @@ export const MealEditorScreen = ({
               setServings((n) => Math.min(MAX_SERVINGS, n + 1))
             }}
             accessibilityRole="button"
-            accessibilityLabel={t('meal.servings')}
+            accessibilityLabel={t('meal.servingsMore')}
             testID="editor-servings-up"
           >
             <Text style={styles.stepperText}>+</Text>

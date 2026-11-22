@@ -56,7 +56,7 @@ export const ServingsStepper = ({
           onChange((n) => Math.max(1, n - 1))
         }}
         accessibilityRole="button"
-        accessibilityLabel={t('plan.cookingFor')}
+        accessibilityLabel={t('meal.servingsFewer')}
         testID={`${testID}-down`}
       >
         <Text style={styles.sign}>−</Text>
@@ -70,7 +70,7 @@ export const ServingsStepper = ({
           onChange((n) => Math.min(MAX_SERVINGS, n + 1))
         }}
         accessibilityRole="button"
-        accessibilityLabel={t('plan.cookingFor')}
+        accessibilityLabel={t('meal.servingsMore')}
         testID={`${testID}-up`}
       >
         <Text style={styles.sign}>+</Text>
