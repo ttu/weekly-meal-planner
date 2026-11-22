@@ -83,9 +83,7 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
 6. **Live-ish extras**: feed `useRecentlyChangedDays` from incoming events, and
    consider presence (it needed a live channel).
 7. **An outside review of the cryptography and the protocol** before any release.
-8. `relay/.wrangler/` (local `wrangler dev` state, 34 files) is committed; untrack
-   it and add it to `.gitignore`, so running the relay locally stops dirtying the tree.
-9. Known limits: the web vault is `localStorage`; the secure store's value size
+8. Known limits: the web vault is `localStorage`; the secure store's value size
    limit may be hit after many epochs; leaving a board leaves its snapshot on the
    device; the row caps are per device view.
 
