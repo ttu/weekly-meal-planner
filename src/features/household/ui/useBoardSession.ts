@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { setLocale } from '@/shared/i18n'
 import { brand } from '@/shared/types/brand'
 import { useData, useSync, useView } from '@/features/sync'
 import { readMembers, readSettings } from '../application/board-data'
@@ -23,7 +24,7 @@ export const useBoardSession = (): BoardSession => {
   const { ready } = useSync()
   const view = useView()
   const data = useData()
-  return useMemo(() => {
+  const session = useMemo(() => {
     if (!view || !data || view.status === 'removed') return { ...NONE, checked: ready }
     const me = readMembers(view, data).find((m) => m.id === brand<string, 'MemberId'>(view.me))
     return {
@@ -33,4 +34,10 @@ export const useBoardSession = (): BoardSession => {
       checked: ready,
     }
   }, [view, data, ready])
+  // The Locale belongs to the Household (ADR 0009): every screen speaks it.
+  const locale = session.household?.locale
+  useEffect(() => {
+    if (locale !== undefined) void setLocale(locale)
+  }, [locale])
+  return session
 }

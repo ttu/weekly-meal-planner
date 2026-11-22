@@ -33,6 +33,8 @@ export const initI18n = (initialLocale: Locale): typeof i18next => {
 }
 
 export const setLocale = async (locale: Locale): Promise<void> => {
+  // Before initI18n there is nothing to switch, and i18next throws (a test with no i18n).
+  if (!i18next.isInitialized && !i18next.isInitializing) return
   await i18next.changeLanguage(locale)
 }
 
