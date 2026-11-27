@@ -14,7 +14,6 @@ type Measure = (report: (bounds: Bounds) => void) => void
 
 type DragValue = {
   readonly dragging: DragPayload | undefined
-  readonly hovered: DropTarget | undefined
   /**
    * The pointer, and where inside the card it was grabbed, in window
    * coordinates. Shared values rather than state: the card under the finger
@@ -46,7 +45,6 @@ const zero = (): SharedValue<number> => makeMutable(0)
  */
 const INERT: DragValue = {
   dragging: undefined,
-  hovered: undefined,
   pointer: { x: zero(), y: zero() },
   grab: { x: zero(), y: zero() },
   cardWidth: zero(),
@@ -58,6 +56,9 @@ const INERT: DragValue = {
 }
 
 const DragContext = createContext<DragValue>(INERT)
+/** Its own context: it changes on every Slot the card crosses, and only the
+ *  targets that light up should re-render for that, not the whole board. */
+const HoveredContext = createContext<DropTarget | undefined>(undefined)
 
 const key = (target: DropTarget): string =>
   target.kind === 'backlog' ? 'backlog' : `${target.date}:${target.slotKey}`
@@ -95,29 +96,9 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
     targets.current.set(key(target), { target, measure })
   }, [])
 
-  const remeasure = useCallback(() => {
-    for (const [id, entry] of targets.current) {
-      entry.measure((measured) => {
-        bounds.current.set(id, { target: entry.target, bounds: measured })
-      })
-    }
-  }, [])
-
-  const begin = useCallback(
-    (payload: DragPayload, from: Bounds) => {
-      grabX.value = pointerX.value - from.x
-      grabY.value = pointerY.value - from.y
-      cardWidth.value = from.width
-
-      setDragging(payload)
-      setHovered(undefined)
-      hoveredRef.current = undefined
-
-      bounds.current.clear()
-      remeasure()
-    },
-    [cardWidth, grabX, grabY, pointerX, pointerY, remeasure],
-  )
+  /** False once the card is let go, so a measurement still on its way back
+   *  cannot light a Slot after the drop. */
+  const isDragging = useRef(false)
 
   const moveTo = useCallback((x: number, y: number) => {
     const entries = [...bounds.current.values()].sort(
@@ -138,9 +119,39 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
     setHovered(undefined)
   }, [])
 
+  // The hit test runs again with each new bound: the board can scroll under a
+  // pointer that is holding still, and the drop must go where it now points.
+  const remeasure = useCallback(() => {
+    for (const [id, entry] of targets.current) {
+      entry.measure((measured) => {
+        if (!isDragging.current) return
+        bounds.current.set(id, { target: entry.target, bounds: measured })
+        moveTo(pointerX.value, pointerY.value)
+      })
+    }
+  }, [moveTo, pointerX, pointerY])
+
+  const begin = useCallback(
+    (payload: DragPayload, from: Bounds) => {
+      grabX.value = pointerX.value - from.x
+      grabY.value = pointerY.value - from.y
+      cardWidth.value = from.width
+
+      setDragging(payload)
+      setHovered(undefined)
+      hoveredRef.current = undefined
+      isDragging.current = true
+
+      bounds.current.clear()
+      remeasure()
+    },
+    [cardWidth, grabX, grabY, pointerX, pointerY, remeasure],
+  )
+
   const end = useCallback((): DropTarget | undefined => {
     const target = hoveredRef.current
     hoveredRef.current = undefined
+    isDragging.current = false
     setDragging(undefined)
     setHovered(undefined)
     return target
@@ -149,7 +160,6 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
   const value = useMemo(
     () => ({
       dragging,
-      hovered,
       pointer: { x: pointerX, y: pointerY },
       grab: { x: grabX, y: grabY },
       cardWidth,
@@ -161,7 +171,6 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
     }),
     [
       dragging,
-      hovered,
       pointerX,
       pointerY,
       grabX,
@@ -175,10 +184,17 @@ export const DragProvider = ({ children }: { readonly children: ReactNode }): Re
     ],
   )
 
-  return <DragContext.Provider value={value}>{children}</DragContext.Provider>
+  return (
+    <DragContext.Provider value={value}>
+      <HoveredContext.Provider value={hovered}>{children}</HoveredContext.Provider>
+    </DragContext.Provider>
+  )
 }
 
 export const useDrag = (): DragValue => use(DragContext)
+
+/** Where the card would land now. Read it only where something lights up. */
+export const useHovered = (): DropTarget | undefined => use(HoveredContext)
 
 /** True when this Slot is the one the card would land in. */
 export const isSameTarget = (a: DropTarget | undefined, b: DropTarget): boolean =>

@@ -64,6 +64,7 @@ export const formStylesSheets = themed((tokens) =>
       justifyContent: 'center',
     },
     primaryPressed: { backgroundColor: tokens.color.actionPressed },
+    primaryDisabled: { opacity: 0.4 },
     primaryText: { ...tokens.type.mealName, color: tokens.color.onAction },
     error: { ...tokens.type.body, color: tokens.color.action, marginBottom: tokens.space.md },
     /** A selectable box: day and Slot chips, unit choices, steppers. Selected

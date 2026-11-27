@@ -1,116 +1,83 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
-import { fakeSupabase, failure, rows, type FakeResponse } from '@/test/fake-supabase'
-import { newQueryClient, sessionWrapper, testClock } from '@/test/session-wrapper'
+import { randomBytes } from '@noble/hashes/utils'
+import { boardWrapper, testClock, TEST_WEEK } from '@/test/session-wrapper'
+import { testBoard } from '@/test/test-board'
+import { brand } from '@/shared/types/brand'
+import { saveMeal, type MealId } from '@/features/meals'
+
+import { addToBacklog } from '../application/planning-data'
+import type { WeekStart } from '../domain/types'
 import { useWeekBoard } from './useWeekBoard'
 
-const planId = '0b7d7b1e-0000-4000-8000-000000000001'
-const mealId = '0b7d7b1e-0000-4000-8000-000000000002'
-const userId = '0b7d7b1e-0000-4000-8000-000000000003'
-const itemId = '0b7d7b1e-0000-4000-8000-000000000004'
+const WEEK = brand<string, 'WeekStart'>(TEST_WEEK) as WeekStart
 
-const backlogItem = {
-  id: itemId,
-  meal_id: mealId,
-  added_by: userId,
-  meal: { name: 'Tacos', servings: 4 },
+const setup = async () => {
+  const board = await testBoard()
+  const view = await renderHook(() => useWeekBoard(testClock), { wrapper: boardWrapper(board) })
+  return { ...view, board }
 }
-const member = { user_id: userId, display_name: 'Sanni', colour: '#5F7355' }
 
-const setup = async (initial: Record<string, FakeResponse>) => {
-  let responses = initial
-  const queryClient = newQueryClient()
-  const client = fakeSupabase(() => responses)
-  const view = await renderHook(() => useWeekBoard(testClock), {
-    wrapper: sessionWrapper(client, queryClient),
+const makeMeal = async (board: Awaited<ReturnType<typeof testBoard>>, name: string) => {
+  let id: MealId | undefined
+  await act(async () => {
+    const saved = await saveMeal(board.data, randomBytes, {
+      name,
+      servings: brand<number, 'Servings'>(4),
+      ingredients: [],
+    })
+    if (saved.kind === 'ok') id = saved.value
   })
-  return {
-    ...view,
-    respondWith: (next: Record<string, FakeResponse>) => {
-      responses = next
-    },
-  }
+  if (id === undefined) throw new Error('not saved')
+  return id
 }
 
 describe('useWeekBoard', () => {
-  it('is loading, not failed and not empty, until the first answer', async () => {
-    const view = await setup({ week_plan: rows(null) })
-    expect(view.result.current.isLoading).toBe(true)
-    expect(view.result.current.isError).toBe(false)
-    await waitFor(() => {
-      expect(view.result.current.isLoading).toBe(false)
-    })
-  })
-
-  it('treats a Week Plan that does not exist yet as an empty board, not an error', async () => {
-    const view = await setup({ week_plan: rows(null) })
+  it('shows the week on screen, named for the Household, with nothing planned yet', async () => {
+    const view = await setup()
     await waitFor(() => {
       expect(view.result.current.hasData).toBe(true)
     })
-    expect(view.result.current.isError).toBe(false)
-    expect(view.result.current.weekPlanId).toBeUndefined()
-    expect(view.result.current.backlog).toEqual([])
-  })
-
-  it('reports a failed load as an error with no data, not as an empty board', async () => {
-    const view = await setup({ week_plan: failure })
-    await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
-    })
-    expect(view.result.current.hasData).toBe(false)
     expect(view.result.current.isLoading).toBe(false)
+    expect(view.result.current.weekStart).toBe(TEST_WEEK)
+    expect(view.result.current.householdName).toBe('Koti')
+    expect(view.result.current.backlog).toEqual([])
+    expect(view.result.current.board).toHaveLength(7)
   })
 
-  it('reports a failed Backlog load as an error rather than an empty Backlog', async () => {
-    const view = await setup({ week_plan: rows({ id: planId }), backlog_item: failure })
-    await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
+  it('follows the board: a Meal put on the Backlog appears with who wanted it', async () => {
+    const view = await setup()
+    const mealId = await makeMeal(view.board, 'Tacos')
+    await act(async () => {
+      await addToBacklog(view.board.data, randomBytes, 1, {
+        weekStart: WEEK,
+        mealId,
+        addedBy: view.board.engine.view().me,
+      })
     })
-    expect(view.result.current.hasData).toBe(false)
+    await waitFor(() => {
+      expect(view.result.current.backlog.map((b) => b.mealName)).toEqual(['Tacos'])
+    })
+    expect(view.result.current.backlog[0]?.addedByName).toBe('Sanni')
   })
 
-  it('recovers when the retry succeeds', async () => {
-    const view = await setup({ week_plan: failure })
-    await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
-    })
-
-    view.respondWith({
-      week_plan: rows({ id: planId }),
-      backlog_item: rows([backlogItem]),
-      household_member: rows([member]),
-    })
-    await act(() => {
-      view.result.current.refetch()
-    })
-
-    await waitFor(() => {
-      expect(view.result.current.isError).toBe(false)
-    })
-    expect(view.result.current.backlog.map((item) => item.mealName)).toEqual(['Tacos'])
-  })
-
-  // The point of throwing from the queryFn: React Query keeps the last good
-  // answer when a refresh fails, so a flaky connection cannot wipe the board.
-  it('keeps the last good board when a refresh fails', async () => {
-    const view = await setup({
-      week_plan: rows({ id: planId }),
-      backlog_item: rows([backlogItem]),
-      household_member: rows([member]),
+  it('drops a planned Meal from the board when its Meal is deleted', async () => {
+    const view = await setup()
+    const mealId = await makeMeal(view.board, 'Tacos')
+    await act(async () => {
+      await addToBacklog(view.board.data, randomBytes, 1, {
+        weekStart: WEEK,
+        mealId,
+        addedBy: view.board.engine.view().me,
+      })
     })
     await waitFor(() => {
       expect(view.result.current.backlog).toHaveLength(1)
     })
-
-    view.respondWith({ week_plan: failure })
-    await act(() => {
-      view.result.current.refetch()
+    await act(async () => {
+      await view.board.data.remove('meal', mealId)
     })
-
     await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
+      expect(view.result.current.backlog).toEqual([])
     })
-    expect(view.result.current.hasData).toBe(true)
-    expect(view.result.current.weekPlanId).toBe(planId)
-    expect(view.result.current.backlog.map((item) => item.mealName)).toEqual(['Tacos'])
   })
 })

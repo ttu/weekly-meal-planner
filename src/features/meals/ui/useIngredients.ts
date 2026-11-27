@@ -1,21 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
-import { isErr } from '@/shared/types/result'
-import { useSession } from '@/features/household'
-import { loadIngredients } from '../infrastructure/ingredient-repository'
+import { useMemo } from 'react'
+import { useBoardSession } from '@/features/household'
+import { catalogueIngredients } from '../domain/catalogue'
 import type { Ingredient } from '../domain/types'
 
+/** The Catalogue's Ingredients, named in the Household's Locale. */
 export const useIngredients = (): { ingredients: readonly Ingredient[]; isLoading: boolean } => {
-  const { client, household } = useSession()
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['ingredients', household?.locale],
-    enabled: household !== undefined,
-    queryFn: async () => {
-      if (household === undefined) return []
-      const result = await loadIngredients(client, household.locale)
-      return isErr(result) ? [] : result.value
-    },
-  })
-
-  return { ingredients: data ?? [], isLoading }
+  const { household, checked } = useBoardSession()
+  const locale = household?.locale
+  const ingredients = useMemo(() => (locale ? catalogueIngredients(locale) : []), [locale])
+  return { ingredients, isLoading: !checked }
 }

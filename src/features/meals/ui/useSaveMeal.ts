@@ -1,20 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { isErr } from '@/shared/types/result'
-import { useSession } from '@/features/household'
-import { saveMeal, type SaveMealError } from '../application/save-meal'
-import { saveMealPhoto, type PhotoChange } from '../application/save-meal-photo'
+import { useData, useSync } from '@/features/sync'
+import { saveMeal, type SaveMealError } from '../application/meals-data'
 import type { MealDraft } from '../domain/meal-draft'
 import type { MealId } from '../domain/types'
 
-type Draft = MealDraft & {
-  readonly id?: MealId
-  readonly photo?: PhotoChange
-  readonly existingPhotoPath?: string | undefined
-}
+type Draft = MealDraft & { readonly id?: MealId }
 
-/** The Meal saved and the photo did not: a different sentence from "could not
- *  save the meal", because the Meal is already there. */
-export type EditorError = SaveMealError | 'photo-failed'
+export type EditorError = SaveMealError
 
 export type SaveMeal = {
   readonly save: (draft: Draft, onSaved: () => void) => void
@@ -22,59 +15,24 @@ export type SaveMeal = {
   readonly error: EditorError | undefined
 }
 
-const SAVE_MEAL_ERRORS: readonly EditorError[] = [
-  'name-required',
-  'name-too-long',
-  'duplicate-ingredient',
-  'write-failed',
-  'photo-failed',
-]
-
-/** A photo that will not upload must not be reported as "could not save the
- *  meal" — the Meal is saved by then. */
-const PHOTO_ERRORS = { 'read-failed': 'photo-failed', 'write-failed': 'photo-failed' } as const
-
-/** The mutation carries the failure as an Error message; parse it back into the
- *  domain error rather than casting a string into one. */
-const parseSaveMealError = (message: string | undefined): EditorError | undefined =>
-  SAVE_MEAL_ERRORS.find((code) => code === message)
-
 export const useSaveMeal = (): SaveMeal => {
-  const { client, household } = useSession()
-  const queryClient = useQueryClient()
-
-  const mutation = useMutation({
-    mutationFn: async (draft: Draft) => {
-      if (household === undefined) throw new Error('no-household')
-
-      const result = await saveMeal(client, { ...draft, householdId: household.id })
-      // The mutation surfaces failure through its error channel; the message is
-      // a SaveMealError code the screen translates.
-      if (isErr(result)) throw new Error(result.error)
-
-      // After the Meal, because the photo's path contains the Meal's id.
-      const photo = await saveMealPhoto(client, {
-        householdId: household.id,
-        mealId: result.value,
-        change: draft.photo ?? { kind: 'unchanged' },
-        existingPath: draft.existingPhotoPath,
-      })
-      if (isErr(photo)) throw new Error(PHOTO_ERRORS[photo.error])
-
-      return result.value
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['meals', household?.id] })
-      // A renamed Meal changes what the board shows, too.
-      void queryClient.invalidateQueries({ queryKey: ['week'] })
-    },
-  })
+  const data = useData()
+  const { deps } = useSync()
+  const [isPending, setPending] = useState(false)
+  const [error, setError] = useState<EditorError | undefined>(undefined)
 
   return {
     save: (draft, onSaved) => {
-      mutation.mutate(draft, { onSuccess: onSaved })
+      if (!data) return
+      setPending(true)
+      setError(undefined)
+      void saveMeal(data, deps.random, draft).then((result) => {
+        setPending(false)
+        if (isErr(result)) setError(result.error)
+        else onSaved()
+      })
     },
-    isPending: mutation.isPending,
-    error: parseSaveMealError(mutation.error?.message),
+    isPending,
+    error,
   }
 }

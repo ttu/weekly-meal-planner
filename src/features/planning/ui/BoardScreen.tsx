@@ -1,35 +1,31 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
 import { Avatar } from '@/shared/ui/Avatar'
 import { useTranslation } from '@/shared/i18n'
-import {
-  boardUrl,
-  signOut,
-  usePresence,
-  useSession,
-  type PresentMember,
-  type SlotKey,
-} from '@/features/household'
+import { useBoardSession, type SlotKey } from '@/features/household'
+import { isOk, type Result } from '@/shared/types/result'
 import { MealLibraryScreen, useHouseholdMeals } from '@/features/meals'
+import { useRefresh, useView } from '@/features/sync'
+import { usePullToRefresh } from '@/shared/ui/pullToRefresh'
 import { systemClock, type Clock } from '@/shared/time/clock'
 import { useWideScreen } from '@/shared/layout/useWideScreen'
 import { BacklogShelf } from './BacklogShelf'
 import { DayOne } from './DayOne'
-import { BoardHeader } from './BoardHeader'
+import { BoardHeader, type PresentMember } from './BoardHeader'
 import { DayColumn } from './DayColumn'
 import { WeekStrip } from './WeekStrip'
 import { WideDayColumn } from './WideDayColumn'
 import { formatWeekRange } from '../domain/format-day'
 import { localToday } from '../domain/week'
+import { cookEventIn, isBoardEmpty, leftoverCountIn, plannedDatesOf } from '../domain/board'
 import { useWeekBoard } from './useWeekBoard'
 import { useSelectedWeek } from './SelectedWeek'
 import { useAddToBacklog } from './useAddToBacklog'
 import { usePlanMeal } from './usePlanMeal'
 import { usePlanningActions } from './usePlanningActions'
-import { useWeekRealtime } from './useWeekRealtime'
 import { useRecentlyChangedDays } from './useRecentlyChangedDays'
 import { WideBoardLayout } from './WideBoardLayout'
 import { DragProvider } from './DragContext'
@@ -41,7 +37,7 @@ import { BoardOverlays } from './BoardOverlays'
 import { useBoardDrop } from './useBoardDrop'
 import { useBoardSheets } from './useBoardSheets'
 import { AppNav } from '@/shared/ui/AppNav'
-import { LoadError, Loading } from '@/shared/ui/LoadState'
+import { Loading } from '@/shared/ui/LoadState'
 import { loadState } from '@/shared/query/load-state'
 import type { CookEvent, CookEventId } from '../domain/types'
 
@@ -155,7 +151,9 @@ const sheets = themed((tokens) =>
 
 type Props = {
   readonly clock?: Clock
-  readonly origin?: string
+  /** Makes a link for a new seat on the board; the route knows the board and where it is served. */
+  readonly createInvite?: (() => Promise<Result<string, 'failed'>>) | undefined
+  readonly onLeave?: (() => void) | undefined
   readonly onOpenLibrary?: (() => void) | undefined
   readonly onOpenShopping?: (() => void) | undefined
   readonly onOpenSettings?: (() => void) | undefined
@@ -170,7 +168,8 @@ type Props = {
 
 const Board = ({
   clock = systemClock,
-  origin = '',
+  createInvite,
+  onLeave,
   onOpenLibrary,
   onOpenShopping,
   onOpenSettings,
@@ -184,23 +183,26 @@ const Board = ({
   const insets = useSafeAreaInsets()
   // The safe-area inset is only known at runtime, so this one sheet is built here.
   const insetStyles = useMemo(
-    () => StyleSheet.create({ top: { paddingTop: insets.top } }),
+    () =>
+      StyleSheet.create({
+        top: { paddingTop: insets.top },
+        contentTop: { paddingTop: insets.top + tokens.space.md },
+      }),
     [insets.top],
   )
-  const session = useSession()
-  const household = session.household
-  const me = session.member
+  const { household } = useBoardSession()
   const locale = household?.locale ?? 'fi'
   const weekBoard = useWeekBoard(clock)
-  const { board, backlog, weekPlanId, householdName, weekStart } = weekBoard
+  const { board, backlog, householdName } = weekBoard
   const boardState = loadState(weekBoard)
-  const { changedDays, markChanged } = useRecentlyChangedDays()
-  useWeekRealtime(weekStart, markChanged)
-  const present = usePresence(weekStart, me)
+  const syncProblem = useView()?.problem
+  const { changedDays } = useRecentlyChangedDays()
+  // Nobody is shown as here too: presence needed a live channel, and the relay is a mailbox.
+  const present: readonly PresentMember[] = []
   const library = useHouseholdMeals()
   const { meals } = library
   const { add, hasFailed } = useAddToBacklog(clock)
-  const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal(clock)
+  const { plan, isPending: planPending, hasFailed: planFailed } = usePlanMeal()
   const boardSheets = useBoardSheets()
   const {
     setPickerOpen,
@@ -213,38 +215,49 @@ const Board = ({
     setMenuOpen,
     setSharing,
   } = boardSheets
-  const planningActions = usePlanningActions(clock)
-  const { addLeftoverFor, leftoverFailed, moveFailed, unplanFailed } = planningActions
+  const planningActions = usePlanningActions()
+  const { addLeftoverFor, leftoverFailed, moveFailed, unplanFailed, otherFailed } = planningActions
   const { offset, goToWeek } = useSelectedWeek(clock)
   const { onDropped, orderRefused } = useBoardDrop({
     board,
-    weekPlanId,
     add,
     plan,
     actions: planningActions,
   })
   const isWide = useWideScreen()
   const scroll = useRef<ScrollView>(null)
+  const { refreshing, refresh } = useRefresh()
+  const refreshControl = usePullToRefresh(refreshing, refresh)
   const autoScroll = useEdgeAutoScroll(scroll)
   const dayOffsets = useRef(new Map<string, number>())
 
-  const shareUrl = household === undefined ? '' : boardUrl(origin, household.shareToken)
+  const [shareUrl, setShareUrl] = useState('')
+  const [shareFailed, setShareFailed] = useState(false)
+  const [shareBusy, setShareBusy] = useState(false)
 
   /** Opens the panel rather than copying silently: the link alone is half of
    *  what a recipient needs, and nothing used to say so. */
   const onShare = (): void => {
-    if (household === undefined) return
+    if (household === undefined || createInvite === undefined) return
+    setShareUrl('')
+    setShareFailed(false)
     setSharing(true)
   }
 
-  const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
-  const leftoverCountFor = (id: CookEventId): number =>
-    allCards.filter((card) => card.kind === 'leftover' && card.leftover.cookEventId === id).length
+  /** On request only: each link is a new seat that stays valid until an admin removes it. */
+  const onCreateInvite = (): void => {
+    if (createInvite === undefined) return
+    setShareBusy(true)
+    setShareFailed(false)
+    void createInvite().then((made) => {
+      setShareBusy(false)
+      if (isOk(made)) setShareUrl(made.value)
+      else setShareFailed(true)
+    })
+  }
 
-  const cookEventById = (id: CookEventId): CookEvent | undefined =>
-    allCards
-      .flatMap((card) => (card.kind === 'cook-event' ? [card.cookEvent] : []))
-      .find((cookEvent) => cookEvent.id === id)
+  const leftoverCountFor = (id: CookEventId): number => leftoverCountIn(board, id)
+  const cookEventById = (id: CookEventId): CookEvent | undefined => cookEventIn(board, id)
 
   const today = localToday(clock)
 
@@ -265,9 +278,7 @@ const Board = ({
     board.map((day) => day.date),
     locale,
   )
-  const plannedDates = new Set(
-    board.filter((day) => day.slots.some((slot) => slot.cards.length > 0)).map((day) => day.date),
-  )
+  const plannedDates = plannedDatesOf(board)
 
   /** Tapping an empty Slot opens the picker already aimed at that Slot, so the
    *  Meal is planned in one step rather than parked in the Backlog first. */
@@ -283,9 +294,9 @@ const Board = ({
       leftoverFailed={leftoverFailed}
       moveFailed={moveFailed}
       unplanFailed={unplanFailed}
+      otherFailed={otherFailed}
       orderRefused={orderRefused}
-      stale={boardState === 'stale'}
-      onRetry={weekBoard.refetch}
+      syncProblem={syncProblem}
     />
   )
 
@@ -293,7 +304,6 @@ const Board = ({
     <BoardOverlays
       sheets={boardSheets}
       board={board}
-      weekPlanId={weekPlanId}
       today={today}
       locale={locale}
       slots={household?.slots ?? []}
@@ -306,6 +316,9 @@ const Board = ({
       actions={planningActions}
       leftoverCountFor={leftoverCountFor}
       shareUrl={shareUrl}
+      shareFailed={shareFailed}
+      shareBusy={shareBusy}
+      onCreateInvite={onCreateInvite}
       shared={shared}
       onShare={onShare}
       onCopyShareUrl={() => {
@@ -313,7 +326,7 @@ const Board = ({
       }}
       onOpenSettings={onOpenSettings}
       onLeave={() => {
-        void signOut(session.client)
+        onLeave?.()
       }}
       onWriteOwnMeal={onWriteOwnMeal}
     />
@@ -339,10 +352,7 @@ const Board = ({
   /** Day one: nothing wanted, nothing planned. Not the same as an empty
    *  Backlog, which is the ordinary state of a week that is already planned. */
   const isLoaded = boardState === 'ready' || boardState === 'stale'
-  const isDayOne =
-    isLoaded &&
-    backlog.length === 0 &&
-    board.every((day) => day.slots.every((slot) => slot.cards.length === 0))
+  const isDayOne = isLoaded && backlog.length === 0 && isBoardEmpty(board)
 
   const dayOne = (
     <DayOne
@@ -370,11 +380,7 @@ const Board = ({
   /** Why there is no board yet. Neither a failed nor an unfinished first load
    *  may be drawn as a week of empty Slots: it invites planning into a week
    *  that is not there. */
-  const boardPlaceholder =
-    (boardState === 'failed' && (
-      <LoadError onRetry={weekBoard.refetch} testID="board-load-error" />
-    )) ||
-    (boardState === 'loading' && <Loading testID="board-loading" />)
+  const boardPlaceholder = boardState === 'loading' && <Loading testID="board-loading" />
 
   const shelf = (layout: 'shelf' | 'pane'): React.JSX.Element => {
     return (
@@ -412,11 +418,12 @@ const Board = ({
             layout="pane"
             meals={meals}
             loadState={loadState(library)}
-            onRetry={library.refetch}
             onSelect={(mealId) => {
               add(mealId)
             }}
-            onAdd={onOpenLibrary}
+            onAdd={() => {
+              onWriteOwnMeal?.()
+            }}
             wrapRow={(meal, row) => (
               <DraggableCard
                 payload={{
@@ -481,11 +488,12 @@ const Board = ({
           scrollEventThrottle={16}
           onScroll={autoScroll.onScroll}
           onContentSizeChange={autoScroll.onContentSizeChange}
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
+          contentContainerStyle={[styles.content, insetStyles.contentTop]}
+          refreshControl={refreshControl}
         >
           <View style={styles.boardNameRow}>
             <BoardNameButton
-              boardName={session.household?.name ?? ''}
+              boardName={household?.name ?? ''}
               onPress={() => {
                 setMenuOpen(true)
               }}

@@ -78,11 +78,14 @@ export type CupboardLine = {
   readonly category: string
 }
 
-/** A planned Meal nobody has given Ingredients yet. Surfaced rather than
- *  silently omitted, so the gap is visible before the shop, not at the stove. */
+/** A planned Meal the list cannot fully cover: nobody has given it Ingredients
+ *  yet, or it names one this build does not know (another Member's newer
+ *  version). Surfaced rather than silently omitted, so the gap is visible
+ *  before the shop, not at the stove. */
 export type IncompleteMealLine = {
   readonly mealId: MealId
   readonly mealName: string
+  readonly reason: 'no-ingredients' | 'unknown-ingredient'
 }
 
 export type ShoppingList = {

@@ -14,7 +14,8 @@ import { BackLink } from '@/shared/ui/BackLink'
 import { Notice } from '@/shared/ui/Notice'
 import { useTranslation } from '@/shared/i18n'
 import { MAX_SLOTS, SLOT_PRESETS, slotName, type SlotEditError } from '../domain/slot-edit'
-import type { AddEmailError } from '../application/add-email'
+import type { BoardMember } from '../application/board-data'
+import { MembersSection } from './MembersSection'
 import { SizeStepper } from './SizeStepper'
 import type { HouseholdSize, Slot, SlotKey } from '../domain/types'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
@@ -26,18 +27,12 @@ const APPEARANCES: readonly SchemeChoice[] = ['light', 'dark', 'system']
 const errorKey = (error: SlotEditError | 'write-failed'): string =>
   `settings.error.${error === 'write-failed' ? 'writeFailed' : error}`
 
-type Account = {
-  /** The confirmed address on this identity, if it has one. */
-  readonly email?: string | undefined
-  /** Given, but not yet clicked through from the inbox. */
-  readonly pendingEmail?: string | undefined
-  readonly isPending: boolean
-  readonly error?: AddEmailError | undefined
-  readonly onAddEmail: (email: string) => void
-}
-
 type Props = {
-  readonly account: Account
+  readonly members: readonly BoardMember[]
+  readonly me: string | undefined
+  readonly isAdmin: boolean
+  readonly onSetRole: (member: string, role: 'admin' | 'member') => void
+  readonly onRemoveMember: (member: string) => void
   /** The language the whole board speaks. A Household setting, not a device
    *  one (ADR 0009). */
   readonly locale: Locale
@@ -53,6 +48,9 @@ type Props = {
   readonly onRemove: (key: SlotKey) => void
   readonly onMove: (key: SlotKey, by: -1 | 1) => void
   readonly onBack: () => void
+  /** Copy (web) or share (phone) this device's own seat, to take on a new device. */
+  readonly onSaveRecoveryLink: () => void
+  readonly recoveryCopied?: boolean | undefined
 }
 
 const sheets = themed((tokens) =>
@@ -85,6 +83,7 @@ const sheets = themed((tokens) =>
     sizeLabel: { marginTop: tokens.space.xl },
     sizeHint: { ...tokens.type.meta, color: tokens.color.textSupport, marginTop: tokens.space.sm },
     hint: { ...tokens.type.meta, color: tokens.color.textSupport, marginBottom: tokens.space.md },
+    members: { marginTop: tokens.space.xl },
   }),
 )
 
@@ -97,7 +96,11 @@ const sheets = themed((tokens) =>
  * is the question that stops people from tidying up.
  */
 export const SettingsScreen = ({
-  account,
+  members,
+  me,
+  isAdmin,
+  onSetRole,
+  onRemoveMember,
   locale,
   onChangeLocale,
   size,
@@ -110,13 +113,14 @@ export const SettingsScreen = ({
   onRemove,
   onMove,
   onBack,
+  onSaveRecoveryLink,
+  recoveryCopied = false,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [named, setNamed] = useState('')
-  const [email, setEmail] = useState('')
   const { choice, setChoice } = useSchemeChoice()
 
   const unused = SLOT_PRESETS.filter((preset) => !slots.some((slot) => slot.key === preset.key))
@@ -294,62 +298,34 @@ export const SettingsScreen = ({
           {t('settings.appearanceHint')}
         </Text>
 
+        <View style={styles.members}>
+          <MembersSection
+            members={members}
+            me={me}
+            isAdmin={isAdmin}
+            onSetRole={onSetRole}
+            onRemove={onRemoveMember}
+          />
+        </View>
+
         <Text style={[formStyles.label, { marginTop: tokens.space.xl }]}>
-          {t('settings.account')}
+          {t('settings.recovery')}
         </Text>
-        {account.email !== undefined ? (
-          <Text style={styles.body} testID="settings-email">
-            {t('settings.emailOn', { email: account.email })}
+        <Text style={styles.hint}>{t('settings.recoveryBody')}</Text>
+        <Pressable
+          style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
+          onPress={onSaveRecoveryLink}
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.recoverySave')}
+          testID="settings-recovery"
+        >
+          <Text style={formStyles.primaryText}>
+            {recoveryCopied ? t('settings.recoveryCopied') : t('settings.recoverySave')}
           </Text>
-        ) : (
-          <>
-            <Text style={styles.body}>{t('settings.emailWhy')}</Text>
-            {account.pendingEmail !== undefined && (
-              <Text style={styles.hint} testID="settings-email-pending">
-                {t('settings.emailPending', { email: account.pendingEmail })}
-              </Text>
-            )}
-            <View style={styles.addRow}>
-              <Field
-                style={styles.addField}
-                value={email}
-                onChangeText={setEmail}
-                placeholder={t('settings.emailPlaceholder')}
-                accessibilityLabel={t('settings.account')}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="done"
-                hasError={account.error === 'invalid-email'}
-                testID="settings-email-field"
-              />
-              <Pressable
-                style={({ pressed }) => [
-                  formStyles.primary,
-                  styles.addButton,
-                  pressed && formStyles.primaryPressed,
-                ]}
-                disabled={account.isPending}
-                onPress={() => {
-                  account.onAddEmail(email)
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.sendLink')}
-                testID="settings-send-link"
-              >
-                <Text style={formStyles.primaryText}>{t('settings.sendLink')}</Text>
-              </Pressable>
-            </View>
-          </>
-        )}
+        </Pressable>
       </ScrollView>
 
       {error !== undefined && <Notice message={t(errorKey(error))} testID="settings-error" />}
-      {account.error !== undefined && (
-        <Notice message={t(`settings.error.${account.error}`)} testID="settings-email-error" />
-      )}
     </KeyboardAvoiding>
   )
 }

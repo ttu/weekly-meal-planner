@@ -14,7 +14,6 @@ import { ServingsSheet } from './ServingsSheet'
 type Props = {
   readonly sheets: BoardSheets
   readonly board: readonly BoardDay[]
-  readonly weekPlanId: string | undefined
   readonly today: string
   readonly locale: Locale
   readonly slots: readonly Slot[]
@@ -30,6 +29,9 @@ type Props = {
   >
   readonly leftoverCountFor: (id: CookEventId) => number
   readonly shareUrl: string
+  readonly shareFailed: boolean
+  readonly shareBusy: boolean
+  readonly onCreateInvite: () => void
   readonly shared: boolean
   readonly onShare: () => void
   readonly onCopyShareUrl: () => void
@@ -42,7 +44,6 @@ type Props = {
 export const BoardOverlays = ({
   sheets,
   board,
-  weekPlanId,
   today,
   locale,
   slots,
@@ -55,6 +56,9 @@ export const BoardOverlays = ({
   actions,
   leftoverCountFor,
   shareUrl,
+  shareFailed,
+  shareBusy,
+  onCreateInvite,
   shared,
   onShare,
   onCopyShareUrl,
@@ -86,7 +90,7 @@ export const BoardOverlays = ({
 
   return (
     <>
-      {planning !== undefined && weekPlanId !== undefined && (
+      {planning !== undefined && (
         <PlanSheet
           visible
           mealName={planning.mealName}
@@ -99,7 +103,6 @@ export const BoardOverlays = ({
           isPending={planPending}
           onSubmit={(choice) => {
             plan({
-              weekPlanId,
               mealId: planning.mealId,
               backlogItemId: planning.id,
               ...choice,
@@ -208,6 +211,9 @@ export const BoardOverlays = ({
       <ShareSheet
         visible={isSharing}
         url={shareUrl}
+        failed={shareFailed}
+        busy={shareBusy}
+        onCreate={onCreateInvite}
         justCopied={shared}
         onCopy={onCopyShareUrl}
         onClose={() => {
@@ -233,7 +239,6 @@ export const BoardOverlays = ({
             add(mealId)
           } else {
             plan({
-              weekPlanId,
               mealId,
               date: target.date,
               slotKey: target.slotKey,

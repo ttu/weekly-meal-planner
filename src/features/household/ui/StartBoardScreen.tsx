@@ -1,36 +1,23 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState, type ReactNode } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View, type TextInput } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useThemed } from '@/shared/theme/theme'
 import { useFormStyles } from '@/shared/theme/form-styles'
 import { Field } from '@/shared/ui/Field'
-import { PasswordField } from '@/shared/ui/PasswordField'
 import { Wordmark } from '@/shared/ui/Wordmark'
 import { useTranslation } from '@/shared/i18n'
-import type { CreateBoardError } from '../application/boards'
-import { BetaKeyField } from './BetaKeyField'
+import { MAX_BOARD_NAME, MAX_MEMBER_NAME } from '../application/board-data'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
-
-const errorKeys: Record<CreateBoardError, string> = {
-  'short-password': 'board.shortPassword',
-  'invalid-beta-key': 'board.invalidBetaKey',
-  'write-failed': 'board.createFailed',
-}
 
 type Props = {
   readonly isPending: boolean
-  readonly error?: CreateBoardError | undefined
-  /** True while a beta key is set; see supabase/schemas/12_beta_key.sql. */
-  readonly askBetaKey?: boolean | undefined
-  readonly onCreate: (input: {
-    boardName: string
-    displayName: string
-    password: string
-    betaKey: string
-  }) => void
-  readonly onSignInInstead: () => void
+  /** Why starting the board failed: it could not be made, or it was made and this device could not keep it. */
+  readonly error?: 'failed' | 'not-saved' | undefined
+  readonly onCreate: (input: { boardName: string; displayName: string }) => void
   readonly onJoinInstead?: (() => void) | undefined
+  /** Below the form; the start route puts its development-only demo board here. */
+  readonly children?: ReactNode
 }
 
 const sheets = themed((tokens) =>
@@ -77,17 +64,16 @@ const sheets = themed((tokens) =>
 )
 
 /**
- * The first screen for someone with no account. It asks for three things and
- * nothing else — a board name, their own name, and the password the family
- * will use to join (ADR 0010).
+ * The first screen for someone with no board. It asks for two things and
+ * nothing else — a board name and their own name. The family joins by invite
+ * link (ADR 0013).
  */
 export const StartBoardScreen = ({
   isPending,
   error,
-  askBetaKey = false,
   onCreate,
-  onSignInInstead,
   onJoinInstead,
+  children,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
   const formStyles = useFormStyles()
@@ -95,8 +81,12 @@ export const StartBoardScreen = ({
   const insets = useSafeAreaInsets()
   const [boardName, setBoardName] = useState('')
   const [displayName, setDisplayName] = useState('')
-  const [password, setPassword] = useState('')
-  const [betaKey, setBetaKey] = useState('')
+  const incomplete = boardName.trim() === '' || displayName.trim() === ''
+  const yourNameRef = useRef<TextInput>(null)
+  // The button and Enter in the last field both land here, so both are guarded.
+  const create = () => {
+    if (!isPending && !incomplete) onCreate({ boardName, displayName })
+  }
 
   return (
     <KeyboardAvoiding>
@@ -116,6 +106,9 @@ export const StartBoardScreen = ({
           onChangeText={setBoardName}
           autoCapitalize="words"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => yourNameRef.current?.focus()}
+          maxLength={MAX_BOARD_NAME}
           placeholder={t('board.boardNamePlaceholder')}
           accessibilityLabel={t('board.boardName')}
           testID="start-board-name"
@@ -123,41 +116,24 @@ export const StartBoardScreen = ({
 
         <Text style={formStyles.label}>{t('board.yourName')}</Text>
         <Field
+          ref={yourNameRef}
           style={styles.fieldTight}
           value={displayName}
           onChangeText={setDisplayName}
           autoComplete="name"
           autoCapitalize="words"
-          returnKeyType="next"
+          returnKeyType="go"
+          onSubmitEditing={create}
+          maxLength={MAX_MEMBER_NAME}
           placeholder={t('board.yourNamePlaceholder')}
           accessibilityLabel={t('board.yourName')}
           testID="start-your-name"
         />
         <Text style={styles.hint}>{t('board.yourNameHint')}</Text>
 
-        <Text style={formStyles.label}>{t('board.password')}</Text>
-        <PasswordField
-          value={password}
-          onChangeText={setPassword}
-          isNew
-          placeholder={t('board.passwordPlaceholder')}
-          hasError={error === 'short-password'}
-          testID="start-password"
-        />
-        <Text style={[styles.hint, { marginTop: tokens.space.xs }]}>{t('board.passwordHint')}</Text>
-
-        {askBetaKey && (
-          <BetaKeyField
-            value={betaKey}
-            onChangeText={setBetaKey}
-            hasError={error === 'invalid-beta-key'}
-            testID="start-beta-key"
-          />
-        )}
-
         {error !== undefined && (
           <Text style={formStyles.error} testID="start-error">
-            {t(errorKeys[error])}
+            {t(error === 'failed' ? 'board.createFailed' : 'board.createNotSaved')}
           </Text>
         )}
 
@@ -167,11 +143,14 @@ export const StartBoardScreen = ({
         </View>
 
         <Pressable
-          style={({ pressed }) => [formStyles.primary, pressed && formStyles.primaryPressed]}
-          disabled={isPending}
-          onPress={() => {
-            onCreate({ boardName, displayName, password, betaKey })
-          }}
+          style={({ pressed }) => [
+            formStyles.primary,
+            pressed && formStyles.primaryPressed,
+            incomplete && formStyles.primaryDisabled,
+          ]}
+          disabled={isPending || incomplete}
+          aria-disabled={isPending || incomplete}
+          onPress={create}
           accessibilityRole="button"
           accessibilityLabel={t('board.create')}
           testID="start-create"
@@ -197,15 +176,8 @@ export const StartBoardScreen = ({
               </Pressable>
             </View>
           )}
-          <Pressable
-            onPress={onSignInInstead}
-            accessibilityRole="button"
-            accessibilityLabel={t('board.signInInstead')}
-            testID="start-sign-in-instead"
-          >
-            <Text style={styles.muted}>{t('board.signInInstead')}</Text>
-          </Pressable>
         </View>
+        {children}
       </ScrollView>
     </KeyboardAvoiding>
   )

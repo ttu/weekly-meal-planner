@@ -1,4 +1,5 @@
 import { useTranslation } from '@/shared/i18n'
+import type { SyncProblem } from '@/features/sync'
 import { Notice } from '@/shared/ui/Notice'
 
 type Props = {
@@ -7,10 +8,10 @@ type Props = {
   readonly leftoverFailed: boolean
   readonly moveFailed: boolean
   readonly unplanFailed: boolean
+  readonly otherFailed: boolean
   readonly orderRefused: boolean
-  /** The week showed once, and the refresh since has failed. */
-  readonly stale: boolean
-  readonly onRetry: () => void
+  /** The relay refused to take this board's changes. */
+  readonly syncProblem: SyncProblem | undefined
 }
 
 /** What went wrong on the board, said where the board is. */
@@ -20,9 +21,9 @@ export const BoardErrors = ({
   leftoverFailed,
   moveFailed,
   unplanFailed,
+  otherFailed,
   orderRefused,
-  stale,
-  onRetry,
+  syncProblem,
 }: Props): React.JSX.Element => {
   const { t } = useTranslation()
 
@@ -33,14 +34,10 @@ export const BoardErrors = ({
       {leftoverFailed && <Notice message={t('leftover.failed')} testID="leftover-error" />}
       {moveFailed && <Notice message={t('plan.moveFailed')} testID="move-error" />}
       {unplanFailed && <Notice message={t('unplan.failed')} testID="unplan-error" />}
+      {otherFailed && <Notice message={t('board.writeFailed')} testID="write-error" />}
       {orderRefused && <Notice message={t('board.leftoverOrder')} testID="leftover-order-error" />}
-      {stale && (
-        <Notice
-          message={t('load.stale')}
-          testID="load-stale"
-          action={{ label: t('load.retry'), onPress: onRetry }}
-        />
-      )}
+      {syncProblem === 'full' && <Notice message={t('board.relayFull')} testID="relay-full" />}
+      {syncProblem === 'busy' && <Notice message={t('board.relayBusy')} testID="relay-busy" />}
     </>
   )
 }

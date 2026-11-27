@@ -3,6 +3,7 @@ import type {
   IngredientId,
   IngredientSlug,
   MealId,
+  Quantity,
   Servings,
 } from '@/shared/types/ids'
 import type { Dimension } from '@/shared/units'
@@ -16,6 +17,9 @@ export type {
   Servings,
 } from '@/shared/types/ids'
 export type { Dimension } from '@/shared/units'
+
+/** The most Servings a Meal is for, or a Cook Event is cooked for: one bound for the editor, the board and the rows. */
+export const MAX_SERVINGS = 50
 
 export type Meal = {
   readonly id: MealId
@@ -39,6 +43,14 @@ export type Ingredient = {
   readonly category: string
   readonly dimension: Dimension
   readonly baseUnit: string
+}
+
+export type MealDetail = Meal & {
+  readonly ingredients: readonly {
+    readonly ingredientId: IngredientId
+    readonly quantity: Quantity
+    readonly unit: string
+  }[]
 }
 
 export const isCatalogueMeal = (meal: Meal): boolean => meal.householdId === undefined

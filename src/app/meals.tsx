@@ -12,7 +12,6 @@ export default function Meals(): React.JSX.Element {
       <MealLibraryScreen
         meals={meals}
         loadState={loadState(library)}
-        onRetry={library.refetch}
         onAdd={() => {
           router.push('/meals/new')
         }}

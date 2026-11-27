@@ -1,26 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import { isErr } from '@/shared/types/result'
-import { useSession } from '@/features/household'
-import { copyCatalogueMeal } from '../application/copy-catalogue-meal'
-import { deleteMeal } from '../application/delete-meal'
-import { loadMeal, type MealDetail } from '../infrastructure/meal-repository'
-import type { MealId } from '../domain/types'
-import { IDEMPOTENT_WRITE_RETRY } from '@/shared/net/queryClient'
+import { useBoardSession } from '@/features/household'
+import { useData, useSync, useView } from '@/features/sync'
+import { copyCatalogueMeal, deleteMeal, getMeal } from '../application/meals-data'
+import type { MealDetail, MealId } from '../domain/types'
 
 export const useMeal = (id: MealId | undefined): { meal: MealDetail | undefined } => {
-  const { client } = useSession()
-
-  const { data } = useQuery({
-    queryKey: ['meal', id],
-    enabled: id !== undefined,
-    queryFn: async () => {
-      if (id === undefined) return undefined
-      const result = await loadMeal(client, id)
-      return isErr(result) ? undefined : result.value
-    },
-  })
-
-  return { meal: data }
+  const { household } = useBoardSession()
+  const data = useData()
+  const view = useView()
+  const meal = useMemo(
+    () => (id && household && data ? getMeal(data, household.id, household.locale, id) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [id, household, data, view],
+  )
+  return { meal }
 }
 
 export type MealActions = {
@@ -30,40 +24,27 @@ export type MealActions = {
 }
 
 export const useMealActions = (): MealActions => {
-  const { client, household } = useSession()
-  const queryClient = useQueryClient()
-
-  const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey: ['meals', household?.id] })
-    void queryClient.invalidateQueries({ queryKey: ['week'] })
-  }
-
-  const copyMutation = useMutation({
-    mutationFn: async (sourceId: MealId) => {
-      if (household === undefined) throw new Error('no-household')
-      const result = await copyCatalogueMeal(client, household.id, sourceId)
-      if (isErr(result)) throw new Error(result.error)
-      return result.value
-    },
-    onSettled: invalidate,
-  })
-
-  const deleteMutation = useMutation({
-    retry: IDEMPOTENT_WRITE_RETRY, // set-to-value / upsert / delete: repeating it changes nothing
-    mutationFn: async (id: MealId) => {
-      const result = await deleteMeal(client, id)
-      if (isErr(result)) throw new Error(result.error)
-    },
-    onSettled: invalidate,
-  })
+  const { household } = useBoardSession()
+  const data = useData()
+  const { deps } = useSync()
+  const [hasFailed, setFailed] = useState(false)
 
   return {
     copy: (sourceId) => {
-      copyMutation.mutate(sourceId)
+      if (!household || !data) return
+      setFailed(false)
+      void copyCatalogueMeal(data, deps.random, household.locale, sourceId).then((result) => {
+        if (isErr(result)) setFailed(true)
+      })
     },
     remove: (id, onRemoved) => {
-      deleteMutation.mutate(id, { onSuccess: onRemoved })
+      if (!data) return
+      setFailed(false)
+      void deleteMeal(data, id).then((result) => {
+        if (isErr(result)) setFailed(true)
+        else onRemoved()
+      })
     },
-    hasFailed: copyMutation.isError || deleteMutation.isError,
+    hasFailed,
   }
 }

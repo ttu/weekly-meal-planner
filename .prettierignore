@@ -11,4 +11,4 @@ test-results/
 playwright-report/
 .worktrees/
 .claude/worktrees/
-supabase/.temp/
+.wrangler/

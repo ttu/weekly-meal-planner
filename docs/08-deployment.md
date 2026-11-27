@@ -2,54 +2,49 @@
 
 ## Environments
 
-| Environment | Supabase                                         | App                          |
-| ----------- | ------------------------------------------------ | ---------------------------- |
-| local       | pglite for tests, local Supabase for manual work | Expo dev                     |
-| staging     | own project, free tier                           | EAS internal distribution    |
-| production  | own project, Pro from first real household       | TestFlight → App Store, Play |
+| Environment | Relay                                                     | App                          |
+| ----------- | --------------------------------------------------------- | ---------------------------- |
+| local       | `wrangler dev` on the host, or nothing (tests use memory) | Expo dev                     |
+| staging     | Worker `menami-relay-staging`                             | EAS internal distribution    |
+| production  | Worker `menami-relay`                                     | TestFlight → App Store, Play |
 
-Free tier is fine until real families depend on the data; the trigger to move to
-Pro is **daily backups**, not a quota. See `01-functional-spec.md`.
-
-## Database changes
-
-Declarative schema plus generated migrations, in version control, applied by CI.
-Reference data (`data/catalogue/`, the ingredient taxonomy) is synced by a
-script using the service role, run as a deploy step and idempotent by design.
-
-Never a manual change in the dashboard. A schema that exists only in production
-is a schema nobody can test.
+The relay (`relay/`, ADR 0013) is the only thing we run. It holds encrypted
+records between visits and nothing else, so there is no database to migrate, no
+reference data to sync (the Catalogue ships inside the app) and nothing to back
+up: a Household's data is on its Members' devices. Cloudflare Durable Objects
+(SQLite-backed) hold one board each; check the current free-tier limits and price
+before relying on them, and watch the Worker's request count, since every device
+polls while visible: every 15 s while the board is busy, every 2 minutes when
+it is quiet.
 
 ## Deploy pipeline
 
-Two workflows, each running the database before the web app so the app never
-ships ahead of its schema:
+Two workflows, each deploying the relay before the web app so the app never ships
+ahead of the relay it talks to:
 
 | Workflow            | Trigger                                  | Environment  |
 | ------------------- | ---------------------------------------- | ------------ |
 | `deploy-staging`    | `validate` passes on a push to `main`    | `staging`    |
 | `deploy-production` | a `v*` tag on a commit that is on `main` | `production` |
 
-Each runs `supabase db push`, then `catalogue:sync`, then exports the web app
-with that environment's keys and runs `eas deploy` (the `staging` alias, or
-`--prod`). Both can also be run by hand from the Actions tab.
+Each runs `wrangler deploy` for `relay/`, then exports the web app with that
+environment's `EXPO_PUBLIC_RELAY_URL` and runs `eas deploy` (the `staging` alias,
+or `--prod`). Both can also be run by hand from the Actions tab. **The relay
+workflow has never run against Cloudflare**; the first deploy is where its
+Durable Object migration (`relay/wrangler.toml`) gets checked.
 
 Release: merge to `main`, check staging, then `git tag v0.1.0 && git push
 origin v0.1.0`. Protect the `production` environment with a required reviewer.
 
 One-time setup, in GitHub:
 
-- Repository secrets: `SUPABASE_ACCESS_TOKEN` (supabase.com/dashboard/account/tokens),
+- Repository secrets: `CLOUDFLARE_API_TOKEN` (Workers edit), `CLOUDFLARE_ACCOUNT_ID`,
   `EXPO_TOKEN` (expo.dev access token).
-- Per environment, variable `SUPABASE_PROJECT_REF`.
-- Per environment, secrets `SUPABASE_DB_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`,
-  `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Per environment, variable `RELAY_URL`: the deployed Worker's URL. It is public.
 - Run `eas init` once and commit the `extra.eas.projectId` it adds to `app.json`;
   the workflows refuse to run without it.
 
-Not in the pipeline, set in the Supabase dashboard per project because
-`config.toml` only configures local: Auth Site URL and redirect URLs, SMTP, the
-Apple provider. Native builds are separate, through EAS Build.
+Native builds are separate, through EAS Build.
 
 ## App builds
 
@@ -87,10 +82,8 @@ failure. A preview build per PR once EAS is wired.
 
 CI reads the Node version from `.nvmrc` rather than hardcoding it.
 
-**E2E** is Maestro (`pnpm run test:e2e`, flows in `.maestro/`) against a
-development build with a seeded local Supabase. Maestro is a developer-machine
-prerequisite, not an npm dependency, and is not yet wired into CI — that needs
-an EAS build in the pipeline and belongs with the deployment work.
+**E2E** is to be rebuilt against a local relay (see `04-testing.md`); nothing runs
+in CI yet.
 
 `pnpm run validate:all` locally reproduces CI, and pre-push runs it.
 
@@ -99,20 +92,5 @@ an EAS build in the pipeline and belongs with the deployment work.
 `app.json` sets `web.output: "single"`, not `"static"`. Static output prerenders
 every route in Node, where `requestAnimationFrame` does not exist — Reanimated
 throws during the build. Prerendering buys nothing here in any case: every
-screen is behind authentication, so there is no public HTML worth generating.
-
-## Local ports
-
-The local API runs on **54421**, not Supabase's default 54321.
-
-A VS Code extension host binds `127.0.0.1:54321` on at least one machine here.
-Docker publishes on the IPv6 wildcard (`*:54321`), so the IPv4 loopback
-resolved to VS Code instead of Kong: every auth call answered `Cannot POST
-/auth/v1/signup`, the app said only "Could not create the board", and
-`supabase start`'s own health check failed against the same address and rolled
-the whole stack back. It looked like a Docker fault for hours.
-
-`e2e/global-setup.ts` now makes one request to `/auth/v1/health` before the
-suite runs and fails loudly if the answer is not GoTrue. Changing the port
-means changing three places together: `supabase/config.toml` `[api] port`,
-`.env`, and `.env.example`.
+screen needs a board, which is on the device, so there is no public HTML worth
+generating.

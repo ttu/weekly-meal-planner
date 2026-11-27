@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '@/shared/theme/tokens'
 import { themed, useTheme, useThemed } from '@/shared/theme/theme'
-import { useTranslation } from '@/shared/i18n'
+import { useLocale, useTranslation } from '@/shared/i18n'
 import { useIsOnline } from '@/shared/net/useIsOnline'
 import { BackLink } from '@/shared/ui/BackLink'
 import { LoadError, Loading } from '@/shared/ui/LoadState'
@@ -11,8 +11,10 @@ import { Notice } from '@/shared/ui/Notice'
 import type { LoadState } from '@/shared/query/load-state'
 import type { IngredientId } from '@/shared/types/ids'
 import { groupBuyLines } from '../domain/group'
+import { formatAmounts, isEmptyList, stillToBuy } from '../domain/summary'
 import type { BuyLine, Extra, ExtraId, ShoppingList } from '../domain/types'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
+import { usePullToRefresh } from '@/shared/ui/pullToRefresh'
 
 /**
  * Row ergonomics are requirements, not styling: 19px text, 28px checkbox, 54px
@@ -210,9 +212,6 @@ const sheets = themed((tokens) =>
   }),
 )
 
-const formatAmounts = (line: BuyLine, unitLabel: (unit: string) => string): string =>
-  line.amounts.map((a) => `${String(a.quantity)} ${unitLabel(a.unit)}`).join(' + ')
-
 type Props = {
   readonly list: ShoppingList
   readonly onToggle: (id: IngredientId, checked: boolean) => void
@@ -229,6 +228,11 @@ type Props = {
    *  buy"; a failed one must not look like an empty one. */
   readonly loadState?: LoadState | undefined
   readonly onRetry?: (() => void) | undefined
+  /** Pull-to-refresh on a phone: another Member may have changed the plan. */
+  readonly onRefresh?: (() => void) | undefined
+  readonly refreshing?: boolean | undefined
+  /** The last tick or Extra could not be saved. */
+  readonly writeFailed?: boolean | undefined
 }
 
 /** An Extra is a Buy Line nobody derived: milk, bin bags, the thing someone
@@ -316,8 +320,12 @@ export const ShoppingListScreen = ({
   onBack,
   loadState = 'ready',
   onRetry,
+  writeFailed = false,
+  onRefresh,
+  refreshing = false,
 }: Props): React.JSX.Element => {
   const styles = useThemed(sheets)
+  const refreshControl = usePullToRefresh(refreshing, onRefresh)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState<IngredientId | undefined>(undefined)
@@ -330,14 +338,16 @@ export const ShoppingListScreen = ({
   const [hideTicked, setHideTicked] = useState(false)
   const isOnline = useIsOnline()
 
-  const unitLabel = (unit: string): string => t(`unit.${unit}`)
+  const locale = useLocale()
+  // A unit from another Member's newer build has no key here; show it as written.
+  const unitLabel = (unit: string): string => t(`unit.${unit}`, { defaultValue: unit })
+  const amountsOf = (line: BuyLine): string => formatAmounts(line.amounts, unitLabel, locale)
   const tickedCount = list.buy.filter((line) => line.checked).length
-  const remaining = list.buy.length - tickedCount
+  const remaining = stillToBuy(list)
   const shown = hideTicked ? list.buy.filter((line) => !line.checked) : list.buy
   const groups = useMemo(() => groupBuyLines(shown), [shown])
 
-  const isEmpty =
-    list.buy.length === 0 && list.cupboard.length === 0 && list.incomplete.length === 0
+  const isEmpty = isEmptyList(list)
 
   if (loadState === 'loading' || loadState === 'failed') {
     return (
@@ -366,7 +376,7 @@ export const ShoppingListScreen = ({
           }}
           accessibilityRole="checkbox"
           aria-checked={line.checked}
-          accessibilityLabel={`${line.name} ${formatAmounts(line, unitLabel)}`}
+          accessibilityLabel={`${line.name} ${amountsOf(line)}`}
           testID={`buy-${line.ingredientId}`}
         >
           <View style={[styles.checkbox, line.checked && styles.checkboxOn]}>
@@ -394,7 +404,7 @@ export const ShoppingListScreen = ({
               line.isOverridden && styles.amountOverridden,
             ]}
           >
-            {formatAmounts(line, unitLabel)}
+            {amountsOf(line)}
           </Text>
 
           {line.contributions.length > 0 && (
@@ -418,9 +428,7 @@ export const ShoppingListScreen = ({
             {line.contributions.map((c, index) => (
               <View key={`${c.mealName}-${String(index)}`} style={styles.provenanceRow}>
                 <Text style={styles.provenanceText}>{c.mealName}</Text>
-                <Text style={styles.provenanceText}>
-                  {String(c.quantity)} {unitLabel(c.unit)}
-                </Text>
+                <Text style={styles.provenanceText}>{formatAmounts([c], unitLabel, locale)}</Text>
               </View>
             ))}
 
@@ -451,6 +459,7 @@ export const ShoppingListScreen = ({
     <KeyboardAvoiding style={styles.page} testID="shopping-screen">
       <ScrollView
         style={styles.scroll}
+        refreshControl={refreshControl}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingTop: insets.top + tokens.space.md }]}
       >
@@ -532,7 +541,12 @@ export const ShoppingListScreen = ({
                 style={styles.incomplete}
                 testID={`incomplete-${meal.mealId}`}
               >
-                {t('shopping.incomplete', { meal: meal.mealName })}
+                {t(
+                  meal.reason === 'unknown-ingredient'
+                    ? 'shopping.unknownIngredient'
+                    : 'shopping.incomplete',
+                  { meal: meal.mealName },
+                )}
               </Text>
             ))}
           </View>
@@ -616,6 +630,7 @@ export const ShoppingListScreen = ({
         </View>
       </View>
 
+      {writeFailed && <Notice message={t('shopping.writeFailed')} testID="shopping-write-error" />}
       {loadState === 'stale' && (
         <Notice
           message={t('load.stale')}

@@ -147,12 +147,12 @@ default it flagged things whose only fix was to make the code less readable,
 which teaches people to route around the gate rather than listen to it.
 
 Real duplications it has caught and that were extracted rather than suppressed:
-`formStyles`, `resolveLocalisedName`, `partitionMeals`, and shopping reading
+`formStyles`, `partitionMeals`, and shopping reading
 Ingredients through `loadIngredients` instead of repeating the query.
 
 ## Observability
 
-Structured logging at boundaries: auth, every Supabase call that fails, the
+Structured logging at boundaries: every relay call that fails, the
 offline queue flush, the catalogue sync. Log context, not prose. Correlation id
 per session so a family's bug report is traceable.
 

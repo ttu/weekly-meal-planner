@@ -47,6 +47,7 @@ export default defineConfig([
       'coverage/**',
       'assets/**',
       'storybook-static/**',
+      '**/.wrangler/**',
       'expo-env.d.ts',
       '*.config.js',
       '*.cjs',
@@ -145,6 +146,7 @@ export default defineConfig([
       '.storybook/**/*.ts',
       '.storybook/**/*.tsx',
       'scripts/**/*.ts',
+      'relay/**/*.ts',
       'e2e/**/*.ts',
       'playwright.config.ts',
     ],
@@ -172,6 +174,8 @@ export default defineConfig([
       'src/**/fixtures/**',
       '.storybook/**',
       'scripts/**',
+      'relay/memory.ts',
+      'relay/**/*.test.ts',
       'e2e/**',
     ],
     rules: {
@@ -191,9 +195,12 @@ export default defineConfig([
         { type: 'feature', pattern: 'src/features/*', capture: ['feature'], partialMatch: true },
         { type: 'shared', pattern: 'src/shared', partialMatch: true },
         { type: 'test', pattern: 'src/test', partialMatch: true },
+        // Development-only tools (the demo board): app code that is never a feature.
+        { type: 'dev', pattern: 'src/dev', partialMatch: true },
+        { type: 'relay', pattern: 'relay', partialMatch: true },
       ],
       // Font and image files are assets, not architectural elements.
-      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg'],
+      'boundaries/ignore': ['**/*.ttf', '**/*.png', '**/*.jpg', '**/*.svg', '**/*.json'],
       'boundaries/files': [{ category: 'feature-public', pattern: 'src/features/*/index.ts' }],
     },
     rules: {
@@ -206,17 +213,17 @@ export default defineConfig([
           default: 'allow',
           policies: [
             {
-              from: { element: { type: 'feature' } },
+              from: { element: { types: { anyOf: ['feature', 'dev'] } } },
               disallow: { to: { element: { type: 'feature' } } },
             },
             {
-              from: { element: { type: 'feature' } },
+              from: { element: { types: { anyOf: ['feature', 'dev'] } } },
               allow: { to: { file: { categories: 'feature-public' } } },
             },
             // shared/ is generic or it is not shared: it may never know a feature.
             {
               from: { element: { type: 'shared' } },
-              disallow: { to: { element: { types: { anyOf: ['feature', 'app'] } } } },
+              disallow: { to: { element: { types: { anyOf: ['feature', 'app', 'dev'] } } } },
             },
           ],
         },
@@ -242,18 +249,10 @@ export default defineConfig([
     },
   },
   {
-    // The e2e suite runs against a local Supabase container and dumps
-    // screenshots under /tmp: `docker` comes off the developer's PATH and the
-    // screenshot paths are throwaway. Neither is a production concern.
+    // The e2e suite waits on what the screen shows, never on the clock.
     files: ['e2e/**'],
     rules: {
-      'sonarjs/no-os-command-from-path': 'off',
-      'sonarjs/publicly-writable-directories': 'off',
-      // Real debt, not a rule to keep off: the suite waits out animations and
-      // the auto-scroll dwell with fixed sleeps. Replacing them with
-      // observable conditions is a dedicated pass (see TODO.md) - doing it
-      // alongside a lint-config change risks flakiness.
-      'sonarjs/no-fixed-wait-in-tests': 'off',
+      'sonarjs/no-fixed-wait-in-tests': 'error',
       // `networkidle` is discouraged by Playwright itself and is the same
       // mistake as a fixed wait: a guess about timing dressed up as a wait.
       'sonarjs/no-networkidle-wait': 'error',

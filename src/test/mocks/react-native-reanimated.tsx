@@ -6,6 +6,7 @@
  * Everything renders its children, so component tests still assert on real
  * output rather than on the animation.
  */
+import { useState } from 'react'
 import { View, type ViewProps } from 'react-native'
 
 const passthrough = (props: ViewProps): React.JSX.Element => <View {...props} />
@@ -43,7 +44,10 @@ export const Easing = {
   linear: (t: number) => t,
 }
 
-export const useSharedValue = (initial: unknown): { value: unknown } => ({ value: initial })
+/** One object for the component's life, as the real one is: a fresh value per
+ *  render would forget every write the moment anything re-rendered. */
+export const useSharedValue = (initial: unknown): { value: unknown } =>
+  useState(() => ({ value: initial }))[0]
 export const makeMutable = (initial: unknown): { value: unknown } => ({ value: initial })
 export const useAnimatedStyle = (factory: () => unknown): unknown => factory()
 export const withTiming = (value: unknown): unknown => value

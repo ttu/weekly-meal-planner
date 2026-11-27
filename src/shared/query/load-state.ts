@@ -7,11 +7,12 @@
 export type LoadState = 'loading' | 'failed' | 'stale' | 'ready'
 
 export type QueryProgress = {
-  readonly isError: boolean
+  /** Reading the board's local copy cannot fail, so the hooks over it leave this out. */
+  readonly isError?: boolean
   readonly hasData: boolean
 }
 
-export const loadState = ({ isError, hasData }: QueryProgress): LoadState => {
+export const loadState = ({ isError = false, hasData }: QueryProgress): LoadState => {
   if (!hasData) return isError ? 'failed' : 'loading'
   return isError ? 'stale' : 'ready'
 }

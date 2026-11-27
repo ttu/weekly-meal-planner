@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router'
 import { goBackTo } from '@/shared/navigation/go-back-to'
-import { useWeekBoard } from '@/features/planning'
+import { usePlannedCount } from '@/features/planning'
 import {
   MealEditorScreen,
   isCatalogueMeal,
@@ -15,18 +15,13 @@ export default function EditMeal(): React.JSX.Element | null {
   const params = useLocalSearchParams<{ id: MealId }>()
   const { meal } = useMeal(params.id)
   const { ingredients } = useIngredients()
-  const { board } = useWeekBoard()
   const { save, isPending, error } = useSaveMeal()
   const { copy, remove } = useMealActions()
+  // Deleting a Meal cascades to its Cook Events, in every week, and their
+  // Leftovers. The confirmation names that consequence rather than letting it be discovered.
+  const plannedCount = usePlannedCount(params.id)
 
   if (meal === undefined) return null
-
-  // Deleting a Meal cascades to its Cook Events and their Leftovers. The
-  // confirmation names that consequence rather than letting it be discovered.
-  const plannedCount = board
-    .flatMap((day) => day.slots)
-    .flatMap((slot) => slot.cards)
-    .filter((card) => card.kind === 'cook-event' && card.cookEvent.mealId === meal.id).length
 
   // A Catalogue Meal is read-only through the client; the editor offers to copy
   // it instead (ADR 0005).
@@ -34,7 +29,6 @@ export default function EditMeal(): React.JSX.Element | null {
     <MealEditorScreen
       defaultServings={meal.servings}
       initial={{ name: meal.name, servings: meal.servings, ingredients: meal.ingredients }}
-      photoUrl={meal.photoUrl}
       ingredients={ingredients}
       isPending={isPending}
       error={error}
@@ -49,8 +43,8 @@ export default function EditMeal(): React.JSX.Element | null {
           goBackTo('/meals')
         })
       }}
-      onSave={(draft, photo) => {
-        save({ ...draft, id: meal.id, photo, existingPhotoPath: meal.photoPath }, () => {
+      onSave={(draft) => {
+        save({ ...draft, id: meal.id }, () => {
           goBackTo('/meals')
         })
       }}

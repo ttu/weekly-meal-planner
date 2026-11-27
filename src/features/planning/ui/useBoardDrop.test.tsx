@@ -41,12 +41,11 @@ const board: readonly BoardDay[] = [
 ]
 const slot = (date: string, slotKey: SlotKey): DropTarget => ({ kind: 'slot', date, slotKey })
 
-const setup = async (hasWeekPlan = true) => {
-  const weekPlanId = hasWeekPlan ? 'wp1' : undefined
+const setup = async () => {
   const add = jest.fn()
   const plan = jest.fn()
   const actions = { move: jest.fn(), moveLeftoverTo: jest.fn(), unplan: jest.fn() }
-  const view = await renderHook(() => useBoardDrop({ board, weekPlanId, add, plan, actions }))
+  const view = await renderHook(() => useBoardDrop({ board, add, plan, actions }))
   const drop = (payload: DragPayload, target: DropTarget) =>
     act(() => {
       view.result.current.onDropped(payload, target)
@@ -73,8 +72,8 @@ describe('useBoardDrop', () => {
     expect(v.add).toHaveBeenCalledWith('m9')
   })
 
-  it('plans a Backlog card onto a Slot, even when the week has no Week Plan yet', async () => {
-    const v = await setup(false)
+  it('plans a Backlog card onto a Slot', async () => {
+    const v = await setup()
     const item = {
       id: brand<string, 'BacklogItemId'>('b1'),
       mealId: brand<string, 'MealId'>('m1'),
@@ -86,7 +85,6 @@ describe('useBoardDrop', () => {
     await v.drop({ kind: 'backlog', item }, slot('2026-09-16', dinner))
     expect(v.plan).toHaveBeenCalledWith(
       expect.objectContaining({
-        weekPlanId: undefined,
         mealId: 'm1',
         backlogItemId: 'b1',
         date: '2026-09-16',

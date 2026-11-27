@@ -1,122 +1,216 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
-import { fakeSupabase, failure, rows, type FakeResponse } from '@/test/fake-supabase'
-import { newQueryClient, sessionWrapper, testClock } from '@/test/session-wrapper'
+import { randomBytes } from '@noble/hashes/utils'
+import { boardWrapper, testClock } from '@/test/session-wrapper'
+import { testBoard } from '@/test/test-board'
+import { brand } from '@/shared/types/brand'
+import type { IngredientId } from '@/shared/types/ids'
+import type { SlotKey } from '@/features/household'
+
+import { saveMeal } from '@/features/meals'
+import { planMeal } from '@/features/planning'
 import { useShoppingList } from './useShoppingList'
 
-const planId = '0b7d7b1e-0000-4000-8000-000000000001'
+const dinner = brand<string, 'SlotKey'>('dinner') as SlotKey
+const onion = brand<string, 'IngredientId'>('onion') as IngredientId
 
-const planned: Record<string, FakeResponse> = {
-  week_plan: rows({ id: planId }),
-  cook_event: rows([]),
-  household_member: rows([]),
-}
-
-const extra = (label: string): FakeResponse =>
-  rows([{ id: '0b7d7b1e-0000-4000-8000-000000000009', label, checked_at: null }])
-
-const setup = async (initial: Record<string, FakeResponse>) => {
-  let responses = initial
-  const client = fakeSupabase(() => responses)
-  const view = await renderHook(() => useShoppingList(testClock), {
-    wrapper: sessionWrapper(client, newQueryClient()),
+/** A Meal of 4 servings needing 2 onions, planned for Wednesday of the test week. */
+const setup = async (servingsCooked = 4, slotKey = dinner) => {
+  const board = await testBoard()
+  const saved = await saveMeal(board.data, randomBytes, {
+    name: 'Onion soup',
+    servings: brand<number, 'Servings'>(4),
+    ingredients: [
+      {
+        ingredientId: onion,
+        quantity: brand<number, 'Quantity'>(2),
+        unit: 'pcs',
+      },
+    ],
   })
-  return {
-    ...view,
-    respondWith: (next: Record<string, FakeResponse>) => {
-      responses = next
-    },
-  }
+  if (saved.kind !== 'ok') throw new Error('not saved')
+  await planMeal(board.data, randomBytes, {
+    mealId: saved.value,
+    date: '2026-03-11',
+    slotKey,
+    servingsCooked: brand<number, 'Servings'>(servingsCooked),
+    addedBy: board.engine.view().me,
+  })
+  const view = await renderHook(() => useShoppingList(testClock), { wrapper: boardWrapper(board) })
+  await waitFor(() => {
+    expect(view.result.current.hasData).toBe(true)
+  })
+  return view
 }
 
 describe('useShoppingList', () => {
-  it('derives a list from the Week Plan', async () => {
-    const view = await setup({ ...planned, shopping_extra: extra('Coffee') })
-    await waitFor(() => {
-      expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Coffee'])
+  it('derives the list from what is planned, scaled by Servings Cooked', async () => {
+    const view = await setup(8)
+    const line = view.result.current.list.buy.find((l) => l.ingredientId === onion)
+    expect(line?.amounts[0]).toMatchObject({ quantity: 4, unit: 'pcs' })
+    expect(view.result.current.list.sittings).toBe(1)
+  })
+
+  it('leaves out what is planned in a Slot the Household no longer has, as the board does', async () => {
+    const view = await setup(4, brand<string, 'SlotKey'>('gone'))
+    expect(view.result.current.list.buy).toEqual([])
+    expect(view.result.current.list.sittings).toBe(0)
+  })
+
+  it('says so when a change could not be saved', async () => {
+    const view = await setup()
+    expect(view.result.current.failed).toBe(false)
+    await act(async () => {
+      view.result.current.addItem('x'.repeat(9000))
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
-    expect(view.result.current.isError).toBe(false)
+    await waitFor(() => {
+      expect(view.result.current.failed).toBe(true)
+    })
   })
 
   it('has an empty list, not an error, when nothing is planned for the week', async () => {
-    const view = await setup({ week_plan: rows(null) })
+    const board = await testBoard()
+    const view = await renderHook(() => useShoppingList(testClock), {
+      wrapper: boardWrapper(board),
+    })
     await waitFor(() => {
       expect(view.result.current.hasData).toBe(true)
     })
-    expect(view.result.current.isError).toBe(false)
     expect(view.result.current.list.buy).toEqual([])
   })
 
-  // The board also reads Members; a failure there must not take the list down.
-  it('still loads the list when the board detail queries fail', async () => {
-    const view = await setup({
-      ...planned,
-      household_member: failure,
-      leftover: failure,
-      shopping_extra: extra('Coffee'),
+  it('ticks a line at once, and unticks it', async () => {
+    const view = await setup()
+    await act(async () => {
+      view.result.current.toggle(onion, true)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
-      expect(view.result.current.list.extras).toHaveLength(1)
+      expect(view.result.current.list.buy.find((l) => l.ingredientId === onion)?.checked).toBe(true)
     })
-    expect(view.result.current.isError).toBe(false)
+    await act(async () => {
+      view.result.current.toggle(onion, false)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.buy.find((l) => l.ingredientId === onion)?.checked).toBe(
+        false,
+      )
+    })
   })
 
-  it('reports a failed Week Plan load as an error, not an empty list', async () => {
-    const view = await setup({ week_plan: failure })
-    await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
+  it('keeps a line in the cupboard, brings it back when it runs out, and forgets it', async () => {
+    const view = await setup()
+    await act(async () => {
+      view.result.current.keepInCupboard(onion)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
-    expect(view.result.current.hasData).toBe(false)
+    await waitFor(() => {
+      expect(view.result.current.list.cupboard.some((l) => l.ingredientId === onion)).toBe(true)
+    })
+    expect(view.result.current.list.buy.some((l) => l.ingredientId === onion)).toBe(false)
+
+    await act(async () => {
+      view.result.current.outOf(onion)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.buy.some((l) => l.ingredientId === onion)).toBe(true)
+    })
+
+    await act(async () => {
+      view.result.current.stopKeeping(onion)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.cupboard).toEqual([])
+    })
   })
 
-  it('retries the Week Plan first, then loads the list, never caching an empty one', async () => {
-    const view = await setup({ week_plan: failure })
+  // Running Low used to be forever: once bought, the Staple stayed on Buy every
+  // week after. Ticking it means it is back in the cupboard.
+  it('puts a Running Low Staple back in the cupboard once it is ticked, unticked if it runs out again', async () => {
+    const view = await setup()
+    const step = async (action: () => void): Promise<void> => {
+      await act(async () => {
+        action()
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0)
+        })
+      })
+    }
+    const buyLine = () => view.result.current.list.buy.find((l) => l.ingredientId === onion)
+
+    await step(() => {
+      view.result.current.keepInCupboard(onion)
+    })
+    await step(() => {
+      view.result.current.outOf(onion)
+    })
     await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
+      expect(buyLine()?.promotedFromCupboard).toBe(true)
     })
 
-    view.respondWith({ ...planned, shopping_extra: extra('Coffee') })
-    await act(() => {
-      view.result.current.refetch()
+    await step(() => {
+      view.result.current.toggle(onion, true)
+    })
+    await waitFor(() => {
+      expect(view.result.current.list.cupboard.some((l) => l.ingredientId === onion)).toBe(true)
+    })
+    expect(buyLine()).toBeUndefined()
+
+    // Run out again the same week: it must not come back already ticked, or
+    // the Agent Prompt would leave it out.
+    await step(() => {
+      view.result.current.outOf(onion)
+    })
+    await waitFor(() => {
+      expect(buyLine()?.checked).toBe(false)
+    })
+  })
+
+  it('adds an Extra, ticks it, and ignores an empty one', async () => {
+    const view = await setup()
+    await act(async () => {
+      view.result.current.addItem('Coffee')
+      view.result.current.addItem('   ')
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
       expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Coffee'])
     })
-    expect(view.result.current.isError).toBe(false)
-  })
-
-  it('reports a failed shopping load as an error, not an empty list', async () => {
-    const view = await setup({ ...planned, shopping_extra: failure })
-    await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
-    })
-    expect(view.result.current.hasData).toBe(false)
-    expect(view.result.current.isLoading).toBe(false)
-  })
-
-  // The bug: the failure was cached as an empty list on top of the good one.
-  it('keeps the last good list when a refresh fails, and recovers on retry', async () => {
-    const view = await setup({ ...planned, shopping_extra: extra('Coffee') })
-    await waitFor(() => {
-      expect(view.result.current.list.extras).toHaveLength(1)
-    })
-
-    view.respondWith({ ...planned, shopping_extra: failure })
-    await act(() => {
-      view.result.current.refetch()
+    const extra = view.result.current.list.extras[0]
+    if (!extra) throw new Error('no extra')
+    await act(async () => {
+      view.result.current.toggleExtra(extra.id, true)
+      // The write finishes a tick later; let it land inside this act.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0)
+      })
     })
     await waitFor(() => {
-      expect(view.result.current.isError).toBe(true)
+      expect(view.result.current.list.extras[0]?.checked).toBe(true)
     })
-    expect(view.result.current.hasData).toBe(true)
-    expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Coffee'])
-
-    view.respondWith({ ...planned, shopping_extra: extra('Tea') })
-    await act(() => {
-      view.result.current.refetch()
-    })
-    await waitFor(() => {
-      expect(view.result.current.list.extras.map((e) => e.label)).toEqual(['Tea'])
-    })
-    expect(view.result.current.isError).toBe(false)
   })
 })

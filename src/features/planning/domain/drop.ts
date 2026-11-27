@@ -54,6 +54,23 @@ export type DropAction =
   /** Let go somewhere that means nothing: put it back and change no data. */
   | { readonly kind: 'none' }
 
+const payloadId = (payload: DragPayload): string => {
+  switch (payload.kind) {
+    case 'backlog':
+      return payload.item.id
+    case 'cook-event':
+      return payload.cookEvent.id
+    case 'leftover':
+      return payload.leftover.id
+    case 'library':
+      return payload.meal.id
+  }
+}
+
+/** Whether `card` is the one in the air, so it can fade where it was picked up. */
+export const samePayload = (dragging: DragPayload | undefined, card: DragPayload): boolean =>
+  dragging !== undefined && dragging.kind === card.kind && payloadId(dragging) === payloadId(card)
+
 export const resolveDrop = (payload: DragPayload, target: DropTarget): DropAction => {
   if (target.kind === 'backlog') {
     // A Cook Event goes back to the Backlog, where it can be planned again. A

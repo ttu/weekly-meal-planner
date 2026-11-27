@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Image } from 'expo-image'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand } from '@/shared/types/brand'
@@ -11,11 +10,9 @@ import { isOk } from '@/shared/types/result'
 import { defaultAmountFor, parseQuantity } from '@/shared/units'
 import { ConfirmSheet } from '@/shared/ui/ConfirmSheet'
 import { IngredientPicker } from './IngredientPicker'
-import { IngredientRow } from './IngredientRow'
-import { pickPhotoFromLibrary, type PickPhoto } from '../infrastructure/photo-picker'
-import type { Ingredient, IngredientId, Servings } from '../domain/types'
+import { IngredientRow, UnknownIngredientRow } from './IngredientRow'
+import { MAX_SERVINGS, type Ingredient, type IngredientId, type Servings } from '../domain/types'
 import type { MealDraft } from '../domain/meal-draft'
-import type { PhotoChange } from '../application/save-meal-photo'
 import type { EditorError } from './useSaveMeal'
 import { KeyboardAvoiding } from '@/shared/ui/KeyboardAvoiding'
 
@@ -54,28 +51,6 @@ const sheets = themed((tokens) =>
       marginBottom: tokens.space.lg,
     },
     saveText: { ...tokens.type.mealName, color: tokens.color.onAction },
-    photoRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: tokens.space.md,
-      marginBottom: tokens.space.lg,
-    },
-    /** Bigger than the 46px chip on a card, because this is where you judge
-     *  whether the picture is the right one. */
-    photo: {
-      width: 72,
-      height: 72,
-      borderRadius: tokens.radius.md,
-      backgroundColor: tokens.color.surfaceInset,
-    },
-    photoEmpty: {
-      backgroundColor: tokens.color.surfaceInset,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    photoInitial: { ...tokens.type.display, color: tokens.color.textGhost },
-    photoActions: { flexDirection: 'row', gap: tokens.space.lg, flex: 1 },
-    photoAction: { minHeight: 54, justifyContent: 'center' },
     noIngredients: { paddingVertical: tokens.space.sm },
     addIngredient: { minHeight: 54, justifyContent: 'center', marginBottom: tokens.space.lg },
     delete: {
@@ -89,7 +64,6 @@ const sheets = themed((tokens) =>
 
 const errorKey = (error: EditorError): string => {
   if (error === 'name-required') return 'meal.nameRequired'
-  if (error === 'photo-failed') return 'meal.photoFailed'
   return 'meal.saveFailed'
 }
 
@@ -117,20 +91,8 @@ type Props = {
   readonly onDelete?: (() => void) | undefined
   readonly isPending: boolean
   readonly error?: EditorError | undefined
-  /** What the Meal already has — a signed URL, not a path. */
-  readonly photoUrl?: string | undefined
-  /** The device dialog, injected so a test can answer without one. */
-  readonly pickPhoto?: PickPhoto
-  readonly onSave: (draft: MealDraft, photo: PhotoChange) => void
+  readonly onSave: (draft: MealDraft) => void
   readonly onCancel: () => void
-}
-
-/** What the editor shows: the picture just picked, nothing if it was cleared,
- *  and otherwise whatever the Meal already had. */
-const shownPhotoFor = (photo: PhotoChange, saved: string | undefined): string | undefined => {
-  if (photo.kind === 'picked') return photo.uri
-  if (photo.kind === 'cleared') return undefined
-  return saved
 }
 
 export const MealEditorScreen = ({
@@ -139,8 +101,6 @@ export const MealEditorScreen = ({
   ingredients,
   isPending,
   error,
-  photoUrl,
-  pickPhoto = pickPhotoFromLibrary,
   isReadOnly = false,
   plannedCount = 0,
   onCopy,
@@ -162,10 +122,7 @@ export const MealEditorScreen = ({
     })) ?? [],
   )
   const [isPickerOpen, setPickerOpen] = useState(false)
-  const [photo, setPhoto] = useState<PhotoChange>({ kind: 'unchanged' })
   const [isConfirmingDelete, setConfirmingDelete] = useState(false)
-
-  const shownPhoto = shownPhotoFor(photo, photoUrl)
 
   const byId = new Map(ingredients.map((i) => [i.id, i]))
   const unpicked = ingredients.filter((i) => !entries.some((e) => e.ingredientId === i.id))
@@ -174,6 +131,9 @@ export const MealEditorScreen = ({
     setEntries((current) =>
       current.map((entry) => (entry.ingredientId === id ? { ...entry, ...patch } : entry)),
     )
+  }
+  const removeEntry = (id: IngredientId): void => {
+    setEntries((current) => current.filter((e) => e.ingredientId !== id))
   }
 
   return (
@@ -209,64 +169,6 @@ export const MealEditorScreen = ({
           testID="editor-name"
         />
 
-        <Text style={formStyles.label}>{t('meal.photo')}</Text>
-        <View style={styles.photoRow}>
-          {shownPhoto === undefined ? (
-            <View style={[styles.photo, styles.photoEmpty]} testID="editor-photo-empty">
-              <Text style={styles.photoInitial}>{(name.trim()[0] ?? '?').toUpperCase()}</Text>
-            </View>
-          ) : (
-            <Image
-              style={styles.photo}
-              source={{ uri: shownPhoto }}
-              contentFit="cover"
-              cachePolicy="disk"
-              accessibilityIgnoresInvertColors
-              accessibilityLabel={t('meal.photo')}
-              testID="editor-photo"
-            />
-          )}
-
-          {!isReadOnly && (
-            <View style={styles.photoActions}>
-              <Pressable
-                style={styles.photoAction}
-                disabled={isPending}
-                onPress={() => {
-                  void pickPhoto().then((picked) => {
-                    if (picked === undefined) return
-                    setPhoto({ kind: 'picked', uri: picked.uri, contentType: picked.contentType })
-                  })
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')
-                }
-                testID="editor-pick-photo"
-              >
-                <Text style={formStyles.quietAction}>
-                  {shownPhoto === undefined ? t('meal.addPhoto') : t('meal.replacePhoto')}
-                </Text>
-              </Pressable>
-
-              {shownPhoto !== undefined && (
-                <Pressable
-                  style={styles.photoAction}
-                  disabled={isPending}
-                  onPress={() => {
-                    setPhoto({ kind: 'cleared' })
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('meal.removePhoto')}
-                  testID="editor-remove-photo"
-                >
-                  <Text style={formStyles.quietAction}>{t('meal.removePhoto')}</Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-        </View>
-
         <Text style={formStyles.label}>{t('meal.servings')}</Text>
         <View style={styles.stepperRow}>
           <Pressable
@@ -275,7 +177,7 @@ export const MealEditorScreen = ({
               setServings((n) => Math.max(1, n - 1))
             }}
             accessibilityRole="button"
-            accessibilityLabel={t('meal.servings')}
+            accessibilityLabel={t('meal.servingsFewer')}
             testID="editor-servings-down"
           >
             <Text style={styles.stepperText}>−</Text>
@@ -286,10 +188,10 @@ export const MealEditorScreen = ({
           <Pressable
             style={styles.stepper}
             onPress={() => {
-              setServings((n) => Math.min(50, n + 1))
+              setServings((n) => Math.min(MAX_SERVINGS, n + 1))
             }}
             accessibilityRole="button"
-            accessibilityLabel={t('meal.servings')}
+            accessibilityLabel={t('meal.servingsMore')}
             testID="editor-servings-up"
           >
             <Text style={styles.stepperText}>+</Text>
@@ -305,7 +207,17 @@ export const MealEditorScreen = ({
         ) : (
           entries.map((entry) => {
             const ingredient = byId.get(entry.ingredientId)
-            if (ingredient === undefined) return null
+            if (ingredient === undefined) {
+              return (
+                <UnknownIngredientRow
+                  key={entry.ingredientId}
+                  slug={entry.ingredientId}
+                  onRemove={() => {
+                    removeEntry(entry.ingredientId)
+                  }}
+                />
+              )
+            }
             return (
               <IngredientRow
                 key={entry.ingredientId}
@@ -320,9 +232,7 @@ export const MealEditorScreen = ({
                   updateEntry(entry.ingredientId, { unit })
                 }}
                 onRemove={() => {
-                  setEntries((current) =>
-                    current.filter((e) => e.ingredientId !== entry.ingredientId),
-                  )
+                  removeEntry(entry.ingredientId)
                 }}
               />
             )
@@ -415,29 +325,25 @@ export const MealEditorScreen = ({
             style={styles.save}
             disabled={isPending}
             onPress={() => {
-              onSave(
-                {
-                  name,
-                  servings: brand<number, 'Servings'>(servings),
-                  // Rows with an unusable amount are dropped rather than blocking the
-                  // save; the row already shows why, and losing a whole edit to one
-                  // stray keystroke is worse.
-                  ingredients: entries.flatMap((entry) => {
-                    const quantity = parseQuantity(entry.quantityText)
-                    return isOk(quantity)
-                      ? [
-                          {
-                            ingredientId: entry.ingredientId,
-                            quantity: quantity.value,
-                            unit: entry.unit,
-                            optional: false,
-                          },
-                        ]
-                      : []
-                  }),
-                },
-                photo,
-              )
+              onSave({
+                name,
+                servings: brand<number, 'Servings'>(servings),
+                // Rows with an unusable amount are dropped rather than blocking the
+                // save; the row already shows why, and losing a whole edit to one
+                // stray keystroke is worse.
+                ingredients: entries.flatMap((entry) => {
+                  const quantity = parseQuantity(entry.quantityText)
+                  return isOk(quantity)
+                    ? [
+                        {
+                          ingredientId: entry.ingredientId,
+                          quantity: quantity.value,
+                          unit: entry.unit,
+                        },
+                      ]
+                    : []
+                }),
+              })
             }}
             accessibilityRole="button"
             accessibilityLabel={t('meal.save')}

@@ -1,6 +1,6 @@
 # 0002 — Row-level security is the only authorization point
 
-Status: Accepted · 2026-08-29
+Status: Superseded by [0013](0013-local-first-encrypted-sync.md)
 
 ## Context
 

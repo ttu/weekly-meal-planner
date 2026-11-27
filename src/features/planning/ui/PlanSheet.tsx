@@ -12,6 +12,7 @@ import type { Servings } from '@/features/meals'
 import { describePlacement } from '../domain/placement'
 import { formatWeekday } from '../domain/format-day'
 import type { BoardDay } from '../domain/board'
+import { ServingsStepper } from './ServingsStepper'
 
 /**
  * A bottom sheet over the board, not a screen that replaces it: the week you
@@ -69,30 +70,6 @@ const sheets = themed((tokens) =>
     slotChipText: { ...tokens.type.mealNameSmall, color: tokens.color.textPrimary },
     chipTextSelected: { color: tokens.color.onAction },
     note: { ...tokens.type.meta, color: tokens.color.textSupport },
-    stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-    stepper: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: tokens.color.cardBorder,
-      backgroundColor: tokens.color.surfaceRaised,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepperSign: {
-      fontFamily: tokens.type.body.fontFamily,
-      fontSize: tokens.type.dayHeading.fontSize,
-      color: tokens.color.textPrimary,
-    },
-    stepperValue: {
-      fontFamily: tokens.type.mealName.fontFamily,
-      fontSize: tokens.type.wordmark.fontSize,
-      fontWeight: '600',
-      color: tokens.color.textPrimary,
-      minWidth: 28,
-      textAlign: 'center',
-    },
     submit: {
       backgroundColor: tokens.color.action,
       borderRadius: tokens.radius.card,
@@ -256,49 +233,6 @@ const SlotChips = ({
   )
 }
 
-/** Servings Cooked, between one and fifty: a stepper rather than a keyboard,
- *  because this is the one number planning a week needs. */
-const ServingsStepper = ({
-  servings,
-  onChange,
-}: {
-  readonly servings: number
-  readonly onChange: (next: (current: number) => number) => void
-}): React.JSX.Element => {
-  const styles = useThemed(sheets)
-  const { t } = useTranslation()
-
-  return (
-    <View style={styles.stepperRow}>
-      <Pressable
-        style={styles.stepper}
-        onPress={() => {
-          onChange((n) => Math.max(1, n - 1))
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t('plan.cookingFor')}
-        testID="plan-servings-down"
-      >
-        <Text style={styles.stepperSign}>−</Text>
-      </Pressable>
-      <Text style={styles.stepperValue} testID="plan-servings">
-        {String(servings)}
-      </Text>
-      <Pressable
-        style={styles.stepper}
-        onPress={() => {
-          onChange((n) => Math.min(50, n + 1))
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t('plan.cookingFor')}
-        testID="plan-servings-up"
-      >
-        <Text style={styles.stepperSign}>+</Text>
-      </Pressable>
-    </View>
-  )
-}
-
 export const PlanSheet = ({
   visible,
   mealName,
@@ -315,6 +249,11 @@ export const PlanSheet = ({
   const styles = useThemed(sheets)
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  // The safe-area inset is only known at runtime, so this one sheet is built here.
+  const insetStyles = useMemo(
+    () => StyleSheet.create({ bottom: { paddingBottom: insets.bottom + tokens.space.lg } }),
+    [insets.bottom],
+  )
 
   const [date, setDate] = useState(board[0]?.date ?? today)
   const [slotKey, setSlotKey] = useState<SlotKey | undefined>(slots[0]?.key)
@@ -342,7 +281,7 @@ export const PlanSheet = ({
         />
         <ScrollView
           style={styles.sheetScroll}
-          contentContainerStyle={[styles.sheet, { paddingBottom: insets.bottom + tokens.space.lg }]}
+          contentContainerStyle={[styles.sheet, insetStyles.bottom]}
           testID="plan-sheet"
         >
           <View style={styles.grip} />
@@ -373,7 +312,7 @@ export const PlanSheet = ({
 
           <View style={styles.group}>
             <Text style={styles.label}>{t('plan.cookingFor')}</Text>
-            <ServingsStepper servings={servings} onChange={setServings} />
+            <ServingsStepper servings={servings} onChange={setServings} testID="plan-servings" />
           </View>
 
           <Pressable

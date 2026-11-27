@@ -1,8 +1,8 @@
 import { fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '@/test/render'
 import { initI18n, setLocale } from '@/shared/i18n'
-import type { ExtraId } from '../domain/types'
-import type { ShoppingList } from '../domain/types'
+import type { IngredientId, MealId, Quantity } from '@/shared/types/ids'
+import type { ExtraId, ShoppingList } from '../domain/types'
 import { ShoppingListScreen } from './ShoppingListScreen'
 
 beforeAll(async () => {
@@ -80,5 +80,68 @@ describe('ShoppingListScreen load states', () => {
   it('shows no notice when everything loaded', async () => {
     const view = await renderWithProviders(screen({ list: withCoffee, loadState: 'ready' }))
     expect(view.queryByTestId('load-stale')).toBeNull()
+  })
+})
+
+describe('ShoppingListScreen with only Extras', () => {
+  // An Extras-only list said "Nothing to buy yet" and would not copy.
+  it('is not empty, counts the Extras, and copies a prompt', async () => {
+    const onCopyPrompt = jest.fn()
+    const view = await renderWithProviders(
+      screen({ list: withCoffee, loadState: 'ready', onCopyPrompt }),
+    )
+    expect(view.queryByTestId('shopping-empty')).toBeNull()
+    expect(view.getByText(/1 still to buy/)).toBeTruthy()
+    await fireEvent.press(view.getByTestId('copy-prompt'))
+    expect(onCopyPrompt).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ShoppingListScreen amounts', () => {
+  const line = (quantity: number, unit: string): ShoppingList['buy'][number] => ({
+    ingredientId: 'flour' as IngredientId,
+    name: 'flour',
+    category: 'dry-goods',
+    amounts: [{ quantity: quantity as Quantity, unit }],
+    contributions: [],
+    isOverridden: false,
+    promotedFromCupboard: false,
+    checked: false,
+  })
+
+  // A unit from another Member's newer build has no translation here.
+  it('shows an unknown unit as itself, not as a translation key', async () => {
+    const view = await renderWithProviders(
+      screen({ list: { ...empty, buy: [line(2, 'tbsp')] }, loadState: 'ready' }),
+    )
+    expect(view.getByText('2 tbsp')).toBeTruthy()
+    expect(view.queryByText(/unit\.tbsp/)).toBeNull()
+  })
+
+  it('writes decimals the way the Locale does', async () => {
+    await setLocale('fi')
+    const view = await renderWithProviders(
+      screen({ list: { ...empty, buy: [line(1.5, 'kg')] }, loadState: 'ready' }),
+    )
+    expect(view.getByText('1,5 kg')).toBeTruthy()
+    await view.unmount()
+    await setLocale('en')
+  })
+})
+
+describe('ShoppingListScreen with an unknown Ingredient', () => {
+  it('says the Meal names an Ingredient this version does not know', async () => {
+    const view = await renderWithProviders(
+      screen({
+        list: {
+          ...empty,
+          incomplete: [
+            { mealId: 'paella' as MealId, mealName: 'Paella', reason: 'unknown-ingredient' },
+          ],
+        },
+        loadState: 'ready',
+      }),
+    )
+    expect(view.getByText(/Paella — has an Ingredient/)).toBeTruthy()
   })
 })

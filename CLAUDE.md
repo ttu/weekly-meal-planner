@@ -8,8 +8,10 @@ Reminders.
 **The constraint that outranks the others: planning a week takes two minutes.**
 Features that make it longer are features this app does not have.
 
-Stack: Expo (React Native, iOS/Android/web) + Supabase (Postgres, Auth, RLS,
-Realtime). No server of our own.
+Stack: Expo (React Native, iOS/Android/web), local-first and end-to-end
+encrypted (ADR 0013). The Household's data lives on its Members' devices and
+syncs through a small relay (`relay/`, a Cloudflare Worker) that only holds
+encrypted records. No Supabase, no accounts.
 
 ## Read before writing code
 
@@ -22,7 +24,8 @@ Realtime). No server of our own.
 | Tables and types                   | `docs/03-datamodel.md`             |
 | How to test it                     | `docs/04-testing.md`               |
 | Rules and conventions              | `docs/05-code-quality.md`          |
-| Auth, RLS, privacy                 | `docs/06-security.md`              |
+| Identity, encryption, privacy      | `docs/06-security.md`              |
+| The sync protocol and the relay    | `docs/11-sync.md`                  |
 | Colours, type, components          | `docs/07-design-system.md`         |
 | Dev container, PAT, git guardrail  | `docs/10-dev-container.md`         |
 | Why things are the way they are    | `docs/adr/README.md`               |
@@ -71,12 +74,11 @@ Always `pnpm run <script>`, never `npx` or a bare binary directly.
 ```
 pnpm run validate      # format:check, lint --max-warnings=0, type-check,
                       # duplication, test, build — the contract, same in CI
-pnpm run validate:all  # everything CI runs; pre-push runs this
+pnpm run validate:all  # everything CI runs, e2e too; pre-push runs this
+pnpm run e2e           # Playwright against the app and an in-memory relay
 pnpm run test:watch
 pnpm run storybook
-pnpm run catalogue:sync  # reference data in data/ -> database (service role)
-pnpm run db:seed         # demo Household + logins (needs the Catalogue synced first)
-pnpm run db:fresh        # db:reset + catalogue:sync + db:seed: a full dev database
+pnpm dlx wrangler dev --config relay/wrangler.toml   # a local relay on :8787
 ```
 
 ## Workflow
@@ -105,8 +107,10 @@ been looked at is not done.
 
 - Don't add a library where a pure function will do
 - Don't put feature-specific code in `shared/`
-- Don't add authorization checks in application code — RLS is the only
-  enforcement point (ADR 0002)
+- Don't add authorization checks in application code — access is the signed
+  membership list, checked by the sync core (ADR 0013)
+- Don't read a row without parsing it: another Member's device wrote it
+- Don't reuse an invite seat's keys for anything but that seat
 - Don't store the shopping list — it is derived, always (ADR 0003)
 - Don't key an Ingredient on its name — identity is the locale-independent slug,
   or the shopping list aggregates `sipuli` and `onion` separately (ADR 0009)

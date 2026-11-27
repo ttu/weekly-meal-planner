@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MealId } from '@/features/meals'
-import type { BoardDay } from '../domain/board'
+import { boardCards, slotOrderOf, type BoardDay } from '../domain/board'
 import { resolveDrop, type DropAction } from '../domain/drop'
 import { breaksLeftoverOrder } from '../domain/leftover-order'
 import type { DragPayload, DropTarget } from './DragContext'
@@ -13,7 +13,6 @@ const REFUSED_MS = 4000
 type Input = {
   readonly board: readonly BoardDay[]
   /** Undefined on a week nobody has planned into yet; the mutation makes the Week Plan. */
-  readonly weekPlanId: string | undefined
   readonly add: (mealId: MealId) => void
   readonly plan: (request: PlanRequest) => void
   readonly actions: Pick<PlanningActions, 'move' | 'moveLeftoverTo' | 'unplan'>
@@ -39,7 +38,6 @@ const orderedMove = (
  */
 export const useBoardDrop = ({
   board,
-  weekPlanId,
   add,
   plan,
   actions,
@@ -67,19 +65,14 @@ export const useBoardDrop = ({
     // home and the board says why, rather than leaving Wednesday eating the
     // leftovers of Friday's dinner.
     const order = orderedMove(action, payload)
-    if (order !== undefined) {
-      const allCards = board.flatMap((day) => day.slots).flatMap((slot) => slot.cards)
-      // The Household's own order of Slots, which is what "before" means within a day.
-      const slotOrder = (board[0]?.slots ?? []).map((slot) => slot.slotKey)
-      if (breaksLeftoverOrder(order, allCards, slotOrder)) {
-        setOrderRefused(true)
-        // A second refusal restarts the clock rather than inheriting the first's.
-        clearTimeout(refusedTimer.current)
-        refusedTimer.current = setTimeout(() => {
-          setOrderRefused(false)
-        }, REFUSED_MS)
-        return
-      }
+    if (order !== undefined && breaksLeftoverOrder(order, boardCards(board), slotOrderOf(board))) {
+      setOrderRefused(true)
+      // A second refusal restarts the clock rather than inheriting the first's.
+      clearTimeout(refusedTimer.current)
+      refusedTimer.current = setTimeout(() => {
+        setOrderRefused(false)
+      }, REFUSED_MS)
+      return
     }
 
     switch (action.kind) {
@@ -87,7 +80,7 @@ export const useBoardDrop = ({
         add(action.mealId)
         return
       case 'plan':
-        plan({ weekPlanId, ...action })
+        plan(action)
         return
       case 'move':
         actions.move(action)

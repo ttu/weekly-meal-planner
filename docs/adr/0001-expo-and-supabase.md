@@ -1,6 +1,6 @@
 # 0001 — Expo and Supabase as the platform
 
-Status: Accepted · 2026-08-29
+Status: Partly superseded by [0013](0013-local-first-encrypted-sync.md) — Expo stands; Supabase is gone
 
 ## Context
 

@@ -16,14 +16,17 @@ export const localToday = (clock: Clock): string => {
 }
 
 /**
- * Monday of the ISO week containing the local day. getUTCDay() on the
+ * The Monday of the ISO week a date (YYYY-MM-DD) falls in. getUTCDay() on the
  * date-only value returns 0 for Sunday, which must map back six days.
  */
-export const currentWeekStart = (clock: Clock): WeekStart => {
-  const today = Date.parse(`${localToday(clock)}T00:00:00.000Z`)
-  const daysSinceMonday = (new Date(today).getUTCDay() + 6) % 7
-  return brand(toIsoDate(new Date(today - daysSinceMonday * DAY_MS)))
+export const weekStartOfDate = (date: string): WeekStart => {
+  const day = Date.parse(`${date}T00:00:00.000Z`)
+  const daysSinceMonday = (new Date(day).getUTCDay() + 6) % 7
+  return brand(toIsoDate(new Date(day - daysSinceMonday * DAY_MS)))
 }
+
+/** Monday of the ISO week containing the local day. */
+export const currentWeekStart = (clock: Clock): WeekStart => weekStartOfDate(localToday(clock))
 
 /**
  * The Monday `offset` weeks from this one. Zero is this week, 1 is next.
