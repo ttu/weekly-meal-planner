@@ -85,9 +85,11 @@ light screens beyond Settings, drag and drop, the wide layout. What is left:
    weeks' ticks stay, and every cell carries a 64-character clock node. Estimated
    (not measured) at ~30 KB of snapshot per planned week, ~1.5 MB a year, saved
    whole on each commit (a burst shares one save). On the web the snapshot is in
-   `localStorage` (~5 MB), so saves start failing after a few years; on the relay
-   the 100,000-record cap is the same wall later, and a full board stays
-   read-only. Found in the repo audit. Needs a decision on dropping deleted rows
+   `localStorage` (~5 MB), so saves start failing after a few years. The relay's
+   100,000-record cap is a separate wall, and either can come first: every write
+   is a record, so editing the same field again and again fills the relay while
+   the snapshot, which keeps only each field's last value, does not grow. A full
+   board stays read-only. Found in the repo audit. Needs a decision on dropping deleted rows
    and past weeks without breaking last-writer-wins for a device that was offline.
 9. Known limits: the web vault is `localStorage`; the secure store's value size
    limit may be hit after many epochs; leaving a board leaves its snapshot on the
