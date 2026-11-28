@@ -140,18 +140,38 @@ const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: strin
   }
 
   // Saves one after another, each of the state as it is then, so the last one written is the latest.
+  // A save not yet started already covers every change made before it starts, so callers share it:
+  // a burst of writes is one save of the whole board, not one each.
   let saving: Promise<unknown> = Promise.resolve()
+  let queued: Promise<void> | undefined
   let vault = savedVault
+  /** Local writes not yet saved. A save that fails takes them back out: their callers are told it failed. */
+  const unsaved = new Set<string>()
+  /** The last save failed, so what is in memory is not what is stored. */
+  let dirty = false
   const persist = (): Promise<void> => {
+    if (queued) return queued
     const run = saving.then(async () => {
+      queued = undefined
+      const covered = new Set(unsaved)
+      covered.forEach((id) => unsaved.delete(id))
       const saved = serialise(state)
-      // Keys first: a snapshot saved past a key the vault lacks could never sync again.
-      if (saved.keys !== vault) {
-        await deps.vault.set(keysKey(state.household), saved.keys)
-        vault = saved.keys
+      try {
+        // Keys first: a snapshot saved past a key the vault lacks could never sync again.
+        if (saved.keys !== vault) {
+          await deps.vault.set(keysKey(state.household), saved.keys)
+          vault = saved.keys
+        }
+        await deps.storage.set(snapshotKey(state.household), saved.snapshot)
+        dirty = false
+      } catch (e) {
+        dirty = true
+        // Here, before the save queued behind this one reads the state, or it would store them anyway.
+        state = { ...state, outbox: state.outbox.filter((event) => !covered.has(event.id)) }
+        throw e
       }
-      await deps.storage.set(snapshotKey(state.household), saved.snapshot)
     })
+    queued = run
     saving = run.catch(() => undefined)
     return run
   }
@@ -381,7 +401,12 @@ const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: strin
       events.push(event)
     }
     if (events.length === 0) return Promise.resolve()
-    return commit({ ...state, hlc, outbox: [...state.outbox, ...events] })
+    // Told it failed, it must not go out anyway (the save took it back out): trying again would write it twice.
+    events.forEach((e) => unsaved.add(e.id))
+    return commit({ ...state, hlc, outbox: [...state.outbox, ...events] }).catch((e: unknown) => {
+      notify()
+      throw e
+    })
   }
 
   let viewed: { state: EngineState; problem: SyncProblem | undefined; view: View } | undefined
@@ -417,6 +442,8 @@ const make = (deps: Deps, me: Identity, initial: EngineState, savedVault?: strin
     sync: (options) =>
       serial(async () => {
         const result = await syncNow(options?.all ? JOIN_ROUNDS : PULL_ROUNDS)
+        // A sync with nothing new commits nothing, so what an earlier failed save left is saved here.
+        if (dirty) await persist()
         const next = problemAfter(result, problem)
         if (next !== problem) {
           problem = next

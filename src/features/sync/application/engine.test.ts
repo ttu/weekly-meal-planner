@@ -589,6 +589,99 @@ describe('sync engine', () => {
     expect(writes).toEqual(['storage'])
   })
 
+  it('saves a burst of writes once, with all of them in it', async () => {
+    const { engine: alice, dev } = await start('alice')
+    let sets = 0
+    const counted: KeyValue = {
+      get: dev.storage.get,
+      set: (k, v) => {
+        sets++
+        return dev.storage.set(k, v)
+      },
+    }
+    const counting = { ...dev, storage: counted }
+    const seat = identityFromInvite(seatOf(alice))
+    const reopened = await openHousehold(counting, seat, alice.household)
+    if (!reopened) throw new Error('could not reopen')
+    await Promise.all([
+      reopened.write('meal:soup', 'title', 'Soup'),
+      reopened.write('meal:stew', 'title', 'Stew'),
+      reopened.write('meal:pie', 'title', 'Pie'),
+    ])
+    expect(sets).toBe(1)
+    const again = await openHousehold(dev, seat, alice.household)
+    if (!again) throw new Error('could not reopen')
+    expect(again.view().pending).toBe(3)
+  })
+
+  it('does not send a write it said had failed, so trying again does not make it twice', async () => {
+    const { engine: alice, dev } = await start('alice')
+    const bob = must(await joinHousehold(device('bob'), must(await alice.invite('member'))))
+    const full: KeyValue = {
+      get: dev.storage.get,
+      set: () => Promise.reject(new Error('storage full')),
+    }
+    const seat = identityFromInvite(seatOf(alice))
+    const reopened = await openHousehold({ ...dev, storage: full }, seat, alice.household)
+    if (!reopened) throw new Error('could not reopen')
+    await expect(reopened.write('extra:milk', 'label', 'Milk')).rejects.toThrow()
+    expect(reopened.view().pending).toBe(0)
+    expect(readField(reopened.view().store, 'extra:milk', 'label')).toBeUndefined()
+    await reopened.sync().catch(() => undefined)
+    must(await bob.sync())
+    expect(readField(bob.view().store, 'extra:milk', 'label')).toBeUndefined()
+  })
+
+  it('keeps a failed write out of the save queued behind it', async () => {
+    const { engine: alice, dev } = await start('alice')
+    let fail: ((e: Error) => void) | undefined
+    const first: KeyValue = {
+      get: dev.storage.get,
+      set: (k, v) =>
+        fail === undefined
+          ? new Promise((_resolve, reject) => {
+              fail = reject
+            })
+          : dev.storage.set(k, v),
+    }
+    const seat = identityFromInvite(seatOf(alice))
+    const reopened = await openHousehold({ ...dev, storage: first }, seat, alice.household)
+    if (!reopened) throw new Error('could not reopen')
+    const a = reopened.write('extra:a', 'label', 'A')
+    await new Promise((resolve) => setImmediate(resolve))
+    const b = reopened.write('extra:b', 'label', 'B')
+    fail?.(new Error('storage full'))
+    await expect(a).rejects.toThrow()
+    await b
+    const again = await openHousehold(dev, seat, alice.household)
+    if (!again) throw new Error('could not reopen')
+    expect(readField(again.view().store, 'extra:a', 'label')).toBeUndefined()
+    expect(readField(again.view().store, 'extra:b', 'label')).toBe('B')
+  })
+
+  it('saves what a pull brought on the next sync, after the save failed', async () => {
+    const { engine: alice, dev } = await start('alice')
+    const { engine: bob } = await joinAs('bob', must(await alice.invite('member')))
+    let broken = false
+    const flaky: KeyValue = {
+      get: dev.storage.get,
+      set: (k, v) => (broken ? Promise.reject(new Error('storage full')) : dev.storage.set(k, v)),
+    }
+    const seat = identityFromInvite(seatOf(alice))
+    const reopened = await openHousehold({ ...dev, storage: flaky }, seat, alice.household)
+    if (!reopened) throw new Error('could not reopen')
+    must(await reopened.sync())
+    await bob.write('meal:soup', 'title', 'Soup')
+    must(await bob.sync())
+    broken = true
+    await expect(reopened.sync()).rejects.toThrow()
+    broken = false
+    must(await reopened.sync())
+    const again = await openHousehold(dev, seat, alice.household)
+    if (!again) throw new Error('could not reopen')
+    expect(title(again)).toBe('Soup')
+  })
+
   it('refuses a write too big for the relay to take, so it cannot block the ones after it', async () => {
     const { engine: alice } = await start('alice')
     const big = Array.from({ length: 10 }, () => 'x'.repeat(8000))
