@@ -149,4 +149,19 @@ describe('sync loop', () => {
     stop()
     expect(t.timerRunning()).toBe(false)
   })
+
+  it('leaves no unhandled rejection when a sync throws, and syncs again', async () => {
+    const unhandled: unknown[] = []
+    const note = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', note)
+    const t = setup(() => Promise.reject(new Error('storage full')))
+    const stop = t.start()
+    await t.settle()
+    await t.tick(2 * MINUTE)
+    await new Promise((resolve) => setImmediate(resolve))
+    process.off('unhandledRejection', note)
+    stop()
+    expect(unhandled).toEqual([])
+    expect(t.engine.sync).toHaveBeenCalledTimes(2)
+  })
 })

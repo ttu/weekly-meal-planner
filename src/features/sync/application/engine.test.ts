@@ -589,6 +589,49 @@ describe('sync engine', () => {
     expect(writes).toEqual(['storage'])
   })
 
+  it('saves a burst of writes once, with all of them in it', async () => {
+    const { engine: alice, dev } = await start('alice')
+    let sets = 0
+    const counted: KeyValue = {
+      get: dev.storage.get,
+      set: (k, v) => {
+        sets++
+        return dev.storage.set(k, v)
+      },
+    }
+    const counting = { ...dev, storage: counted }
+    const seat = identityFromInvite(seatOf(alice))
+    const reopened = await openHousehold(counting, seat, alice.household)
+    if (!reopened) throw new Error('could not reopen')
+    await Promise.all([
+      reopened.write('meal:soup', 'title', 'Soup'),
+      reopened.write('meal:stew', 'title', 'Stew'),
+      reopened.write('meal:pie', 'title', 'Pie'),
+    ])
+    expect(sets).toBe(1)
+    const again = await openHousehold(dev, seat, alice.household)
+    if (!again) throw new Error('could not reopen')
+    expect(again.view().pending).toBe(3)
+  })
+
+  it('does not send a write it said had failed, so trying again does not make it twice', async () => {
+    const { engine: alice, dev } = await start('alice')
+    const bob = must(await joinHousehold(device('bob'), must(await alice.invite('member'))))
+    const full: KeyValue = {
+      get: dev.storage.get,
+      set: () => Promise.reject(new Error('storage full')),
+    }
+    const seat = identityFromInvite(seatOf(alice))
+    const reopened = await openHousehold({ ...dev, storage: full }, seat, alice.household)
+    if (!reopened) throw new Error('could not reopen')
+    await expect(reopened.write('extra:milk', 'label', 'Milk')).rejects.toThrow()
+    expect(reopened.view().pending).toBe(0)
+    expect(readField(reopened.view().store, 'extra:milk', 'label')).toBeUndefined()
+    await reopened.sync().catch(() => undefined)
+    must(await bob.sync())
+    expect(readField(bob.view().store, 'extra:milk', 'label')).toBeUndefined()
+  })
+
   it('refuses a write too big for the relay to take, so it cannot block the ones after it', async () => {
     const { engine: alice } = await start('alice')
     const big = Array.from({ length: 10 }, () => 'x'.repeat(8000))

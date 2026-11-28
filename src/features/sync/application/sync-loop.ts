@@ -51,9 +51,13 @@ export const startSyncLoop = (
     if (running) return
     running = true
     lastSync = pace.now()
-    void engine.sync().finally(() => {
-      running = false
-    })
+    void engine
+      .sync()
+      // A failed save leaves the state in memory; the next sync saves it.
+      .catch(() => undefined)
+      .finally(() => {
+        running = false
+      })
   }
   const tick = () => {
     const now = pace.now()
